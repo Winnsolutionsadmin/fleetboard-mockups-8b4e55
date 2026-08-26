@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Pulse Analytics</title>
+<style>
+  :root{
+    --bg:#f7f8fa;
+    --card:#ffffff;
+    --ink:#0f172a;
+    --ink-2:#475569;
+    --ink-3:#94a3b8;
+    --line:#e2e8f0;
+    --accent:#0e9994;          /* teal/cyan family */
+    --accent-deep:#0f766e;
+    --accent-soft:#e6f7f6;
+    --hot:#e11d48;             /* needs-you */
+    --hot-soft:#fff1f2;
+    --ok:#16a34a;
+    --ok-soft:#f0fdf4;
+    --warn:#d97706;
+    --warn-soft:#fffbeb;
+    --wait:#6366f1;
+    --wait-soft:#eef2ff;
+    --stale:#64748b;
+    --stale-soft:#f1f5f9;
+    --shadow:0 1px 2px rgba(15,23,42,.05), 0 4px 14px rgba(15,23,42,.07);
+    --shadow-hot:0 1px 2px rgba(225,29,72,.08), 0 6px 18px rgba(225,29,72,.13);
+    --radius:12px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; font-size:15px;}
+  button{font:inherit; cursor:pointer; border:0; background:none; color:inherit;}
+  svg{display:block;}
+
+  .wrap{max-width:1280px; margin:0 auto; padding:16px 20px 48px;}
+
+  /* ── Header ─────────────────────────────── */
+  header{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:6px 0 14px;}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand .mark{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--accent),#22b8cf);
+    display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);}
+  .brand h1{font-size:19px; font-weight:700; letter-spacing:-.02em;}
+  .brand .sub{font-size:12px; color:var(--ink-3); margin-top:1px;}
+  .spacer{flex:1;}
+  .demo-badge{display:none; font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--accent-deep);
+    background:var(--accent-soft); border:1px solid #bfe8e6; padding:4px 9px; border-radius:999px;}
+  body.demo .demo-badge{display:inline-block;}
+  .toggle{display:flex; align-items:center; gap:8px; min-height:44px; padding:0 4px; border-radius:10px;}
+  .toggle .lbl{font-size:13px; color:var(--ink-2); font-weight:600;}
+  .switch{width:42px; height:24px; border-radius:999px; background:#cbd5e1; position:relative; transition:background .18s;}
+  .switch::after{content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:left .18s;}
+  body.demo .switch{background:var(--accent);}
+  body.demo .switch::after{left:21px;}
+  .updated{font-size:12px; color:var(--ink-3);}
+
+  /* ── KPI strip ──────────────────────────── */
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px;}
+  .kpi{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:14px 16px 12px; display:flex; flex-direction:column; gap:6px; min-height:96px;}
+  .kpi .k-label{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3);}
+  .kpi .k-row{display:flex; align-items:flex-end; justify-content:space-between; gap:10px;}
+  .kpi .k-num{font-size:30px; font-weight:750; letter-spacing:-.03em; line-height:1;}
+  .kpi.hot .k-num{color:var(--hot);}
+  .kpi .k-viz{flex:0 0 auto;}
+  .kpi .k-foot{font-size:11.5px; color:var(--ink-3);}
+  .kpi.hot{border-color:#fecdd3; background:linear-gradient(180deg,#fff,#fff6f7);}
+
+  /* ── Fleet health strip ─────────────────── */
+  .fleet{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--card);
+    border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:10px 14px; margin-bottom:20px;}
+  .node{display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--ink-2);
+    background:var(--stale-soft); border:1px solid var(--line); border-radius:999px; padding:6px 12px; min-height:32px;}
+  .node .dot{width:8px; height:8px; border-radius:50%;}
+  .node.fresh .dot{background:var(--ok); box-shadow:0 0 0 3px rgba(22,163,74,.15);}
+  .node.dead{background:#fef2f2; border-color:#fecaca; color:#b91c1c;}
+  .node.dead .dot{background:#dc2626; animation:pulse 1.4s ease-in-out infinite;}
+  .node .n-count{color:var(--ink-3); font-weight:600;}
+  .node.dead .n-count{color:#dc2626;}
+  .fleet .totals{margin-left:auto; font-size:13px; color:var(--ink-2);}
+  .fleet .totals b{color:var(--ink); font-weight:700;}
+  .fleet .totals .hotn{color:var(--hot); font-weight:700;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+
+  /* ── Segmented filter (mobile) ──────────── */
+  .seg{display:none; gap:6px; margin-bottom:14px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px;}
+  .seg button{flex:0 0 auto; min-height:44px; padding:0 14px; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); font-size:13px; font-weight:600; color:var(--ink-2); box-shadow:var(--shadow);}
+  .seg button.on{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .seg button.on[data-col="needs"]{background:var(--hot); border-color:var(--hot);}
+
+  /* ── Board ──────────────────────────────── */
+  .board{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; align-items:start;}
+  .col{border-radius:var(--radius); min-width:0;}
+  .col-head{display:flex; align-items:center; gap:8px; border-radius:10px; padding:9px 12px; margin-bottom:12px;
+    font-size:13px; font-weight:700; letter-spacing:.01em;}
+  .col-head .pill{margin-left:auto; font-size:12px; font-weight:700; min-width:24px; height:22px; padding:0 8px;
+    border-radius:999px; display:flex; align-items:center; justify-content:center; background:#fff;}
+  .col-head .cdot{width:9px; height:9px; border-radius:50%;}
+  .col.needs .col-head{background:var(--hot-soft); color:#9f1239; border:1px solid #fecdd3;}
+  .col.needs .col-head .cdot{background:var(--hot); animation:pulse 1.6s ease-in-out infinite;}
+  .col.needs .col-head .pill{color:var(--hot); border:1px solid #fecdd3;}
+  .col.working .col-head{background:var(--accent-soft); color:var(--accent-deep); border:1px solid #bfe8e6;}
+  .col.working .col-head .cdot{background:var(--accent);}
+  .col.working .col-head .pill{color:var(--accent-deep); border:1px solid #bfe8e6;}
+  .col.waiting .col-head{background:var(--wait-soft); color:#4338ca; border:1px solid #e0e7ff;}
+  .col.waiting .col-head .cdot{background:var(--wait);}
+  .col.waiting .col-head .pill{color:#4338ca; border:1px solid #e0e7ff;}
+  .col.stale .col-head{background:var(--stale-soft); color:var(--stale); border:1px solid var(--line);}
+  .col.stale .col-head .cdot{background:#94a3b8;}
+  .col.stale .col-head .pill{color:var(--stale); border:1px solid var(--line);}
+  .stack{display:flex; flex-direction:column; gap:12px;}
+  .empty{border:1.5px dashed var(--line); border-radius:var(--radius); color:var(--ink-3);
+    font-size:13px; text-align:center; padding:26px 12px;}
+
+  /* ── Card ───────────────────────────────── */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:13px 14px 12px; cursor:pointer; transition:box-shadow .15s, transform .15s; position:relative;}
+  .card:hover{box-shadow:0 2px 4px rgba(15,23,42,.06), 0 10px 24px rgba(15,23,42,.10); transform:translateY(-1px);}
+  .col.needs .card{border-color:#fecdd3; box-shadow:var(--shadow-hot);}
+  .col.needs .card::before{content:""; position:absolute; left:0; top:12px; bottom:12px; width:3px;
+    border-radius:0 3px 3px 0; background:var(--hot);}
+  .col.stale .card{opacity:.78; box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  .col.stale .card:hover{opacity:1;}
+
+  .c-top{display:flex; align-items:flex-start; gap:10px;}
+  .c-id{flex:1; min-width:0;}
+  .c-proj{font-size:15px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .c-meta{display:flex; align-items:center; gap:6px; margin-top:3px; flex-wrap:wrap;}
+  .chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--ink-2);
+    background:var(--stale-soft); border-radius:6px; padding:2px 7px; white-space:nowrap;}
+  .chip.model{background:var(--accent-soft); color:var(--accent-deep);}
+  .chip.src{background:#f5f3ff; color:#6d28d9;}
+  .ring-wrap{flex:0 0 auto; position:relative; width:44px; height:44px;}
+  .ring-wrap .pct{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; font-weight:750; letter-spacing:-.02em;}
+
+  .c-now{margin:9px 0 10px; font-size:13px; line-height:1.45; color:var(--ink-2);
+    display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;}
+
+  .c-stats{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .stat{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:650; color:var(--ink-2);}
+  .stat svg{opacity:.55;}
+  .spark{margin-left:auto;}
+
+  .c-actions{display:flex; align-items:center; gap:8px; margin-top:11px;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:0 14px;
+    border-radius:10px; font-size:13px; font-weight:700; transition:filter .12s;}
+  .btn:hover{filter:brightness(.96);}
+  .btn-resume{background:var(--accent); color:#fff; flex:1;}
+  .btn-resume.tier-revive{background:var(--warn);}
+  .btn-resume.tier-repair{background:#fff; color:var(--warn); border:1.5px solid var(--warn);}
+  .tier-badge{font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    background:rgba(255,255,255,.25); border-radius:5px; padding:2px 6px;}
+  .btn-resume.tier-repair .tier-badge{background:var(--warn-soft);}
+  .btn-live{background:#fff; border:1.5px solid var(--ok); color:var(--ok); min-width:44px;}
+  .btn-live .ldot{width:7px; height:7px; border-radius:50%; background:var(--ok); animation:pulse 1.4s infinite;}
+
+  .c-more{display:none; margin-top:11px; border-top:1px solid var(--line); padding-top:10px;
+    font-size:12.5px; line-height:1.5; color:var(--ink-2);}
+  .card.open .c-more{display:block;}
+  .c-more .row{display:flex; gap:7px; margin-bottom:6px;}
+  .c-more .tag{flex:0 0 auto; font-size:10px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--ink-3); padding-top:2px; width:38px;}
+  .c-more .xtra{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .c-more .note{margin-top:8px; background:var(--warn-soft); border:1px solid #fde68a; color:#92400e;
+    border-radius:8px; padding:7px 9px; font-size:12px;}
+
+  /* toast */
+  #toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(14px); opacity:0;
+    background:var(--ink); color:#fff; font-size:13px; font-weight:600; padding:10px 16px; border-radius:10px;
+    box-shadow:0 8px 24px rgba(15,23,42,.28); pointer-events:none; transition:opacity .2s, transform .2s; z-index:50; max-width:88vw;}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ── Responsive ─────────────────────────── */
+  @media (max-width:1020px){ .board{grid-template-columns:repeat(2,1fr);} .kpis{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:640px){
+    .wrap{padding:12px 12px 40px;}
+    .board{grid-template-columns:1fr;}
+    .kpis{grid-template-columns:repeat(2,1fr); gap:10px;}
+    .kpi .k-num{font-size:24px;}
+    .seg{display:flex;}
+    .fleet .totals{margin-left:0; width:100%;}
+    body[data-filter="needs"]   .col:not(.needs),
+    body[data-filter="working"] .col:not(.working),
+    body[data-filter="waiting"] .col:not(.waiting),
+    body[data-filter="stale"]   .col:not(.stale){display:none;}
+  }
+</style>
+</head>
+<body class="demo" data-filter="all">
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2 12 6 12 9 5 13 19 16 12 22 12"/>
+        </svg>
+      </div>
+      <div>
+        <h1>FleetBoard <span style="color:var(--accent);">Pulse</span></h1>
+        <div class="sub" id="builtAt">—</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <span class="demo-badge">DEMO DATA</span>
+    <button class="toggle" id="demoToggle" aria-pressed="true" aria-label="Toggle demo mode">
+      <span class="lbl">Demo</span><span class="switch"></span>
+    </button>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Fleet key metrics"></section>
+
+  <section class="fleet" id="fleet" aria-label="Fleet health"></section>
+
+  <nav class="seg" id="seg" aria-label="Column filter">
+    <button data-col="all" class="on">All</button>
+    <button data-col="needs">Needs You</button>
+    <button data-col="working">Working</button>
+    <button data-col="waiting">Waiting</button>
+    <button data-col="stale">Stale</button>
+  </nav>
+
+  <main class="board" id="board"></main>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script id="fleet-data" type="application/json">
+{
+  "schema": "fleet-board/1",
+  "self": "mactop",
+  "builtAt": "2026-08-26T02:30:00-07:00",
+  "nodes": {
+    "macbook": {"ok": true, "publishAgeSec": 4, "liveness": "fresh", "sessions": 3},
+    "mactop": {"ok": false, "publishAgeSec": 4500000, "liveness": "dead", "sessions": 2, "note": "publisher silently dead since Jul 5 — false-healthy bug demo"},
+    "mini": {"ok": true, "publishAgeSec": 7, "liveness": "fresh", "sessions": 3}
+  },
+  "totals": {"sessions": 8, "needsYou": 2, "tokensToday": 6400000, "estCostToday": 41.20},
+  "sessions": [
+    {
+      "session_id": "a8187667-686c-4342-85e7-b382a6af6fdd",
+      "project": "miscellaneous", "branch": "daybed-avenge", "host": "mactop", "model": "opus",
+      "status": "working", "source": "omnara",
+      "summary": {
+        "now": "Running /research-deliberate on the session-kanban dashboard; 6-model panel deliberating on the mini",
+        "next": "Parse panel matrix, adopt considerations, build variant mockups + written proposal",
+        "goal": "Full written + visual proposal for a fleet session kanban dashboard, ready for Jarred's review"
+      },
+      "contextPct": 62, "tokens": 3900000, "elapsedActive": "3h 40m", "idle": "0m", "msgs": 41, "cost": 18.40,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 2, "lastActivity": "just now"
+    },
+    {
+      "session_id": "4e8ffea7-c649-440f-96de-2f03cc6983c9",
+      "project": "gm-waitlist", "branch": "roman-impish", "host": "macbook", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "Waitlist demo flow blocked on a copy decision for the parent-facing confirmation step",
+        "next": "Needs Jarred: approve confirmation copy variant A or B, then wire the email template",
+        "goal": "Ship the waitlist demo flow to staging behind the kill-switch"
+      },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 05m", "idle": "42m", "msgs": 23, "cost": 6.10,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 6, "lastActivity": "42m ago"
+    },
+    {
+      "session_id": "77b1c2d3-1111-4aaa-9bbb-000000000001",
+      "project": "kindred-portal", "branch": "lic701-explainer", "host": "mini", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "LIC 701 validation built; upload-check rejects wrong docs and drafts parent guidance",
+        "next": "Needs Jarred: confirm the enrollment-flow explainer copy before merge to main",
+        "goal": "Parents can download, understand, and correctly upload the LIC 701 form"
+      },
+      "contextPct": 55, "tokens": 900000, "elapsedActive": "2h 20m", "idle": "1h 10m", "msgs": 31, "cost": 4.80,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 12, "lastActivity": "1h 10m ago"
+    },
+    {
+      "session_id": "88c2d3e4-2222-4bbb-8ccc-000000000002",
+      "project": "growingmindfully", "branch": "analyze-google-yelp-conversions", "host": "macbook", "model": "opus",
+      "status": "working",
+      "summary": {
+        "now": "Cross-referencing GA4 conversion exports against Google Ads + Yelp click data",
+        "next": "Produce attribution comparison table; flag the 2 legacy Contact-us conversions for removal",
+        "goal": "Defensible view of which channel actually drives GM tour bookings"
+      },
+      "contextPct": 78, "tokens": 2100000, "elapsedActive": "5h 02m", "idle": "3m", "msgs": 58, "cost": 9.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 3, "lastActivity": "3m ago"
+    },
+    {
+      "session_id": "99d3e4f5-3333-4ccc-9ddd-000000000003",
+      "project": "travel-planner", "branch": "travel-points-cash-comparison", "host": "mactop", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Points-vs-cash comparison engine complete; 22 commits ahead of main, tests green",
+        "next": "Open PR and merge, or extend to hotel-chain transfer partners",
+        "goal": "One-look answer: pay points or cash for any planned trip leg"
+      },
+      "contextPct": 34, "tokens": 800000, "elapsedActive": "1h 48m", "idle": "9d", "msgs": 27, "cost": 3.60,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 240, "lastActivity": "9d ago", "stale": true
+    },
+    {
+      "session_id": "aab4f5a6-4444-4ddd-8eee-000000000004",
+      "project": "client-alpha", "branch": "tweet-ai-trust-verification", "host": "mini", "model": "opus",
+      "status": "waiting",
+      "summary": {
+        "now": "Draft thread on AI trust verification staged; 8 commits unmerged, no PR",
+        "next": "Jarred review of thread copy, then merge or archive the branch",
+        "goal": "Publishable the client thread + reusable verification framing"
+      },
+      "contextPct": 88, "tokens": 3100000, "elapsedActive": "4h 15m", "idle": "5d", "msgs": 66, "cost": 14.70,
+      "resumeTier": "revive", "worktreeOk": true, "summaryAgeMin": 300, "lastActivity": "5d ago", "stale": true,
+      "note": "Context 88% — resume will hit 'Prompt is too long'; revive (distill + fork) is the offered action"
+    },
+    {
+      "session_id": "bbc5a6b7-5555-4eee-9fff-000000000005",
+      "project": "gm-waitlist", "branch": "backup/macbook-local-errfix", "host": "macbook", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Error-fix backup branch holding 1 commit of client-feedback fixes",
+        "next": "Cherry-pick into main or discard; worktree was pruned last week",
+        "goal": "No client-feedback fix lost from the Aug 12 session"
+      },
+      "contextPct": 22, "tokens": 400000, "elapsedActive": "38m", "idle": "12d", "msgs": 12, "cost": 1.40,
+      "resumeTier": "resume", "worktreeOk": false, "summaryAgeMin": 600, "lastActivity": "12d ago", "stale": true,
+      "note": "Worktree missing — resume gated behind repair (re-create worktree from branch)"
+    },
+    {
+      "session_id": "ccd6b7c8-6666-4fff-8aaa-000000000006",
+      "project": "gm-sage", "branch": "main", "host": "mini", "model": "sonnet",
+      "status": "working", "source": "launchd",
+      "summary": {
+        "now": "Hourly GM inbox triage pass: 3 new threads classified, 1 draft staged for approval",
+        "next": "Surface the staged draft + one family LIC 701 anomaly at next check-in",
+        "goal": "Zero unhandled GM inbound; every thread owned or routed"
+      },
+      "contextPct": 18, "tokens": 300000, "elapsedActive": "22m", "idle": "1m", "msgs": 9, "cost": 0.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 1, "lastActivity": "1m ago"
+    }
+  ]
+}
+</script>
+
+<script>
+"use strict";
+const FLEET = JSON.parse(document.getElementById("fleet-data").textContent);
+
+/* ── helpers ─────────────────────────────── */
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function fmtTokens(n){return n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,"")+"M" : n>=1e3 ? Math.round(n/1e3)+"K" : String(n);}
+function fmtCost(n){return "$"+(n>=10 ? Math.round(n) : n.toFixed(2).replace(/0$/,""));}
+
+/* deterministic PRNG seeded from session data */
+function seedOf(str){let h=2166136261>>>0; for(let i=0;i<str.length;i++){h^=str.charCodeAt(i); h=Math.imul(h,16777619)>>>0;} return h;}
+function mulberry32(a){return function(){a|=0; a=(a+0x6D2B79F5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296;};}
+
+/* synthesized per-hour token-burn points, deterministic from session id + tokens */
+function burnPoints(key, n){
+  const rnd=mulberry32(seedOf(key)); const pts=[]; let v=.25+rnd()*.35;
+  for(let i=0;i<n;i++){ v=Math.max(.06,Math.min(1, v+(rnd()-.42)*.38)); pts.push(v); }
+  return pts;
+}
+function sparkSVG(pts,w,h,color,fill){
+  const px=2, step=(w-px*2)/(pts.length-1);
+  const xy=pts.map((v,i)=>[(px+i*step), (h-2-(h-4)*v)]);
+  const line=xy.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+  let area="";
+  if(fill){
+    area='<polygon points="'+px+','+(h-1)+' '+line+' '+xy[xy.length-1][0].toFixed(1)+','+(h-1)+'" fill="'+color+'" opacity="0.12"/>';
+  }
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true">'+area+
+    '<polyline points="'+line+'" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<circle cx="'+xy[xy.length-1][0].toFixed(1)+'" cy="'+xy[xy.length-1][1].toFixed(1)+'" r="2.2" fill="'+color+'"/></svg>';
+}
+function miniBars(vals,w,h,color){
+  const gap=3, bw=(w-gap*(vals.length-1))/vals.length, mx=Math.max.apply(null,vals);
+  let s='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true">';
+  vals.forEach((v,i)=>{const bh=Math.max(2,(h-2)*v/mx);
+    s+='<rect x="'+(i*(bw+gap)).toFixed(1)+'" y="'+(h-bh).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1.5" fill="'+color+'" opacity="'+(0.35+0.65*i/(vals.length-1)).toFixed(2)+'"/>';});
+  return s+"</svg>";
+}
+/* 44px context ring, green→amber→red as % rises */
+function ringColor(p){return p<50 ? "#16a34a" : p<75 ? "#d97706" : "#dc2626";}
+function ringSVG(pct){
+  const r=18, c=2*Math.PI*r, off=c*(1-pct/100), col=ringColor(pct);
+  return '<div class="ring-wrap" title="Context '+pct+'% used">' +
+    '<svg width="44" height="44" viewBox="0 0 44 44" role="img" aria-label="Context '+pct+' percent">'+
+    '<circle cx="22" cy="22" r="'+r+'" fill="none" stroke="#e8edf3" stroke-width="4.5"/>'+
+    '<circle cx="22" cy="22" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="4.5" stroke-linecap="round" '+
+    'stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" transform="rotate(-90 22 22)"/>'+
+    '</svg><span class="pct" style="color:'+col+'">'+pct+'%</span></div>';
+}
+const IC={
+  bolt:'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+  msg:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3c-1.4 0-2.8-.3-4-.9L3 20l1.1-4.4a8.1 8.1 0 0 1-1-4A8.4 8.4 0 0 1 11.6 3.3 8.4 8.4 0 0 1 21 11.5z"/></svg>',
+  clock:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  eye:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  play:'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5-13-7.5z"/></svg>',
+  wrench:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M14.7 6.3a4.5 4.5 0 0 0 5.9 5.9L17 15.8l-8.5 8.5a2.1 2.1 0 0 1-3-3L14 12.8l.7-6.5z" transform="rotate(90 12 12)"/></svg>',
+  host:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'
+};
+
+/* column classification: needs_input → Needs You; working → Working;
+   waiting → Stale when stale && idle ≥ 7d, else Waiting */
+function idleDays(idle){const m=/^(\d+)d/.exec(idle||""); return m?+m[1]:0;}
+function columnOf(s){
+  if(s.status==="needs_input") return "needs";
+  if(s.status==="working") return "working";
+  return (s.stale && idleDays(s.idle)>=7) ? "stale" : "waiting";
+}
+
+/* ── KPI strip ───────────────────────────── */
+(function renderKPIs(){
+  const t=FLEET.totals, el=document.getElementById("kpis");
+  const nodeCounts=Object.values(FLEET.nodes).map(n=>n.sessions);
+  el.innerHTML=
+    '<div class="kpi"><div class="k-label">Active sessions</div>'+
+      '<div class="k-row"><div class="k-num">'+t.sessions+'</div><div class="k-viz">'+miniBars(nodeCounts,52,26,"#0e9994")+'</div></div>'+
+      '<div class="k-foot">across 3 nodes</div></div>'+
+    '<div class="kpi hot"><div class="k-label">Need you</div>'+
+      '<div class="k-row"><div class="k-num">'+t.needsYou+'</div><div class="k-viz">'+miniBars(burnPoints("needsyou",6).map(v=>v),52,26,"#e11d48")+'</div></div>'+
+      '<div class="k-foot">blocked on a decision</div></div>'+
+    '<div class="kpi"><div class="k-label">Tokens today</div>'+
+      '<div class="k-row"><div class="k-num">'+fmtTokens(t.tokensToday)+'</div><div class="k-viz">'+sparkSVG(burnPoints("tokens-today",14),64,26,"#0e9994",true)+'</div></div>'+
+      '<div class="k-foot">per-hour burn</div></div>'+
+    '<div class="kpi"><div class="k-label">Est cost today</div>'+
+      '<div class="k-row"><div class="k-num">$'+t.estCostToday.toFixed(2)+'</div><div class="k-viz">'+sparkSVG(burnPoints("cost-today",14),64,26,"#0e9994",true)+'</div></div>'+
+      '<div class="k-foot">all models, all nodes</div></div>';
+})();
+
+/* ── Fleet health strip ──────────────────── */
+(function renderFleet(){
+  const el=document.getElementById("fleet"); const t=FLEET.totals;
+  let html="";
+  for(const name in FLEET.nodes){
+    const n=FLEET.nodes[name], dead=n.liveness==="dead";
+    html+='<span class="node '+(dead?"dead":"fresh")+'" title="'+esc(dead?(n.note||"dead"):"publishing, age "+n.publishAgeSec+"s")+'">'+
+      '<span class="dot"></span>'+esc(name)+(dead?' · DEAD':' · fresh')+' <span class="n-count">· '+n.sessions+'</span></span>';
+  }
+  html+='<span class="totals"><b>'+t.sessions+'</b> sessions · <span class="hotn">'+t.needsYou+' need you</span> · <b>'+
+    fmtTokens(t.tokensToday)+'</b> tok · <b>$'+t.estCostToday.toFixed(2)+'</b></span>';
+  el.innerHTML=html;
+})();
+
+/* ── Board ───────────────────────────────── */
+const COLS=[
+  {key:"needs",   label:"Needs You"},
+  {key:"working", label:"Working"},
+  {key:"waiting", label:"Waiting"},
+  {key:"stale",   label:"Stale"}
+];
+function tierBtn(s){
+  if(!s.worktreeOk) return '<button class="btn btn-resume tier-repair" data-act="repair">'+IC.wrench+' Repair <span class="tier-badge">worktree</span></button>';
+  const t=s.resumeTier, label=t==="attach"?"Attach":t==="revive"?"Revive":"Resume";
+  return '<button class="btn btn-resume tier-'+esc(t)+'" data-act="'+esc(t)+'">'+IC.play+' '+label+' <span class="tier-badge">'+esc(t)+'</span></button>';
+}
+function cardHTML(s){
+  const live = s.resumeTier==="attach" && s.worktreeOk;
+  return '<article class="card" data-sid="'+esc(s.session_id)+'" tabindex="0" role="button" aria-expanded="false">'+
+    '<div class="c-top"><div class="c-id">'+
+      '<div class="c-proj">'+esc(s.project)+'</div>'+
+      '<div class="c-meta"><span class="chip">'+IC.host+' '+esc(s.host)+'</span>'+
+        '<span class="chip model">'+esc(s.model)+'</span>'+
+        (s.source?'<span class="chip src">'+esc(s.source)+'</span>':"")+
+      '</div></div>'+ringSVG(s.contextPct)+'</div>'+
+    '<p class="c-now">'+esc(s.summary.now)+'</p>'+
+    '<div class="c-stats">'+
+      '<span class="stat" title="Tokens">'+IC.bolt+' '+fmtTokens(s.tokens)+'</span>'+
+      '<span class="stat" title="Est cost">'+fmtCost(s.cost)+'</span>'+
+      '<span class="stat" title="Last activity">'+IC.clock+' '+esc(s.lastActivity)+'</span>'+
+      '<span class="spark" title="Token burn (per hour, synthesized)">'+sparkSVG(burnPoints(s.session_id,10),58,18,"#0e9994",false)+'</span>'+
+    '</div>'+
+    '<div class="c-actions">'+tierBtn(s)+
+      (live?'<button class="btn btn-live" data-act="live" aria-label="Open live view"><span class="ldot"></span>'+IC.eye+' LIVE</button>':"")+
+    '</div>'+
+    '<div class="c-more">'+
+      '<div class="row"><span class="tag">Next</span><span>'+esc(s.summary.next)+'</span></div>'+
+      '<div class="row"><span class="tag">Goal</span><span>'+esc(s.summary.goal)+'</span></div>'+
+      '<div class="xtra">'+
+        '<span class="chip">'+IC.msg+' '+s.msgs+' msgs</span>'+
+        '<span class="chip">'+IC.clock+' '+esc(s.elapsedActive)+' active</span>'+
+        '<span class="chip">idle '+esc(s.idle)+'</span>'+
+        '<span class="chip">'+esc(s.branch)+'</span>'+
+      '</div>'+
+      (s.note?'<div class="note">'+esc(s.note)+'</div>':"")+
+    '</div></article>';
+}
+(function renderBoard(){
+  const groups={needs:[],working:[],waiting:[],stale:[]};
+  FLEET.sessions.forEach(s=>groups[columnOf(s)].push(s));
+  const el=document.getElementById("board");
+  el.innerHTML=COLS.map(c=>{
+    const list=groups[c.key];
+    return '<section class="col '+c.key+'" aria-label="'+c.label+'">'+
+      '<div class="col-head"><span class="cdot"></span>'+c.label+'<span class="pill">'+list.length+'</span></div>'+
+      '<div class="stack">'+(list.length?list.map(cardHTML).join(""):'<div class="empty">Nothing here</div>')+'</div></section>';
+  }).join("");
+})();
+
+/* ── interactions ────────────────────────── */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
+}
+document.getElementById("board").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-act]");
+  const card=e.target.closest(".card");
+  if(!card) return;
+  const sid=card.getAttribute("data-sid");
+  const s=FLEET.sessions.find(x=>x.session_id===sid);
+  if(btn){
+    const act=btn.getAttribute("data-act");
+    if(act==="live") toast("Live view: tailing "+s.project+" on "+s.host+" (mockup)");
+    else if(act==="repair") toast("Repair: re-create worktree from "+s.branch+" (mockup)");
+    else toast(act.charAt(0).toUpperCase()+act.slice(1)+": "+s.project+" @ "+s.host+" (mockup)");
+    return;
+  }
+  card.classList.toggle("open");
+  card.setAttribute("aria-expanded", card.classList.contains("open")?"true":"false");
+});
+document.getElementById("board").addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ") && e.target.classList.contains("card")){
+    e.preventDefault(); e.target.click();
+  }
+});
+document.getElementById("demoToggle").addEventListener("click",function(){
+  const on=document.body.classList.toggle("demo");
+  this.setAttribute("aria-pressed", on?"true":"false");
+  toast(on?"Demo mode on — synthesized fleet data":"Demo mode off — would connect to live publishers");
+});
+document.getElementById("seg").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-col]"); if(!b) return;
+  document.querySelectorAll("#seg button").forEach(x=>x.classList.toggle("on",x===b));
+  document.body.setAttribute("data-filter", b.getAttribute("data-col"));
+});
+(function(){
+  const d=new Date(FLEET.builtAt);
+  document.getElementById("builtAt").textContent =
+    "8 sessions · built "+d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+})();
+</script>
+</body>
+</html>

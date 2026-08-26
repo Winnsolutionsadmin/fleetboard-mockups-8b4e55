@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Linear Calm</title>
+<style>
+  :root{
+    --canvas:#fcfcfd;
+    --card:#ffffff;
+    --line:#e6e8ec;
+    --line-soft:#eff0f3;
+    --ink:#282a30;
+    --ink-2:#5f6168;
+    --ink-3:#9a9ca3;
+    --accent:#5e6ad2;
+    --red:#e5484d;
+    --red-soft:#fdf3f3;
+    --green:#46a758;
+    --amber:#c9962b;
+    --gray-dot:#b4b6bc;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--canvas)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    font-size:13px;
+    line-height:1.45;
+    letter-spacing:-0.08px;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:48px;
+  }
+  button{font:inherit;letter-spacing:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 24px;
+    border-bottom:1px solid var(--line);
+    background:var(--card);
+  }
+  .wordmark{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;letter-spacing:-0.15px}
+  .wordmark .mark{
+    width:16px;height:16px;border-radius:4px;background:var(--accent);
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+  }
+  .wordmark .mark svg{display:block}
+  .built{color:var(--ink-3);font-size:12px}
+  .spacer{flex:1}
+  .demo-toggle{
+    display:flex;align-items:center;gap:8px;min-height:32px;padding:0 4px;
+    color:var(--ink-2);font-size:12px;
+  }
+  .switch{
+    width:28px;height:17px;border-radius:9px;background:#d8dade;position:relative;flex:none;
+    transition:background .15s ease;
+  }
+  .switch::after{
+    content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
+    background:#fff;transition:transform .15s ease;
+  }
+  .demo-toggle[aria-pressed="true"] .switch{background:var(--accent)}
+  .demo-toggle[aria-pressed="true"] .switch::after{transform:translateX(11px)}
+
+  /* ---------- health strip ---------- */
+  .health{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:12px 24px 0;
+  }
+  .node-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    border:1px solid var(--line);border-radius:6px;background:var(--card);
+    padding:4px 9px;font-size:12px;color:var(--ink-2);
+  }
+  .node-chip .nname{font-weight:500;color:var(--ink)}
+  .node-chip .ncount{color:var(--ink-3)}
+  .node-chip.dead{border-color:#f3c8c9;background:var(--red-soft);color:var(--red)}
+  .node-chip.dead .nname,.node-chip.dead .ncount{color:var(--red)}
+  .node-chip.dead .nstate{font-weight:600;font-size:10.5px;letter-spacing:.4px}
+  .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .dot.fresh{background:var(--green)}
+  .dot.dead{background:var(--red)}
+  .totals{color:var(--ink-3);font-size:12px;margin-left:4px}
+  .totals b{font-weight:500;color:var(--ink-2)}
+  .totals .ny{color:var(--red);font-weight:500}
+
+  /* ---------- segmented filter (mobile) ---------- */
+  .seg{
+    display:none;gap:6px;overflow-x:auto;padding:12px 16px 0;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .seg::-webkit-scrollbar{display:none}
+  .seg button{
+    flex:none;min-height:44px;padding:0 14px;border-radius:8px;
+    border:1px solid var(--line);background:var(--card);color:var(--ink-2);font-size:12.5px;
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .seg button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:#f4f5fb}
+  .seg .sdot{width:6px;height:6px;border-radius:50%}
+
+  /* ---------- board ---------- */
+  .board{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;
+    padding:20px 24px 0;align-items:start;
+  }
+  .col-head{
+    display:flex;align-items:center;gap:8px;
+    padding:2px 2px 12px;
+  }
+  .col-head .cname{font-weight:500;font-size:12.5px;color:var(--ink-2)}
+  .col-head .cdot{width:8px;height:8px;border-radius:50%;flex:none}
+  .count{
+    font-size:11px;color:var(--ink-3);
+    border:1px solid var(--line);border-radius:9px;padding:0 6px;line-height:16px;background:var(--card);
+  }
+  .col[data-col="needs_you"] .cname{color:var(--red);font-weight:600}
+  .col[data-col="needs_you"] .cdot{background:var(--red);box-shadow:0 0 0 4px rgba(229,72,77,.14)}
+  .col[data-col="needs_you"] .count{color:var(--red);border-color:#f3c8c9;background:var(--red-soft)}
+  .col[data-col="working"] .cdot{background:var(--green)}
+  .col[data-col="waiting"] .cdot{background:var(--amber)}
+  .col[data-col="stale"] .cdot{background:var(--gray-dot)}
+  .col[data-col="stale"] .cname{color:var(--ink-3)}
+  .cards{display:flex;flex-direction:column;gap:10px}
+  .empty{
+    border:1px dashed var(--line);border-radius:var(--radius);
+    color:var(--ink-3);font-size:12px;text-align:center;padding:22px 12px;
+  }
+
+  /* ---------- card ---------- */
+  .card{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px 10px;
+    cursor:pointer;
+    transition:border-color .12s ease;
+  }
+  .card:hover{border-color:#d6d9df}
+  .card:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .card.needs-you{border-color:#f0d2d3}
+  .card.needs-you::before{
+    content:"";position:absolute;left:-1px;top:10px;bottom:10px;width:3px;
+    border-radius:0 2px 2px 0;background:var(--red);opacity:.85;
+  }
+  .card.is-stale{background:transparent}
+  .card.is-stale .proj{color:var(--ink-2)}
+  .card.is-stale .now{color:var(--ink-3)}
+
+  .row1{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .proj{font-weight:600;font-size:13px;letter-spacing:-0.12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .host{color:var(--ink-3);font-size:11.5px;flex:none}
+  .status-inline{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-3)}
+  .status-inline .dot{width:6px;height:6px}
+  .status-inline .dot.needs{background:var(--red)}
+  .status-inline .dot.work{background:var(--green)}
+  .status-inline .dot.wait{background:var(--amber)}
+  .status-inline .dot.stal{background:var(--gray-dot)}
+  .branch{color:var(--ink-3);font-size:11.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .now{
+    margin-top:7px;color:var(--ink-2);font-size:12.5px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .card.needs-you .now{color:var(--ink)}
+
+  /* numerics: quiet text pairs with tiny icons */
+  .nums{
+    display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;
+    margin-top:9px;color:var(--ink-3);font-size:11.5px;
+  }
+  .num{display:inline-flex;align-items:center;gap:4.5px;white-space:nowrap}
+  .num svg{flex:none;opacity:.75}
+  .num .v{color:var(--ink-2)}
+  .ctx{display:inline-flex;align-items:center;gap:6px}
+  .ctxbar{width:34px;height:3px;border-radius:2px;background:var(--line-soft);overflow:hidden;flex:none}
+  .ctxbar i{display:block;height:100%;border-radius:2px;background:var(--ink-3)}
+  .ctx.hot .ctxbar i{background:var(--red)}
+  .ctx.warm .ctxbar i{background:var(--amber)}
+  .ctx.hot .v{color:var(--red)}
+
+  /* expand */
+  .more{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft)}
+  .card.open .more{display:block}
+  .more .kv{display:flex;gap:8px;font-size:12px;margin-top:5px}
+  .more .kv:first-child{margin-top:0}
+  .more .k{flex:none;width:34px;color:var(--ink-3);font-size:11px;padding-top:1px}
+  .more .val{color:var(--ink-2)}
+  .more .fnote{margin-top:7px;font-size:11px;color:var(--amber)}
+
+  /* actions */
+  .actions{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;
+    min-height:30px;padding:0 10px;border-radius:6px;
+    border:1px solid var(--line);background:var(--card);
+    font-size:12px;color:var(--ink-2);
+  }
+  .btn:hover{border-color:#d6d9df;color:var(--ink)}
+  .btn.live .ldot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2.4s ease-in-out infinite}
+  .btn.live.off .ldot{background:var(--gray-dot);animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .btn.primary{
+    border-color:transparent;background:var(--accent);color:#fff;font-weight:500;
+  }
+  .btn.primary:hover{background:#5560c4;color:#fff}
+  .btn.primary .tier{
+    font-size:10px;font-weight:500;letter-spacing:.2px;
+    background:rgba(255,255,255,.22);border-radius:4px;padding:1px 5px;
+  }
+  .btn.repair{border-color:#ead9b2;color:var(--amber);background:#fdfaf2}
+  .btn.repair:hover{color:var(--amber);border-color:#dfc98f}
+  .last{margin-left:auto;color:var(--ink-3);font-size:11px;white-space:nowrap}
+  .card.needs-you .last{color:var(--red)}
+
+  /* demo-off state */
+  .offboard{
+    display:none;margin:40px 24px 0;padding:44px 20px;text-align:center;
+    border:1px dashed var(--line);border-radius:var(--radius);color:var(--ink-3);font-size:12.5px;
+  }
+  body.demo-off .board,body.demo-off .health,body.demo-off .seg{display:none}
+  body.demo-off .offboard{display:block}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:980px){
+    .board{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:640px){
+    .topbar{padding:12px 16px}
+    .health{padding:12px 16px 0}
+    .seg{display:flex}
+    .board{grid-template-columns:1fr;gap:24px;padding:16px 16px 0}
+    .board[data-filter="needs_you"] .col:not([data-col="needs_you"]),
+    .board[data-filter="working"] .col:not([data-col="working"]),
+    .board[data-filter="waiting"] .col:not([data-col="waiting"]),
+    .board[data-filter="stale"] .col:not([data-col="stale"]){display:none}
+    .btn{min-height:44px;padding:0 14px}
+    .demo-toggle{min-height:44px}
+    .card{padding:14px 14px 12px}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="wordmark">
+    <span class="mark" aria-hidden="true">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><rect x="0.5" y="0.5" width="3.2" height="3.2" rx="0.8" fill="#fff"/><rect x="5.3" y="0.5" width="3.2" height="3.2" rx="0.8" fill="#fff" opacity=".55"/><rect x="0.5" y="5.3" width="3.2" height="3.2" rx="0.8" fill="#fff" opacity=".55"/><rect x="5.3" y="5.3" width="3.2" height="3.2" rx="0.8" fill="#fff" opacity=".3"/></svg>
+    </span>
+    FleetBoard
+  </span>
+  <span class="built" id="built"></span>
+  <span class="spacer"></span>
+  <button class="demo-toggle" id="demoToggle" aria-pressed="true" aria-label="Demo data toggle">
+    <span class="switch" aria-hidden="true"></span>
+    Demo data
+  </button>
+</header>
+
+<div class="health" id="health" aria-label="Fleet health"></div>
+
+<nav class="seg" id="seg" aria-label="Column filter"></nav>
+
+<main class="board" id="board" data-filter="all"></main>
+
+<div class="offboard" id="offboard">Demo data off — no live fleet source connected in this mockup.<br>Turn the toggle back on to restore the sample fleet.</div>
+
+<script id="fleet-data" type="application/json">
+{
+  "schema": "fleet-board/1",
+  "self": "mactop",
+  "builtAt": "2026-08-26T02:30:00-07:00",
+  "nodes": {
+    "macbook": {"ok": true, "publishAgeSec": 4, "liveness": "fresh", "sessions": 3},
+    "mactop": {"ok": false, "publishAgeSec": 4500000, "liveness": "dead", "sessions": 2, "note": "publisher silently dead since Jul 5 — false-healthy bug demo"},
+    "mini": {"ok": true, "publishAgeSec": 7, "liveness": "fresh", "sessions": 3}
+  },
+  "totals": {"sessions": 8, "needsYou": 2, "tokensToday": 6400000, "estCostToday": 41.20},
+  "sessions": [
+    {
+      "session_id": "a8187667-686c-4342-85e7-b382a6af6fdd",
+      "project": "miscellaneous", "branch": "daybed-avenge", "host": "mactop", "model": "opus",
+      "status": "working", "source": "omnara",
+      "summary": {
+        "now": "Running /research-deliberate on the session-kanban dashboard; 6-model panel deliberating on the mini",
+        "next": "Parse panel matrix, adopt considerations, build variant mockups + written proposal",
+        "goal": "Full written + visual proposal for a fleet session kanban dashboard, ready for Jarred's review"
+      },
+      "contextPct": 62, "tokens": 3900000, "elapsedActive": "3h 40m", "idle": "0m", "msgs": 41, "cost": 18.40,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 2, "lastActivity": "just now"
+    },
+    {
+      "session_id": "4e8ffea7-c649-440f-96de-2f03cc6983c9",
+      "project": "gm-waitlist", "branch": "roman-impish", "host": "macbook", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "Waitlist demo flow blocked on a copy decision for the parent-facing confirmation step",
+        "next": "Needs Jarred: approve confirmation copy variant A or B, then wire the email template",
+        "goal": "Ship the waitlist demo flow to staging behind the kill-switch"
+      },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 05m", "idle": "42m", "msgs": 23, "cost": 6.10,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 6, "lastActivity": "42m ago"
+    },
+    {
+      "session_id": "77b1c2d3-1111-4aaa-9bbb-000000000001",
+      "project": "kindred-portal", "branch": "lic701-explainer", "host": "mini", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "LIC 701 validation built; upload-check rejects wrong docs and drafts parent guidance",
+        "next": "Needs Jarred: confirm the enrollment-flow explainer copy before merge to main",
+        "goal": "Parents can download, understand, and correctly upload the LIC 701 form"
+      },
+      "contextPct": 55, "tokens": 900000, "elapsedActive": "2h 20m", "idle": "1h 10m", "msgs": 31, "cost": 4.80,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 12, "lastActivity": "1h 10m ago"
+    },
+    {
+      "session_id": "88c2d3e4-2222-4bbb-8ccc-000000000002",
+      "project": "growingmindfully", "branch": "analyze-google-yelp-conversions", "host": "macbook", "model": "opus",
+      "status": "working",
+      "summary": {
+        "now": "Cross-referencing GA4 conversion exports against Google Ads + Yelp click data",
+        "next": "Produce attribution comparison table; flag the 2 legacy Contact-us conversions for removal",
+        "goal": "Defensible view of which channel actually drives GM tour bookings"
+      },
+      "contextPct": 78, "tokens": 2100000, "elapsedActive": "5h 02m", "idle": "3m", "msgs": 58, "cost": 9.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 3, "lastActivity": "3m ago"
+    },
+    {
+      "session_id": "99d3e4f5-3333-4ccc-9ddd-000000000003",
+      "project": "travel-planner", "branch": "travel-points-cash-comparison", "host": "mactop", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Points-vs-cash comparison engine complete; 22 commits ahead of main, tests green",
+        "next": "Open PR and merge, or extend to hotel-chain transfer partners",
+        "goal": "One-look answer: pay points or cash for any planned trip leg"
+      },
+      "contextPct": 34, "tokens": 800000, "elapsedActive": "1h 48m", "idle": "9d", "msgs": 27, "cost": 3.60,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 240, "lastActivity": "9d ago", "stale": true
+    },
+    {
+      "session_id": "aab4f5a6-4444-4ddd-8eee-000000000004",
+      "project": "client-alpha", "branch": "tweet-ai-trust-verification", "host": "mini", "model": "opus",
+      "status": "waiting",
+      "summary": {
+        "now": "Draft thread on AI trust verification staged; 8 commits unmerged, no PR",
+        "next": "Jarred review of thread copy, then merge or archive the branch",
+        "goal": "Publishable the client thread + reusable verification framing"
+      },
+      "contextPct": 88, "tokens": 3100000, "elapsedActive": "4h 15m", "idle": "5d", "msgs": 66, "cost": 14.70,
+      "resumeTier": "revive", "worktreeOk": true, "summaryAgeMin": 300, "lastActivity": "5d ago", "stale": true,
+      "note": "Context 88% — resume will hit 'Prompt is too long'; revive (distill + fork) is the offered action"
+    },
+    {
+      "session_id": "bbc5a6b7-5555-4eee-9fff-000000000005",
+      "project": "gm-waitlist", "branch": "backup/macbook-local-errfix", "host": "macbook", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Error-fix backup branch holding 1 commit of client-feedback fixes",
+        "next": "Cherry-pick into main or discard; worktree was pruned last week",
+        "goal": "No client-feedback fix lost from the Aug 12 session"
+      },
+      "contextPct": 22, "tokens": 400000, "elapsedActive": "38m", "idle": "12d", "msgs": 12, "cost": 1.40,
+      "resumeTier": "resume", "worktreeOk": false, "summaryAgeMin": 600, "lastActivity": "12d ago", "stale": true,
+      "note": "Worktree missing — resume gated behind repair (re-create worktree from branch)"
+    },
+    {
+      "session_id": "ccd6b7c8-6666-4fff-8aaa-000000000006",
+      "project": "gm-sage", "branch": "main", "host": "mini", "model": "sonnet",
+      "status": "working", "source": "launchd",
+      "summary": {
+        "now": "Hourly GM inbox triage pass: 3 new threads classified, 1 draft staged for approval",
+        "next": "Surface the staged draft + one family LIC 701 anomaly at next check-in",
+        "goal": "Zero unhandled GM inbound; every thread owned or routed"
+      },
+      "contextPct": 18, "tokens": 300000, "elapsedActive": "22m", "idle": "1m", "msgs": 9, "cost": 0.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 1, "lastActivity": "1m ago"
+    }
+  ]
+}
+</script>
+
+<script>
+(function(){
+  "use strict";
+  var FLEET = JSON.parse(document.getElementById("fleet-data").textContent);
+
+  /* ---------- helpers ---------- */
+  function esc(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function fmtTok(n){
+    if(n >= 1e6){ var m = n/1e6; return (m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)) + "M"; }
+    if(n >= 1e3){ return Math.round(n/1e3) + "K"; }
+    return String(n);
+  }
+  function fmtCost(n){
+    return "$" + (n % 1 === 0 ? n.toFixed(0) : n.toFixed(2));
+  }
+
+  /* tiny 12px stroke icons */
+  var IC = {
+    gauge:'<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M2 9.5a4.5 4.5 0 1 1 8 0"/><path d="M6 7.5 8 5"/></svg>',
+    tok:'<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="4.2"/><path d="M4.4 6h3.2M6 4.4v3.2"/></svg>',
+    dollar:'<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M6 1.6v8.8M8.2 3.4H5a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H3.6"/></svg>',
+    clock:'<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="4.4"/><path d="M6 3.6V6l1.7 1"/></svg>',
+    msg:'<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 7.4a1.6 1.6 0 0 1-1.6 1.6H4.4L1.6 11V3.2a1.6 1.6 0 0 1 1.6-1.6h5.6a1.6 1.6 0 0 1 1.6 1.6z"/></svg>',
+    eye:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6s1.9-3.4 5-3.4S11 6 11 6s-1.9 3.4-5 3.4S1 6 1 6Z"/><circle cx="6" cy="6" r="1.5"/></svg>',
+    play:'<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><path d="M3.2 1.8 10 6 3.2 10.2z"/></svg>',
+    wrench:'<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 1.6a2.8 2.8 0 0 0-3.5 3.5L1.4 7.8a1.3 1.3 0 0 0 1.8 1.8l2.7-2.7a2.8 2.8 0 0 0 3.5-3.5L7.6 5.2 6.4 4z"/></svg>'
+  };
+
+  var COLS = [
+    {id:"needs_you", label:"Needs You", dotClass:"needs"},
+    {id:"working",   label:"Working",   dotClass:"work"},
+    {id:"waiting",   label:"Waiting",   dotClass:"wait"},
+    {id:"stale",     label:"Stale",     dotClass:"stal"}
+  ];
+
+  function colFor(s){
+    if(s.stale) return "stale";
+    if(s.status === "needs_input") return "needs_you";
+    if(s.status === "working") return "working";
+    return "waiting";
+  }
+
+  /* ---------- built time ---------- */
+  var built = new Date(FLEET.builtAt);
+  document.getElementById("built").textContent =
+    "updated " + built.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+
+  /* ---------- health strip ---------- */
+  var healthEl = document.getElementById("health");
+  var hh = "";
+  Object.keys(FLEET.nodes).forEach(function(name){
+    var n = FLEET.nodes[name];
+    var dead = n.liveness === "dead";
+    hh += '<span class="node-chip' + (dead ? " dead" : "") + '"' +
+          (n.note ? ' title="' + esc(n.note) + '"' : '') + '>' +
+          '<span class="dot ' + (dead ? "dead" : "fresh") + '"></span>' +
+          '<span class="nname">' + esc(name) + '</span>' +
+          (dead ? '<span class="nstate">DEAD</span>' : '') +
+          '<span class="ncount">' + n.sessions + '</span></span>';
+  });
+  var t = FLEET.totals;
+  hh += '<span class="totals"><b>' + t.sessions + ' sessions</b> &middot; ' +
+        '<span class="ny">' + t.needsYou + ' need you</span> &middot; ' +
+        fmtTok(t.tokensToday) + ' tok &middot; ' + fmtCost(t.estCostToday) + '</span>';
+  healthEl.innerHTML = hh;
+
+  /* ---------- board ---------- */
+  var board = document.getElementById("board");
+  var byCol = {needs_you:[], working:[], waiting:[], stale:[]};
+  FLEET.sessions.forEach(function(s){ byCol[colFor(s)].push(s); });
+
+  function ctxClass(p){ return p >= 80 ? "hot" : (p >= 65 ? "warm" : ""); }
+
+  function cardHTML(s, colId){
+    var live = s.status === "working";
+    var cls = "card";
+    if(colId === "needs_you") cls += " needs-you";
+    if(colId === "stale") cls += " is-stale";
+    var statusDot = colId === "needs_you" ? "needs" : colId === "working" ? "work" : colId === "waiting" ? "wait" : "stal";
+    var statusLabel = colId === "needs_you" ? "needs you" : colId === "stale" ? "stale" : colId;
+
+    var action;
+    if(!s.worktreeOk){
+      action = '<button class="btn repair" data-act="repair" aria-label="Repair worktree for ' + esc(s.project) + '">' +
+               IC.wrench + 'Repair</button>';
+    } else {
+      action = '<button class="btn primary" data-act="resume" aria-label="' + esc(s.resumeTier) + ' session ' + esc(s.project) + '">' +
+               IC.play + 'Resume<span class="tier">' + esc(s.resumeTier) + '</span></button>';
+    }
+
+    return '<article class="' + cls + '" tabindex="0" role="button" aria-expanded="false" data-sid="' + esc(s.session_id) + '">' +
+      '<div class="row1">' +
+        '<span class="proj">' + esc(s.project) + '</span>' +
+        '<span class="host">' + esc(s.host) + '</span>' +
+        '<span class="status-inline"><span class="dot ' + statusDot + '"></span>' + esc(statusLabel) + '</span>' +
+      '</div>' +
+      '<div class="branch">' + esc(s.branch) + ' &middot; ' + esc(s.model) + (s.source ? ' &middot; ' + esc(s.source) : '') + '</div>' +
+      '<div class="now" title="' + esc(s.summary.now) + '">' + esc(s.summary.now) + '</div>' +
+      '<div class="nums">' +
+        '<span class="num ctx ' + ctxClass(s.contextPct) + '" title="Context used">' + IC.gauge +
+          '<span class="ctxbar"><i style="width:' + s.contextPct + '%"></i></span>' +
+          '<span class="v">' + s.contextPct + '%</span></span>' +
+        '<span class="num" title="Tokens">' + IC.tok + '<span class="v">' + fmtTok(s.tokens) + '</span></span>' +
+        '<span class="num" title="Est. cost">' + IC.dollar + '<span class="v">' + fmtCost(s.cost) + '</span></span>' +
+        '<span class="num" title="Active time">' + IC.clock + '<span class="v">' + esc(s.elapsedActive) + '</span></span>' +
+        '<span class="num" title="Messages">' + IC.msg + '<span class="v">' + s.msgs + '</span></span>' +
+      '</div>' +
+      '<div class="more">' +
+        '<div class="kv"><span class="k">Next</span><span class="val">' + esc(s.summary.next) + '</span></div>' +
+        '<div class="kv"><span class="k">Goal</span><span class="val">' + esc(s.summary.goal) + '</span></div>' +
+        (s.note ? '<div class="fnote">' + esc(s.note) + '</div>' : '') +
+      '</div>' +
+      '<div class="actions">' +
+        '<button class="btn live' + (live ? '' : ' off') + '" data-act="live" aria-label="Live view of ' + esc(s.project) + '">' +
+          '<span class="ldot"></span>' + IC.eye + 'Live</button>' +
+        action +
+        '<span class="last">' + esc(s.lastActivity) + '</span>' +
+      '</div>' +
+    '</article>';
+  }
+
+  var bh = "";
+  COLS.forEach(function(c){
+    var list = byCol[c.id];
+    bh += '<section class="col" data-col="' + c.id + '">' +
+      '<header class="col-head"><span class="cdot"></span>' +
+      '<span class="cname">' + c.label + '</span>' +
+      '<span class="count">' + list.length + '</span></header>' +
+      '<div class="cards">';
+    if(list.length === 0){
+      bh += '<div class="empty">Nothing here</div>';
+    } else {
+      list.forEach(function(s){ bh += cardHTML(s, c.id); });
+    }
+    bh += '</div></section>';
+  });
+  board.innerHTML = bh;
+
+  /* ---------- interactions ---------- */
+  board.addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-act]");
+    if(btn){
+      e.stopPropagation();
+      return; /* mockup: click zones present, no live backend */
+    }
+    var card = e.target.closest(".card");
+    if(card) toggleCard(card);
+  });
+  board.addEventListener("keydown", function(e){
+    if(e.key !== "Enter" && e.key !== " ") return;
+    var card = e.target.closest(".card");
+    if(card && e.target === card){
+      e.preventDefault();
+      toggleCard(card);
+    }
+  });
+  function toggleCard(card){
+    var open = card.classList.toggle("open");
+    card.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  /* ---------- segmented filter (mobile) ---------- */
+  var seg = document.getElementById("seg");
+  var segItems = [{id:"all", label:"All", dot:null}].concat(COLS.map(function(c){
+    return {id:c.id, label:c.label, dot:c.id};
+  }));
+  var sh = "";
+  segItems.forEach(function(it){
+    var dotColor = it.dot === "needs_you" ? "var(--red)" :
+                   it.dot === "working" ? "var(--green)" :
+                   it.dot === "waiting" ? "var(--amber)" :
+                   it.dot === "stale" ? "var(--gray-dot)" : null;
+    sh += '<button data-filter="' + it.id + '" aria-pressed="' + (it.id === "all" ? "true" : "false") + '">' +
+          (dotColor ? '<span class="sdot" style="background:' + dotColor + '"></span>' : '') +
+          esc(it.label) +
+          (it.id !== "all" ? ' <span style="opacity:.6">' + byCol[it.id].length + '</span>' : '') +
+          '</button>';
+  });
+  seg.innerHTML = sh;
+  seg.addEventListener("click", function(e){
+    var b = e.target.closest("button[data-filter]");
+    if(!b) return;
+    board.setAttribute("data-filter", b.getAttribute("data-filter"));
+    Array.prototype.forEach.call(seg.querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", x === b ? "true" : "false");
+    });
+  });
+
+  /* ---------- demo toggle ---------- */
+  var demo = document.getElementById("demoToggle");
+  demo.addEventListener("click", function(){
+    var on = demo.getAttribute("aria-pressed") === "true";
+    demo.setAttribute("aria-pressed", on ? "false" : "true");
+    document.body.classList.toggle("demo-off", on);
+  });
+})();
+</script>
+</body>
+</html>

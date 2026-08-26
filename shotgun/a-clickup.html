@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetBoard — Sessions</title>
+<style>
+  :root{
+    --brand:#7b68ee; --brand-dark:#5f4dd0; --brand-soft:#efecfd;
+    --ink:#2a2e43; --ink-soft:#6b7186; --ink-faint:#9aa1b5;
+    --line:#e6e9f2; --ws:#fafbfc;
+    --c-needs:#f0555f; --c-needs-bg:#fdeef0;
+    --c-work:#4c9aff;  --c-work-bg:#eef5ff;
+    --c-wait:#f0a92e;  --c-wait-bg:#fdf6ea;
+    --c-stale:#98a1b3; --c-stale-bg:#f3f4f7;
+    --ok:#27ae60; --warn:#f0a92e; --bad:#e5484d;
+    --shadow:0 1px 3px rgba(42,46,67,.08), 0 1px 2px rgba(42,46,67,.05);
+    --shadow-hover:0 4px 14px rgba(42,46,67,.13);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--ws); color:var(--ink);
+    -webkit-font-smoothing:antialiased; font-size:14px;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  svg{display:block;flex:none}
+
+  /* ── Top bar ─────────────────────────────── */
+  .topbar{
+    display:flex;align-items:center;gap:16px;
+    background:#fff;border-bottom:1px solid var(--line);
+    padding:0 16px;height:56px;flex:none;position:sticky;top:0;z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{
+    width:30px;height:30px;border-radius:8px;flex:none;
+    background:linear-gradient(135deg,#8f7ff5,#6a5ae0);
+    color:#fff;font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(123,104,238,.4);
+  }
+  .brand h1{font-size:16px;font-weight:700;white-space:nowrap}
+  .brand .ws-name{color:var(--ink-faint);font-size:13px;white-space:nowrap}
+  .brand .ws-name::before{content:"/";margin-right:8px;color:var(--line)}
+
+  .view-tabs{display:flex;gap:2px;margin-left:4px}
+  .view-tabs button{
+    display:flex;align-items:center;gap:6px;
+    padding:0 12px;min-height:44px;font-size:13.5px;font-weight:500;
+    color:var(--ink-soft);border-bottom:2px solid transparent;border-radius:6px 6px 0 0;
+  }
+  .view-tabs button:hover{background:var(--brand-soft);color:var(--brand-dark)}
+  .view-tabs button.active{color:var(--brand-dark);border-bottom-color:var(--brand);font-weight:600}
+
+  .topbar .spacer{flex:1}
+  .search{
+    display:flex;align-items:center;gap:8px;
+    background:var(--ws);border:1px solid var(--line);border-radius:8px;
+    padding:0 12px;height:36px;width:220px;color:var(--ink-faint);
+  }
+  .search input{border:0;background:none;outline:none;font:inherit;color:var(--ink);width:100%}
+  .search input::placeholder{color:var(--ink-faint)}
+
+  .demo-toggle{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;user-select:none}
+  .demo-toggle .lbl{font-size:13px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+  .switch{position:relative;width:40px;height:22px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+  .switch .track{
+    position:absolute;inset:0;border-radius:999px;background:#d5d9e6;transition:background .15s;
+  }
+  .switch .knob{
+    position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s;pointer-events:none;
+  }
+  .switch input:checked ~ .track{background:var(--brand)}
+  .switch input:checked ~ .knob{transform:translateX(18px)}
+
+  .me-avatar{
+    width:32px;height:32px;border-radius:50%;flex:none;
+    background:linear-gradient(135deg,#ffb26b,#f0555f);
+    color:#fff;font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ── Fleet health strip ──────────────────── */
+  .health{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:10px 16px;background:#fff;border-bottom:1px solid var(--line);flex:none;
+  }
+  .node-chip{
+    display:flex;align-items:center;gap:7px;
+    border:1px solid var(--line);border-radius:999px;
+    padding:5px 12px 5px 8px;background:var(--ws);font-size:12.5px;font-weight:600;
+  }
+  .node-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .node-chip.fresh .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(39,174,96,.15)}
+  .node-chip.dead{background:#fdeef0;border-color:#f6c7cb;color:#c02b34}
+  .node-chip.dead .dot{background:var(--bad);box-shadow:0 0 0 3px rgba(229,72,77,.18);animation:pulse 1.4s infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(229,72,77,.05)}}
+  .node-chip .sub{font-weight:500;color:var(--ink-faint)}
+  .node-chip.dead .sub{color:#c02b34;font-weight:700}
+  .health .totals{
+    margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    color:var(--ink-soft);font-size:12.5px;
+  }
+  .health .totals b{color:var(--ink)}
+  .health .totals .sep{color:var(--line)}
+  .health .totals .hot{color:var(--c-needs);font-weight:700}
+
+  /* ── Demo-off banner ─────────────────────── */
+  .demo-banner{
+    display:none;align-items:center;gap:8px;
+    background:#fff8e6;border-bottom:1px solid #f2e2b3;color:#8a6a12;
+    padding:8px 16px;font-size:13px;
+  }
+  body.demo-off .demo-banner{display:flex}
+  body.demo-off .board{opacity:.45;filter:saturate(.4);pointer-events:none}
+
+  /* ── Mobile segmented filter ─────────────── */
+  .seg{
+    display:none;gap:6px;overflow-x:auto;
+    padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);
+    -webkit-overflow-scrolling:touch;
+  }
+  .seg button{
+    flex:none;min-height:44px;padding:0 14px;border-radius:10px;
+    font-size:13px;font-weight:600;color:var(--ink-soft);
+    background:var(--ws);border:1px solid var(--line);
+    display:flex;align-items:center;gap:6px;
+  }
+  .seg button .pin{width:8px;height:8px;border-radius:50%}
+  .seg button.active{background:var(--brand-soft);border-color:var(--brand);color:var(--brand-dark)}
+
+  /* ── Board ───────────────────────────────── */
+  .board{
+    flex:1;display:flex;gap:14px;align-items:flex-start;
+    padding:16px;overflow-x:auto;
+  }
+  .col{
+    flex:1 1 0;min-width:255px;max-width:340px;
+    background:var(--col-bg,#f4f5f9);border-radius:12px;padding:8px;
+  }
+  .col-head{
+    display:flex;align-items:center;gap:8px;
+    background:var(--col-color);color:#fff;
+    border-radius:8px;padding:8px 12px;margin-bottom:10px;
+    box-shadow:var(--shadow);
+  }
+  .col-head .t{font-size:13px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+  .col-head .count{
+    margin-left:auto;background:rgba(255,255,255,.28);
+    border-radius:999px;min-width:24px;height:20px;padding:0 8px;
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  }
+  .col[data-col="needs_you"]{
+    box-shadow:0 0 0 1.5px rgba(240,85,95,.35), 0 6px 20px rgba(240,85,95,.14);
+  }
+  .col[data-col="needs_you"] .col-head{box-shadow:0 3px 10px rgba(240,85,95,.35)}
+  .col[data-col="stale"]{opacity:.82}
+  .col[data-col="stale"] .card{box-shadow:none;border-color:#e0e3ec}
+
+  .cards{display:flex;flex-direction:column;gap:10px}
+  .empty{
+    border:2px dashed #d8dce8;border-radius:12px;padding:22px 12px;
+    text-align:center;color:var(--ink-faint);font-size:13px;background:rgba(255,255,255,.5);
+  }
+
+  /* ── Card ────────────────────────────────── */
+  .card{
+    background:#fff;border:1px solid var(--line);
+    border-left:3px solid var(--edge,#ccc);
+    border-radius:11px;box-shadow:var(--shadow);
+    padding:12px 12px 10px;cursor:pointer;
+    transition:box-shadow .15s, transform .15s;
+  }
+  .card:hover{box-shadow:var(--shadow-hover);transform:translateY(-1px)}
+  .card-top{display:flex;align-items:center;gap:9px;min-width:0}
+  .host-avatar{
+    width:28px;height:28px;border-radius:50%;flex:none;
+    color:#fff;font-size:10.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 3px rgba(42,46,67,.2);
+  }
+  .card-title{min-width:0;flex:1}
+  .card-title .proj{font-size:15px;font-weight:700;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-title .host-line{font-size:11.5px;color:var(--ink-faint);margin-top:1px;
+    display:flex;align-items:center;gap:5px}
+  .host-line .hd{width:6px;height:6px;border-radius:50%;flex:none}
+  .chev{color:var(--ink-faint);transition:transform .18s;flex:none}
+  .card.open .chev{transform:rotate(180deg)}
+
+  .now{
+    margin-top:9px;font-size:13px;line-height:1.35;color:var(--ink-soft);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .card[data-status="needs_input"] .now{color:#b8353e;font-weight:600}
+
+  .tags{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .tag{
+    font-size:11px;font-weight:600;border-radius:999px;padding:3px 9px;
+    background:var(--brand-soft);color:var(--brand-dark);
+    max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .tag.model{background:#eaf7f0;color:#1d7a45}
+  .tag.src{background:#fdf2e5;color:#a5651a}
+  .tag.warn{background:#fdeef0;color:#c02b34}
+
+  .stats{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .ring{position:relative;width:34px;height:34px;flex:none}
+  .ring svg{width:34px;height:34px;transform:rotate(-90deg)}
+  .ring .pct{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:8.5px;font-weight:700;color:var(--ink);
+  }
+  .stat{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ink-soft)}
+  .stat svg{color:var(--ink-faint)}
+  .stat.age{margin-left:auto;font-weight:500;color:var(--ink-faint)}
+  .card[data-status="needs_input"] .stat.age{color:var(--c-needs);font-weight:700}
+
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    min-height:44px;border-radius:9px;font-size:13px;font-weight:600;
+    padding:0 12px;transition:background .12s;
+  }
+  .btn-live{
+    background:#fff;border:1.5px solid var(--line);color:var(--ink-soft);flex:none;
+  }
+  .btn-live:hover{border-color:var(--brand);color:var(--brand-dark);background:var(--brand-soft)}
+  .btn-live .live-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);
+    box-shadow:0 0 0 2.5px rgba(39,174,96,.2)}
+  .btn-primary{
+    flex:1;background:var(--brand);color:#fff;box-shadow:0 2px 6px rgba(123,104,238,.35);
+  }
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-primary .tier{
+    background:rgba(255,255,255,.24);border-radius:999px;
+    font-size:10.5px;font-weight:700;padding:2px 8px;letter-spacing:.3px;text-transform:uppercase;
+  }
+  .btn-primary.revive{background:#e07c1f;box-shadow:0 2px 6px rgba(224,124,31,.35)}
+  .btn-primary.revive:hover{background:#c76c17}
+  .btn-primary.repair{background:#e5484d;box-shadow:0 2px 6px rgba(229,72,77,.35)}
+  .btn-primary.repair:hover{background:#c93b40}
+
+  .more{display:none;margin-top:11px;border-top:1px solid var(--line);padding-top:10px}
+  .card.open .more{display:block}
+  .more .row{display:flex;gap:8px;margin-bottom:8px;font-size:12.5px;line-height:1.4}
+  .more .k{
+    flex:none;width:44px;font-size:10.5px;font-weight:700;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--ink-faint);padding-top:2px;
+  }
+  .more .v{color:var(--ink-soft)}
+  .more .note{background:#fff8e6;border:1px solid #f2e2b3;color:#8a6a12;
+    border-radius:8px;padding:7px 10px;font-size:12px;margin-bottom:8px}
+  .more .meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--ink-faint);font-size:11.5px}
+
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width:860px){
+    .search{display:none}
+    .brand .ws-name{display:none}
+  }
+  @media (max-width:700px){
+    .view-tabs{display:none}
+    .seg{display:flex}
+    .board{flex-direction:column;overflow-x:visible;padding:12px}
+    .col{max-width:none;width:100%;min-width:0}
+    .board[data-filter="needs_you"] .col:not([data-col="needs_you"]),
+    .board[data-filter="working"] .col:not([data-col="working"]),
+    .board[data-filter="waiting"] .col:not([data-col="waiting"]),
+    .board[data-filter="stale"] .col:not([data-col="stale"]){display:none}
+    .health .totals{margin-left:0;width:100%}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">FB</div>
+    <h1>FleetBoard</h1>
+    <span class="ws-name">Winn Fleet</span>
+  </div>
+  <nav class="view-tabs" aria-label="Views (decorative)">
+    <button class="active" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="12" rx="1.5"/></svg>
+      Board</button>
+    <button type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+      List</button>
+    <button type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+      Calendar</button>
+  </nav>
+  <div class="spacer"></div>
+  <label class="search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+    <input type="search" placeholder="Search sessions…" aria-label="Search (decorative)">
+  </label>
+  <label class="demo-toggle">
+    <span class="lbl">Demo</span>
+    <span class="switch">
+      <input type="checkbox" id="demoToggle" checked aria-label="Demo mode">
+      <span class="track"></span><span class="knob"></span>
+    </span>
+  </label>
+  <div class="me-avatar" title="Jarred">JW</div>
+</header>
+
+<div class="health" id="health"></div>
+
+<div class="demo-banner">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  Demo mode off — live feed isn’t wired in this mockup. Flip Demo back on to see the sample fleet.
+</div>
+
+<div class="seg" id="seg" role="tablist" aria-label="Column filter"></div>
+
+<main class="board" id="board" data-filter="all"></main>
+
+<script>
+"use strict";
+const FLEET = {
+  "schema": "fleet-board/1",
+  "self": "mactop",
+  "builtAt": "2026-08-26T02:30:00-07:00",
+  "nodes": {
+    "macbook": {"ok": true, "publishAgeSec": 4, "liveness": "fresh", "sessions": 3},
+    "mactop": {"ok": false, "publishAgeSec": 4500000, "liveness": "dead", "sessions": 2, "note": "publisher silently dead since Jul 5 — false-healthy bug demo"},
+    "mini": {"ok": true, "publishAgeSec": 7, "liveness": "fresh", "sessions": 3}
+  },
+  "totals": {"sessions": 8, "needsYou": 2, "tokensToday": 6400000, "estCostToday": 41.20},
+  "sessions": [
+    {
+      "session_id": "a8187667-686c-4342-85e7-b382a6af6fdd",
+      "project": "miscellaneous", "branch": "daybed-avenge", "host": "mactop", "model": "opus",
+      "status": "working", "source": "omnara",
+      "summary": {
+        "now": "Running /research-deliberate on the session-kanban dashboard; 6-model panel deliberating on the mini",
+        "next": "Parse panel matrix, adopt considerations, build variant mockups + written proposal",
+        "goal": "Full written + visual proposal for a fleet session kanban dashboard, ready for Jarred's review"
+      },
+      "contextPct": 62, "tokens": 3900000, "elapsedActive": "3h 40m", "idle": "0m", "msgs": 41, "cost": 18.40,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 2, "lastActivity": "just now"
+    },
+    {
+      "session_id": "4e8ffea7-c649-440f-96de-2f03cc6983c9",
+      "project": "gm-waitlist", "branch": "roman-impish", "host": "macbook", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "Waitlist demo flow blocked on a copy decision for the parent-facing confirmation step",
+        "next": "Needs Jarred: approve confirmation copy variant A or B, then wire the email template",
+        "goal": "Ship the waitlist demo flow to staging behind the kill-switch"
+      },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 05m", "idle": "42m", "msgs": 23, "cost": 6.10,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 6, "lastActivity": "42m ago"
+    },
+    {
+      "session_id": "77b1c2d3-1111-4aaa-9bbb-000000000001",
+      "project": "kindred-portal", "branch": "lic701-explainer", "host": "mini", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "LIC 701 validation built; upload-check rejects wrong docs and drafts parent guidance",
+        "next": "Needs Jarred: confirm the enrollment-flow explainer copy before merge to main",
+        "goal": "Parents can download, understand, and correctly upload the LIC 701 form"
+      },
+      "contextPct": 55, "tokens": 900000, "elapsedActive": "2h 20m", "idle": "1h 10m", "msgs": 31, "cost": 4.80,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 12, "lastActivity": "1h 10m ago"
+    },
+    {
+      "session_id": "88c2d3e4-2222-4bbb-8ccc-000000000002",
+      "project": "growingmindfully", "branch": "analyze-google-yelp-conversions", "host": "macbook", "model": "opus",
+      "status": "working",
+      "summary": {
+        "now": "Cross-referencing GA4 conversion exports against Google Ads + Yelp click data",
+        "next": "Produce attribution comparison table; flag the 2 legacy Contact-us conversions for removal",
+        "goal": "Defensible view of which channel actually drives GM tour bookings"
+      },
+      "contextPct": 78, "tokens": 2100000, "elapsedActive": "5h 02m", "idle": "3m", "msgs": 58, "cost": 9.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 3, "lastActivity": "3m ago"
+    },
+    {
+      "session_id": "99d3e4f5-3333-4ccc-9ddd-000000000003",
+      "project": "travel-planner", "branch": "travel-points-cash-comparison", "host": "mactop", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Points-vs-cash comparison engine complete; 22 commits ahead of main, tests green",
+        "next": "Open PR and merge, or extend to hotel-chain transfer partners",
+        "goal": "One-look answer: pay points or cash for any planned trip leg"
+      },
+      "contextPct": 34, "tokens": 800000, "elapsedActive": "1h 48m", "idle": "9d", "msgs": 27, "cost": 3.60,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 240, "lastActivity": "9d ago", "stale": true
+    },
+    {
+      "session_id": "aab4f5a6-4444-4ddd-8eee-000000000004",
+      "project": "client-alpha", "branch": "tweet-ai-trust-verification", "host": "mini", "model": "opus",
+      "status": "waiting",
+      "summary": {
+        "now": "Draft thread on AI trust verification staged; 8 commits unmerged, no PR",
+        "next": "Jarred review of thread copy, then merge or archive the branch",
+        "goal": "Publishable the client thread + reusable verification framing"
+      },
+      "contextPct": 88, "tokens": 3100000, "elapsedActive": "4h 15m", "idle": "5d", "msgs": 66, "cost": 14.70,
+      "resumeTier": "revive", "worktreeOk": true, "summaryAgeMin": 300, "lastActivity": "5d ago", "stale": true,
+      "note": "Context 88% — resume will hit 'Prompt is too long'; revive (distill + fork) is the offered action"
+    },
+    {
+      "session_id": "bbc5a6b7-5555-4eee-9fff-000000000005",
+      "project": "gm-waitlist", "branch": "backup/macbook-local-errfix", "host": "macbook", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Error-fix backup branch holding 1 commit of client-feedback fixes",
+        "next": "Cherry-pick into main or discard; worktree was pruned last week",
+        "goal": "No client-feedback fix lost from the Aug 12 session"
+      },
+      "contextPct": 22, "tokens": 400000, "elapsedActive": "38m", "idle": "12d", "msgs": 12, "cost": 1.40,
+      "resumeTier": "resume", "worktreeOk": false, "summaryAgeMin": 600, "lastActivity": "12d ago", "stale": true,
+      "note": "Worktree missing — resume gated behind repair (re-create worktree from branch)"
+    },
+    {
+      "session_id": "ccd6b7c8-6666-4fff-8aaa-000000000006",
+      "project": "gm-sage", "branch": "main", "host": "mini", "model": "sonnet",
+      "status": "working", "source": "launchd",
+      "summary": {
+        "now": "Hourly GM inbox triage pass: 3 new threads classified, 1 draft staged for approval",
+        "next": "Surface the staged draft + one family LIC 701 anomaly at next check-in",
+        "goal": "Zero unhandled GM inbound; every thread owned or routed"
+      },
+      "contextPct": 18, "tokens": 300000, "elapsedActive": "22m", "idle": "1m", "msgs": 9, "cost": 0.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 1, "lastActivity": "1m ago"
+    }
+  ]
+};
+
+/* ── helpers ─────────────────────────────────── */
+function el(tag, cls, text){
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined && text !== null) n.textContent = text;
+  return n;
+}
+function icon(paths, size){
+  const s = size || 13;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 24 24");
+  svg.setAttribute("width",s); svg.setAttribute("height",s);
+  svg.setAttribute("fill","none"); svg.setAttribute("stroke","currentColor");
+  svg.setAttribute("stroke-width","2"); svg.setAttribute("stroke-linecap","round");
+  svg.setAttribute("stroke-linejoin","round");
+  paths.forEach(function(d){
+    const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("d", d); svg.appendChild(p);
+  });
+  return svg;
+}
+const I = {
+  zap:   ["M13 2 3 14h9l-1 8 10-12h-9l1-8z"],
+  msg:   ["M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"],
+  clock: ["M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z","M12 7v5l3 2"],
+  eye:   ["M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z","M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"],
+  play:  ["M7 4.5 19 12 7 19.5v-15z"],
+  wrench:["M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"],
+  chev:  ["M6 9l6 6 6-6"],
+  bolt:  ["M13 2 3 14h9l-1 8 10-12h-9l1-8z"]
+};
+function fmtTokens(n){
+  if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,"") + "M";
+  if (n >= 1e3) return Math.round(n/1e3) + "K";
+  return String(n);
+}
+function fmtCost(c){
+  return c >= 10 ? "$" + Math.round(c) : "$" + c.toFixed(2).replace(/0$/,"");
+}
+const HOSTS = {
+  macbook:{label:"MacBook", init:"MB", color:"#7b68ee"},
+  mactop: {label:"MacTop",  init:"MT", color:"#f0736b"},
+  mini:   {label:"Mini",    init:"MN", color:"#49aee0"}
+};
+const COLS = [
+  {id:"needs_you", label:"Needs You", color:"var(--c-needs)", bg:"var(--c-needs-bg)",
+   dot:"#f0555f", match:function(s){ return s.status === "needs_input"; },
+   empty:"Nothing needs you. Enjoy it."},
+  {id:"working", label:"Working", color:"var(--c-work)", bg:"var(--c-work-bg)",
+   dot:"#4c9aff", match:function(s){ return s.status === "working"; },
+   empty:"No active sessions."},
+  {id:"waiting", label:"Waiting", color:"var(--c-wait)", bg:"var(--c-wait-bg)",
+   dot:"#f0a92e", match:function(s){ return s.status === "waiting" && !s.stale; },
+   empty:"Nothing freshly waiting — see Stale for parked branches."},
+  {id:"stale", label:"Stale", color:"var(--c-stale)", bg:"var(--c-stale-bg)",
+   dot:"#98a1b3", match:function(s){ return !!s.stale; },
+   empty:"No stale sessions."}
+];
+const EDGE = {needs_you:"#f0555f", working:"#4c9aff", waiting:"#f0a92e", stale:"#98a1b3"};
+
+function ringNode(pct){
+  const wrap = el("div","ring");
+  wrap.title = "Context " + pct + "% used";
+  const R = 14, C = 2 * Math.PI * R;
+  const color = pct >= 75 ? "#e5484d" : (pct >= 50 ? "#f0a92e" : "#27ae60");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 34 34");
+  const bg = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  bg.setAttribute("cx","17"); bg.setAttribute("cy","17"); bg.setAttribute("r",R);
+  bg.setAttribute("fill","none"); bg.setAttribute("stroke","#edeff5"); bg.setAttribute("stroke-width","3.5");
+  const fg = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  fg.setAttribute("cx","17"); fg.setAttribute("cy","17"); fg.setAttribute("r",R);
+  fg.setAttribute("fill","none"); fg.setAttribute("stroke",color); fg.setAttribute("stroke-width","3.5");
+  fg.setAttribute("stroke-linecap","round");
+  fg.setAttribute("stroke-dasharray",(C*pct/100).toFixed(1) + " " + C.toFixed(1));
+  svg.appendChild(bg); svg.appendChild(fg);
+  wrap.appendChild(svg);
+  wrap.appendChild(el("div","pct", pct + "%"));
+  return wrap;
+}
+function stat(iconPaths, text, cls){
+  const s = el("div","stat" + (cls ? " " + cls : ""));
+  if (iconPaths) s.appendChild(icon(iconPaths, 12));
+  s.appendChild(el("span", null, text));
+  return s;
+}
+
+/* ── card ────────────────────────────────────── */
+function buildCard(s, colId){
+  const host = HOSTS[s.host] || {label:s.host, init:(s.host||"??").slice(0,2).toUpperCase(), color:"#98a1b3"};
+  const node = FLEET.nodes[s.host];
+  const card = el("article","card");
+  card.dataset.status = s.status;
+  card.style.setProperty("--edge", EDGE[colId] || "#ccc");
+  card.tabIndex = 0;
+  card.setAttribute("role","button");
+  card.setAttribute("aria-expanded","false");
+
+  // top row: avatar + project + host + chevron
+  const top = el("div","card-top");
+  const av = el("div","host-avatar", host.init);
+  av.style.background = host.color;
+  av.title = host.label;
+  const tt = el("div","card-title");
+  tt.appendChild(el("div","proj", s.project));
+  const hl = el("div","host-line");
+  const hd = el("span","hd");
+  hd.style.background = (node && node.liveness === "dead") ? "#e5484d" : "#27ae60";
+  hl.appendChild(hd);
+  hl.appendChild(el("span", null, host.label + (node && node.liveness === "dead" ? " · host dead" : "")));
+  tt.appendChild(hl);
+  const chev = el("span","chev"); chev.appendChild(icon(I.chev, 16));
+  top.appendChild(av); top.appendChild(tt); top.appendChild(chev);
+  card.appendChild(top);
+
+  // one-line "now"
+  const now = el("p","now", s.summary.now);
+  now.title = s.summary.now;
+  card.appendChild(now);
+
+  // tag chips
+  const tags = el("div","tags");
+  const b = el("span","tag", s.branch); b.title = s.branch; tags.appendChild(b);
+  tags.appendChild(el("span","tag model", s.model));
+  if (s.source) tags.appendChild(el("span","tag src", s.source));
+  if (!s.worktreeOk) tags.appendChild(el("span","tag warn","worktree missing"));
+  card.appendChild(tags);
+
+  // numeric chips + context ring
+  const stats = el("div","stats");
+  stats.appendChild(ringNode(s.contextPct));
+  const tok = stat(I.zap, fmtTokens(s.tokens)); tok.title = s.tokens.toLocaleString() + " tokens";
+  stats.appendChild(tok);
+  const cost = stat(null, fmtCost(s.cost)); cost.title = "Est. cost today";
+  stats.appendChild(cost);
+  const msgs = stat(I.msg, String(s.msgs)); msgs.title = s.msgs + " messages";
+  stats.appendChild(msgs);
+  stats.appendChild(stat(I.clock, s.lastActivity, "age"));
+  card.appendChild(stats);
+
+  // actions
+  const actions = el("div","actions");
+  const live = el("button","btn btn-live");
+  live.type = "button";
+  live.setAttribute("aria-label","Open live view for " + s.project);
+  live.appendChild(el("span","live-dot"));
+  live.appendChild(icon(I.eye, 14));
+  live.appendChild(el("span", null, "Live"));
+  actions.appendChild(live);
+
+  const primary = el("button","btn btn-primary");
+  primary.type = "button";
+  if (!s.worktreeOk){
+    primary.classList.add("repair");
+    primary.appendChild(icon(I.wrench, 14));
+    primary.appendChild(el("span", null, "Repair"));
+    primary.appendChild(el("span","tier","worktree"));
+    primary.setAttribute("aria-label","Repair worktree for " + s.project);
+  } else {
+    if (s.resumeTier === "revive") primary.classList.add("revive");
+    primary.appendChild(icon(I.play, 13));
+    primary.appendChild(el("span", null, s.resumeTier === "revive" ? "Revive" : "Resume"));
+    primary.appendChild(el("span","tier", s.resumeTier));
+    primary.setAttribute("aria-label", s.resumeTier + " session " + s.project);
+  }
+  actions.appendChild(primary);
+  card.appendChild(actions);
+
+  // expandable detail
+  const more = el("div","more");
+  if (s.note) more.appendChild(el("div","note", s.note));
+  const rNext = el("div","row");
+  rNext.appendChild(el("div","k","Next"));
+  rNext.appendChild(el("div","v", s.summary.next));
+  more.appendChild(rNext);
+  const rGoal = el("div","row");
+  rGoal.appendChild(el("div","k","Goal"));
+  rGoal.appendChild(el("div","v", s.summary.goal));
+  more.appendChild(rGoal);
+  const meta = el("div","meta");
+  meta.appendChild(el("span", null, "active " + s.elapsedActive));
+  meta.appendChild(el("span", null, "idle " + s.idle));
+  meta.appendChild(el("span", null, "summary " + s.summaryAgeMin + "m old"));
+  meta.appendChild(el("span", null, s.session_id.slice(0,8)));
+  more.appendChild(meta);
+  card.appendChild(more);
+
+  // interactions
+  function toggle(){
+    const open = card.classList.toggle("open");
+    card.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  card.addEventListener("click", function(e){
+    if (e.target.closest(".btn")) return;
+    toggle();
+  });
+  card.addEventListener("keydown", function(e){
+    if ((e.key === "Enter" || e.key === " ") && e.target === card){
+      e.preventDefault(); toggle();
+    }
+  });
+  live.addEventListener("click", function(e){ e.stopPropagation(); });
+  primary.addEventListener("click", function(e){ e.stopPropagation(); });
+
+  return card;
+}
+
+/* ── board ───────────────────────────────────── */
+function renderBoard(){
+  const board = document.getElementById("board");
+  board.textContent = "";
+  COLS.forEach(function(c){
+    const col = el("section","col");
+    col.dataset.col = c.id;
+    col.style.setProperty("--col-color", c.color);
+    col.style.setProperty("--col-bg", c.bg);
+    const head = el("div","col-head");
+    head.appendChild(el("span","t", c.label));
+    const items = FLEET.sessions.filter(c.match);
+    head.appendChild(el("span","count", String(items.length)));
+    col.appendChild(head);
+    const cards = el("div","cards");
+    if (items.length === 0){
+      cards.appendChild(el("div","empty", c.empty));
+    } else {
+      items.forEach(function(s){ cards.appendChild(buildCard(s, c.id)); });
+    }
+    col.appendChild(cards);
+    board.appendChild(col);
+  });
+}
+
+/* ── fleet health strip ──────────────────────── */
+function renderHealth(){
+  const h = document.getElementById("health");
+  h.textContent = "";
+  Object.keys(FLEET.nodes).forEach(function(name){
+    const n = FLEET.nodes[name];
+    const chip = el("div","node-chip " + (n.liveness === "dead" ? "dead" : "fresh"));
+    if (n.note) chip.title = n.note;
+    chip.appendChild(el("span","dot"));
+    chip.appendChild(el("span", null, name));
+    chip.appendChild(el("span","sub", n.liveness === "dead" ? "DEAD" : n.liveness + " · " + n.sessions));
+    h.appendChild(chip);
+  });
+  const t = FLEET.totals;
+  const totals = el("div","totals");
+  function piece(html, hot){
+    const s = el("span", hot ? "hot" : null);
+    s.textContent = html;
+    return s;
+  }
+  function sep(){ return el("span","sep","·"); }
+  const b1 = el("b", null, String(t.sessions)); totals.appendChild(b1);
+  totals.appendChild(piece(" sessions")); totals.appendChild(sep());
+  totals.appendChild(piece(t.needsYou + " need you", true)); totals.appendChild(sep());
+  totals.appendChild(piece(fmtTokens(t.tokensToday) + " tok today")); totals.appendChild(sep());
+  totals.appendChild(piece("$" + t.estCostToday.toFixed(2)));
+  h.appendChild(totals);
+}
+
+/* ── mobile segmented filter ─────────────────── */
+function renderSeg(){
+  const seg = document.getElementById("seg");
+  const board = document.getElementById("board");
+  const opts = [{id:"all", label:"All", dot:"#7b68ee"}].concat(
+    COLS.map(function(c){ return {id:c.id, label:c.label, dot:c.dot}; })
+  );
+  opts.forEach(function(o){
+    const b = el("button", o.id === "all" ? "active" : "");
+    b.type = "button";
+    b.setAttribute("role","tab");
+    const pin = el("span","pin"); pin.style.background = o.dot;
+    b.appendChild(pin);
+    b.appendChild(el("span", null, o.label));
+    b.addEventListener("click", function(){
+      seg.querySelectorAll("button").forEach(function(x){ x.classList.remove("active"); });
+      b.classList.add("active");
+      board.dataset.filter = o.id;
+    });
+    seg.appendChild(b);
+  });
+}
+
+/* ── demo toggle ─────────────────────────────── */
+document.getElementById("demoToggle").addEventListener("change", function(e){
+  document.body.classList.toggle("demo-off", !e.target.checked);
+});
+
+/* decorative view tabs: visual active-state only */
+document.querySelectorAll(".view-tabs button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll(".view-tabs button").forEach(function(x){ x.classList.remove("active"); });
+    b.classList.add("active");
+  });
+});
+
+renderHealth();
+renderSeg();
+renderBoard();
+</script>
+</body>
+</html>

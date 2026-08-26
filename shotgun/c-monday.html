@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Monday Bold</title>
+<style>
+  :root{
+    --red:#e2445c; --green:#00c875; --orange:#fdab3d; --gray:#c4c4c4;
+    --red-soft:#fdeef1; --green-soft:#e6faf2; --orange-soft:#fff4e3; --gray-soft:#f2f2f2;
+    --ink:#323338; --ink-2:#676879; --ink-3:#9a9ba7;
+    --bg:#ffffff; --board-bg:#f6f7fb; --card:#ffffff;
+    --shadow:0 4px 10px rgba(29,33,57,.08);
+    --shadow-lift:0 12px 24px rgba(29,33,57,.16);
+    --radius:8px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+  body{min-height:100vh}
+
+  /* ---------- Top bar ---------- */
+  header.top{
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:18px 24px 10px;
+  }
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo .mark{
+    width:34px;height:34px;border-radius:10px;flex:none;
+    background:linear-gradient(135deg,var(--red) 0 25%,var(--orange) 25% 50%,var(--green) 50% 75%,#579bfc 75% 100%);
+  }
+  .logo h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .logo h1 span{color:var(--ink-3);font-weight:600}
+  .spacer{flex:1}
+  .demo-toggle{
+    display:flex;align-items:center;gap:10px;min-height:44px;padding:0 6px;
+    font-size:14px;font-weight:700;color:var(--ink-2);cursor:pointer;user-select:none;
+    background:none;border:0;font-family:inherit;
+  }
+  .switch{
+    width:52px;height:30px;border-radius:15px;background:#d0d4e4;position:relative;transition:background .2s;flex:none;
+  }
+  .switch::after{
+    content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s;
+  }
+  .demo-toggle[aria-pressed="true"] .switch{background:var(--green)}
+  .demo-toggle[aria-pressed="true"] .switch::after{left:25px}
+
+  /* ---------- Fleet health strip ---------- */
+  .health{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:8px 24px 16px;
+  }
+  .node-chip{
+    display:inline-flex;align-items:center;gap:8px;
+    background:#fff;border:2px solid #e6e9f2;border-radius:999px;
+    padding:8px 14px;font-size:13.5px;font-weight:800;color:var(--ink);min-height:40px;
+  }
+  .node-chip .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .node-chip.fresh .dot{background:var(--green);box-shadow:0 0 0 4px rgba(0,200,117,.18)}
+  .node-chip.dead{border-color:var(--red);background:var(--red-soft);color:var(--red)}
+  .node-chip.dead .dot{background:var(--red);box-shadow:0 0 0 4px rgba(226,68,92,.2);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+  .node-chip small{font-weight:700;color:var(--ink-3);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+  .node-chip.dead small{color:var(--red)}
+  .totals{
+    display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto;
+    font-size:13.5px;font-weight:700;color:var(--ink-2);
+  }
+  .tot{background:var(--board-bg);border-radius:999px;padding:8px 13px;white-space:nowrap}
+  .tot b{color:var(--ink);font-weight:800}
+  .tot.hot{background:var(--red-soft);color:var(--red)}
+  .tot.hot b{color:var(--red)}
+
+  /* ---------- Segmented filter (mobile) ---------- */
+  .seg{
+    display:none;gap:6px;padding:0 16px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  }
+  .seg button{
+    flex:none;min-height:44px;padding:0 16px;border:0;border-radius:999px;cursor:pointer;
+    font-family:inherit;font-size:14px;font-weight:800;color:var(--ink-2);background:var(--board-bg);
+  }
+  .seg button[aria-pressed="true"]{color:#fff}
+  .seg button[data-col="all"][aria-pressed="true"]{background:var(--ink)}
+  .seg button[data-col="needs_you"][aria-pressed="true"]{background:var(--red)}
+  .seg button[data-col="working"][aria-pressed="true"]{background:var(--green)}
+  .seg button[data-col="waiting"][aria-pressed="true"]{background:var(--orange)}
+  .seg button[data-col="stale"][aria-pressed="true"]{background:#9a9ba7}
+
+  /* ---------- Board ---------- */
+  .board{
+    display:grid;grid-template-columns:repeat(4,minmax(280px,1fr));gap:16px;
+    padding:4px 24px 40px;align-items:start;
+  }
+  .col{background:var(--board-bg);border-radius:12px;overflow:hidden}
+  .col-head{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 16px;color:#fff;font-size:16px;font-weight:800;letter-spacing:-.01em;
+  }
+  .col-head .count{
+    margin-left:auto;min-width:28px;height:28px;padding:0 9px;border-radius:14px;
+    background:rgba(255,255,255,.3);display:inline-flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;color:#fff;
+  }
+  .col[data-col="needs_you"] .col-head{background:var(--red);box-shadow:0 6px 18px rgba(226,68,92,.45)}
+  .col[data-col="working"]  .col-head{background:var(--green)}
+  .col[data-col="waiting"]  .col-head{background:var(--orange)}
+  .col[data-col="stale"]    .col-head{background:var(--gray);color:#5b5c66}
+  .col[data-col="stale"]    .col-head .count{background:rgba(255,255,255,.55);color:#5b5c66}
+  .col[data-col="needs_you"]{background:#fdf3f5;box-shadow:0 0 0 2px rgba(226,68,92,.25)}
+  .col[data-col="stale"]{opacity:.78}
+  .col-body{padding:12px;display:flex;flex-direction:column;gap:12px;min-height:70px}
+  .empty{
+    border:2px dashed #d7dbe8;border-radius:var(--radius);padding:18px 12px;text-align:center;
+    color:var(--ink-3);font-size:13.5px;font-weight:700;
+  }
+
+  /* ---------- Cards ---------- */
+  .card{
+    position:relative;background:var(--card);border-radius:var(--radius);
+    box-shadow:var(--shadow);cursor:pointer;padding:14px 14px 12px 20px;
+    transition:transform .15s ease,box-shadow .15s ease;
+    border:1px solid rgba(29,33,57,.05);
+  }
+  .card::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:6px;
+    border-radius:var(--radius) 0 0 var(--radius);background:var(--bar,#ccc);
+  }
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift)}
+  .card:active{transform:translateY(-1px)}
+  .card[data-col="needs_you"]{--bar:var(--red)}
+  .card[data-col="working"]{--bar:var(--green)}
+  .card[data-col="waiting"]{--bar:var(--orange)}
+  .card[data-col="stale"]{--bar:var(--gray)}
+  .card[data-col="needs_you"]{box-shadow:0 4px 14px rgba(226,68,92,.22)}
+  .card[data-col="stale"]{background:#fbfbfc}
+  .card[data-col="stale"] .proj{color:var(--ink-2)}
+
+  .card-top{display:flex;align-items:flex-start;gap:10px}
+  .proj{font-size:16.5px;font-weight:800;letter-spacing:-.01em;line-height:1.25;word-break:break-word}
+  .host{
+    display:inline-flex;align-items:center;gap:5px;margin-top:4px;
+    font-size:12px;font-weight:800;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;
+  }
+  .host svg{width:12px;height:12px}
+  .host.dead-host{color:var(--red)}
+  .pill{
+    margin-left:auto;flex:none;
+    padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:800;color:#fff;
+    text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;
+  }
+  .pill.needs_you{background:var(--red)}
+  .pill.working{background:var(--green)}
+  .pill.waiting{background:var(--orange)}
+  .pill.stale{background:#adadb8}
+
+  .now{
+    margin-top:10px;font-size:13.5px;font-weight:600;color:var(--ink-2);line-height:1.4;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  /* numeric chips */
+  .chips{display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .ring{position:relative;width:40px;height:40px;flex:none}
+  .ring svg{width:40px;height:40px;transform:rotate(-90deg)}
+  .ring .pct{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:10.5px;font-weight:800;color:var(--ink);
+  }
+  .chip{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:6px 11px;border-radius:999px;font-size:12.5px;font-weight:800;white-space:nowrap;
+  }
+  .chip svg{width:13px;height:13px;flex:none}
+  .chip.tok{background:#e9f2ff;color:#1f76e8}
+  .chip.cost{background:var(--green-soft);color:#00854d}
+  .chip.msgs{background:#f0edff;color:#6c5ce7}
+  .chip.idle{background:var(--gray-soft);color:var(--ink-2)}
+  .card[data-col="stale"] .chip{filter:saturate(.35)}
+
+  /* actions */
+  .actions{display:flex;align-items:center;gap:8px;margin-top:12px}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    min-height:44px;padding:0 16px;border-radius:10px;border:0;cursor:pointer;
+    font-family:inherit;font-size:14px;font-weight:800;transition:transform .12s,filter .12s;
+  }
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+  .btn:active{transform:translateY(0)}
+  .btn svg{width:15px;height:15px;flex:none}
+  .btn-live{
+    background:#fff;color:#1f76e8;border:2px solid #1f76e8;
+  }
+  .btn-live .live-dot{width:8px;height:8px;border-radius:50%;background:#1f76e8;animation:pulse 1.6s infinite}
+  .btn-resume{flex:1;color:#fff}
+  .btn-resume.attach{background:var(--green)}
+  .btn-resume.resume{background:#579bfc}
+  .btn-resume.revive{background:#a25ddc}
+  .btn-resume.repair{background:var(--orange);color:#5b3c00}
+  .tier{
+    background:rgba(255,255,255,.32);border-radius:6px;padding:2px 7px;
+    font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+  }
+  .btn-resume.repair .tier{background:rgba(255,255,255,.55)}
+
+  /* expand */
+  .details{display:none;margin-top:12px;border-top:2px solid var(--board-bg);padding-top:11px}
+  .card.open .details{display:block}
+  .drow{display:flex;gap:9px;margin-bottom:9px;font-size:13px;line-height:1.45}
+  .drow .k{
+    flex:none;width:46px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ink-3);padding-top:2px;
+  }
+  .drow .v{font-weight:600;color:var(--ink)}
+  .meta-line{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11.5px;font-weight:700;color:var(--ink-3);margin-top:4px}
+  .warn-note{
+    margin-top:6px;background:var(--orange-soft);color:#8a5a00;border-radius:8px;
+    padding:8px 11px;font-size:12.5px;font-weight:700;line-height:1.4;
+  }
+  .caret{
+    position:absolute;right:12px;bottom:10px;color:var(--ink-3);transition:transform .2s;line-height:0;
+  }
+  .card.open .caret{transform:rotate(180deg)}
+
+  /* toast */
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);
+    background:var(--ink);color:#fff;font-size:14px;font-weight:700;
+    padding:12px 20px;border-radius:12px;box-shadow:var(--shadow-lift);
+    opacity:0;transition:transform .25s,opacity .25s;pointer-events:none;max-width:88vw;text-align:center;z-index:50;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  .demo-off{
+    display:none;padding:60px 24px;text-align:center;color:var(--ink-3);font-weight:700;font-size:15px;
+  }
+  body.demo-disabled .board,body.demo-disabled .seg{display:none!important}
+  body.demo-disabled .demo-off{display:block}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:1120px){
+    .board{grid-template-columns:repeat(2,minmax(280px,1fr))}
+  }
+  @media (max-width:700px){
+    header.top{padding:14px 16px 8px}
+    .health{padding:6px 16px 12px}
+    .totals{margin-left:0}
+    .board{grid-template-columns:1fr;padding:0 16px 40px}
+    .seg{display:flex}
+    body[data-filter="needs_you"] .col:not([data-col="needs_you"]),
+    body[data-filter="working"]  .col:not([data-col="working"]),
+    body[data-filter="waiting"]  .col:not([data-col="waiting"]),
+    body[data-filter="stale"]    .col:not([data-col="stale"]){display:none}
+  }
+</style>
+</head>
+<body data-filter="all">
+
+<header class="top">
+  <div class="logo">
+    <div class="mark" aria-hidden="true"></div>
+    <h1>FleetBoard <span>· Monday Bold</span></h1>
+  </div>
+  <div class="spacer"></div>
+  <button class="demo-toggle" id="demoToggle" aria-pressed="true" type="button">
+    <span class="switch" aria-hidden="true"></span> Demo mode
+  </button>
+</header>
+
+<div class="health" id="healthStrip"></div>
+
+<nav class="seg" id="segFilter" aria-label="Column filter">
+  <button type="button" data-col="all" aria-pressed="true">All</button>
+  <button type="button" data-col="needs_you" aria-pressed="false">Needs You</button>
+  <button type="button" data-col="working" aria-pressed="false">Working</button>
+  <button type="button" data-col="waiting" aria-pressed="false">Waiting</button>
+  <button type="button" data-col="stale" aria-pressed="false">Stale</button>
+</nav>
+
+<main class="board" id="board"></main>
+
+<div class="demo-off">Demo mode is off — no live publisher connected in this mockup.<br>Flip Demo mode back on to see the sample fleet.</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script id="fleet-data" type="application/json">
+{
+  "schema": "fleet-board/1",
+  "self": "mactop",
+  "builtAt": "2026-08-26T02:30:00-07:00",
+  "nodes": {
+    "macbook": {"ok": true, "publishAgeSec": 4, "liveness": "fresh", "sessions": 3},
+    "mactop": {"ok": false, "publishAgeSec": 4500000, "liveness": "dead", "sessions": 2, "note": "publisher silently dead since Jul 5 — false-healthy bug demo"},
+    "mini": {"ok": true, "publishAgeSec": 7, "liveness": "fresh", "sessions": 3}
+  },
+  "totals": {"sessions": 8, "needsYou": 2, "tokensToday": 6400000, "estCostToday": 41.20},
+  "sessions": [
+    {
+      "session_id": "a8187667-686c-4342-85e7-b382a6af6fdd",
+      "project": "miscellaneous", "branch": "daybed-avenge", "host": "mactop", "model": "opus",
+      "status": "working", "source": "omnara",
+      "summary": {
+        "now": "Running /research-deliberate on the session-kanban dashboard; 6-model panel deliberating on the mini",
+        "next": "Parse panel matrix, adopt considerations, build variant mockups + written proposal",
+        "goal": "Full written + visual proposal for a fleet session kanban dashboard, ready for Jarred's review"
+      },
+      "contextPct": 62, "tokens": 3900000, "elapsedActive": "3h 40m", "idle": "0m", "msgs": 41, "cost": 18.40,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 2, "lastActivity": "just now"
+    },
+    {
+      "session_id": "4e8ffea7-c649-440f-96de-2f03cc6983c9",
+      "project": "gm-waitlist", "branch": "roman-impish", "host": "macbook", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "Waitlist demo flow blocked on a copy decision for the parent-facing confirmation step",
+        "next": "Needs Jarred: approve confirmation copy variant A or B, then wire the email template",
+        "goal": "Ship the waitlist demo flow to staging behind the kill-switch"
+      },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 05m", "idle": "42m", "msgs": 23, "cost": 6.10,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 6, "lastActivity": "42m ago"
+    },
+    {
+      "session_id": "77b1c2d3-1111-4aaa-9bbb-000000000001",
+      "project": "kindred-portal", "branch": "lic701-explainer", "host": "mini", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "LIC 701 validation built; upload-check rejects wrong docs and drafts parent guidance",
+        "next": "Needs Jarred: confirm the enrollment-flow explainer copy before merge to main",
+        "goal": "Parents can download, understand, and correctly upload the LIC 701 form"
+      },
+      "contextPct": 55, "tokens": 900000, "elapsedActive": "2h 20m", "idle": "1h 10m", "msgs": 31, "cost": 4.80,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 12, "lastActivity": "1h 10m ago"
+    },
+    {
+      "session_id": "88c2d3e4-2222-4bbb-8ccc-000000000002",
+      "project": "growingmindfully", "branch": "analyze-google-yelp-conversions", "host": "macbook", "model": "opus",
+      "status": "working",
+      "summary": {
+        "now": "Cross-referencing GA4 conversion exports against Google Ads + Yelp click data",
+        "next": "Produce attribution comparison table; flag the 2 legacy Contact-us conversions for removal",
+        "goal": "Defensible view of which channel actually drives GM tour bookings"
+      },
+      "contextPct": 78, "tokens": 2100000, "elapsedActive": "5h 02m", "idle": "3m", "msgs": 58, "cost": 9.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 3, "lastActivity": "3m ago"
+    },
+    {
+      "session_id": "99d3e4f5-3333-4ccc-9ddd-000000000003",
+      "project": "travel-planner", "branch": "travel-points-cash-comparison", "host": "mactop", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Points-vs-cash comparison engine complete; 22 commits ahead of main, tests green",
+        "next": "Open PR and merge, or extend to hotel-chain transfer partners",
+        "goal": "One-look answer: pay points or cash for any planned trip leg"
+      },
+      "contextPct": 34, "tokens": 800000, "elapsedActive": "1h 48m", "idle": "9d", "msgs": 27, "cost": 3.60,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 240, "lastActivity": "9d ago", "stale": true
+    },
+    {
+      "session_id": "aab4f5a6-4444-4ddd-8eee-000000000004",
+      "project": "client-alpha", "branch": "tweet-ai-trust-verification", "host": "mini", "model": "opus",
+      "status": "waiting",
+      "summary": {
+        "now": "Draft thread on AI trust verification staged; 8 commits unmerged, no PR",
+        "next": "Jarred review of thread copy, then merge or archive the branch",
+        "goal": "Publishable the client thread + reusable verification framing"
+      },
+      "contextPct": 88, "tokens": 3100000, "elapsedActive": "4h 15m", "idle": "5d", "msgs": 66, "cost": 14.70,
+      "resumeTier": "revive", "worktreeOk": true, "summaryAgeMin": 300, "lastActivity": "5d ago", "stale": true,
+      "note": "Context 88% — resume will hit 'Prompt is too long'; revive (distill + fork) is the offered action"
+    },
+    {
+      "session_id": "bbc5a6b7-5555-4eee-9fff-000000000005",
+      "project": "gm-waitlist", "branch": "backup/macbook-local-errfix", "host": "macbook", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Error-fix backup branch holding 1 commit of client-feedback fixes",
+        "next": "Cherry-pick into main or discard; worktree was pruned last week",
+        "goal": "No client-feedback fix lost from the Aug 12 session"
+      },
+      "contextPct": 22, "tokens": 400000, "elapsedActive": "38m", "idle": "12d", "msgs": 12, "cost": 1.40,
+      "resumeTier": "resume", "worktreeOk": false, "summaryAgeMin": 600, "lastActivity": "12d ago", "stale": true,
+      "note": "Worktree missing — resume gated behind repair (re-create worktree from branch)"
+    },
+    {
+      "session_id": "ccd6b7c8-6666-4fff-8aaa-000000000006",
+      "project": "gm-sage", "branch": "main", "host": "mini", "model": "sonnet",
+      "status": "working", "source": "launchd",
+      "summary": {
+        "now": "Hourly GM inbox triage pass: 3 new threads classified, 1 draft staged for approval",
+        "next": "Surface the staged draft + one family LIC 701 anomaly at next check-in",
+        "goal": "Zero unhandled GM inbound; every thread owned or routed"
+      },
+      "contextPct": 18, "tokens": 300000, "elapsedActive": "22m", "idle": "1m", "msgs": 9, "cost": 0.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 1, "lastActivity": "1m ago"
+    }
+  ]
+}
+</script>
+
+<script>
+"use strict";
+const FLEET = JSON.parse(document.getElementById("fleet-data").textContent);
+
+/* ---------- helpers ---------- */
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtTok(n){
+  if(n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,"") + "M";
+  if(n >= 1e3) return Math.round(n/1e3) + "K";
+  return String(n);
+}
+function fmtCost(c){ return "$" + (c >= 10 ? Math.round(c) : c.toFixed(2).replace(/0$/,"")); }
+function idleDays(idle){
+  const m = /^(\d+)d/.exec(idle || "");
+  return m ? parseInt(m[1], 10) : 0;
+}
+/* Column assignment: needs_input -> Needs You; working -> Working;
+   waiting w/ idle >= 7d -> Stale; other waiting -> Waiting */
+function columnOf(s){
+  if(s.status === "needs_input") return "needs_you";
+  if(s.status === "working") return "working";
+  if(s.stale && idleDays(s.idle) >= 7) return "stale";
+  return "waiting";
+}
+const COLS = [
+  {id:"needs_you", label:"Needs You"},
+  {id:"working",   label:"Working"},
+  {id:"waiting",   label:"Waiting"},
+  {id:"stale",     label:"Stale"}
+];
+const PILL_LABEL = {needs_you:"Needs You", working:"Working", waiting:"Waiting", stale:"Stale"};
+
+const ICONS = {
+  host: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="12" height="8" rx="1.5"/><path d="M5.5 14h5M8 11v3"/></svg>',
+  tok:  '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6" opacity=".25"/><circle cx="8" cy="8" r="3"/></svg>',
+  cost: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.5v13M11.2 4.2c-.6-1-1.8-1.5-3.2-1.5-1.7 0-3 .9-3 2.4C5 8.6 11 7.4 11 10.6c0 1.5-1.3 2.4-3 2.4-1.4 0-2.7-.6-3.3-1.6"/></svg>',
+  msgs: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 3.5h11v7h-6l-3 3v-3h-2z" stroke-linejoin="round"/></svg>',
+  clock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.4 1.6"/></svg>',
+  eye:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2.2"/></svg>',
+  play: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3l8 5-8 5z"/></svg>',
+  wrench:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 2.5a3.5 3.5 0 0 0-3.9 4.9L2 11l3 3 3.6-3.6a3.5 3.5 0 0 0 4.9-3.9L11 9 8.5 6.5z" stroke-linejoin="round"/></svg>',
+  caret:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>'
+};
+
+function ringSVG(pct){
+  const r = 15.5, c = 2 * Math.PI * r;
+  const color = pct >= 80 ? "#e2445c" : (pct >= 60 ? "#fdab3d" : "#00c875");
+  const off = c * (1 - pct / 100);
+  return '<span class="ring" title="Context ' + pct + '% used">' +
+    '<svg viewBox="0 0 40 40">' +
+    '<circle cx="20" cy="20" r="' + r + '" fill="none" stroke="#e9ebf3" stroke-width="5"/>' +
+    '<circle cx="20" cy="20" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="5" stroke-linecap="round" ' +
+    'stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/>' +
+    '</svg><span class="pct">' + pct + '%</span></span>';
+}
+
+function resumeBtn(s){
+  if(!s.worktreeOk){
+    return '<button type="button" class="btn btn-resume repair" data-act="repair">' + ICONS.wrench + ' Repair <span class="tier">worktree</span></button>';
+  }
+  const t = s.resumeTier;
+  const label = t === "attach" ? "Attach" : (t === "revive" ? "Revive" : "Resume");
+  return '<button type="button" class="btn btn-resume ' + t + '" data-act="' + t + '">' + ICONS.play + ' ' + label + ' <span class="tier">' + t + '</span></button>';
+}
+
+function cardHTML(s){
+  const col = columnOf(s);
+  const hostDead = FLEET.nodes[s.host] && !FLEET.nodes[s.host].ok;
+  return '<article class="card" data-col="' + col + '" data-id="' + esc(s.session_id) + '" tabindex="0" role="button" aria-expanded="false">' +
+    '<div class="card-top">' +
+      '<div><div class="proj">' + esc(s.project) + '</div>' +
+        '<div class="host' + (hostDead ? " dead-host" : "") + '">' + ICONS.host + esc(s.host) + (hostDead ? " · dead" : "") + '</div></div>' +
+      '<span class="pill ' + col + '">' + PILL_LABEL[col] + '</span>' +
+    '</div>' +
+    '<div class="now" title="' + esc(s.summary.now) + '">' + esc(s.summary.now) + '</div>' +
+    '<div class="chips">' +
+      ringSVG(s.contextPct) +
+      '<span class="chip tok">' + ICONS.tok + fmtTok(s.tokens) + '</span>' +
+      '<span class="chip cost">' + ICONS.cost + fmtCost(s.cost).replace("$","") + '</span>' +
+      '<span class="chip msgs">' + ICONS.msgs + s.msgs + '</span>' +
+      '<span class="chip idle">' + ICONS.clock + esc(s.lastActivity) + '</span>' +
+    '</div>' +
+    '<div class="actions">' +
+      '<button type="button" class="btn btn-live" data-act="live" aria-label="Open live view of ' + esc(s.project) + '"><span class="live-dot"></span>' + ICONS.eye + ' LIVE</button>' +
+      resumeBtn(s) +
+    '</div>' +
+    '<div class="details">' +
+      '<div class="drow"><span class="k">Next</span><span class="v">' + esc(s.summary.next) + '</span></div>' +
+      '<div class="drow"><span class="k">Goal</span><span class="v">' + esc(s.summary.goal) + '</span></div>' +
+      (s.note ? '<div class="warn-note">' + esc(s.note) + '</div>' : '') +
+      '<div class="meta-line">' +
+        '<span>' + esc(s.branch) + '</span><span>' + esc(s.model) + '</span>' +
+        '<span>active ' + esc(s.elapsedActive) + '</span><span>idle ' + esc(s.idle) + '</span>' +
+        (s.source ? '<span>via ' + esc(s.source) + '</span>' : '') +
+      '</div>' +
+    '</div>' +
+    '<span class="caret" aria-hidden="true">' + ICONS.caret + '</span>' +
+  '</article>';
+}
+
+/* ---------- render ---------- */
+function renderHealth(){
+  const el = document.getElementById("healthStrip");
+  let h = "";
+  for(const name of Object.keys(FLEET.nodes)){
+    const n = FLEET.nodes[name];
+    h += '<span class="node-chip ' + (n.ok ? "fresh" : "dead") + '"' + (n.note ? ' title="' + esc(n.note) + '"' : '') + '>' +
+      '<span class="dot"></span>' + esc(name) + ' <small>' + esc(n.liveness) + '</small></span>';
+  }
+  const t = FLEET.totals;
+  h += '<span class="totals">' +
+    '<span class="tot"><b>' + t.sessions + '</b> sessions</span>' +
+    '<span class="tot hot"><b>' + t.needsYou + '</b> need you</span>' +
+    '<span class="tot"><b>' + fmtTok(t.tokensToday) + '</b> tok</span>' +
+    '<span class="tot"><b>$' + t.estCostToday.toFixed(2) + '</b> today</span>' +
+    '</span>';
+  el.innerHTML = h;
+}
+
+function renderBoard(){
+  const board = document.getElementById("board");
+  const groups = {needs_you:[], working:[], waiting:[], stale:[]};
+  for(const s of FLEET.sessions) groups[columnOf(s)].push(s);
+  let h = "";
+  for(const c of COLS){
+    const cards = groups[c.id];
+    h += '<section class="col" data-col="' + c.id + '">' +
+      '<div class="col-head">' + c.label + '<span class="count">' + cards.length + '</span></div>' +
+      '<div class="col-body">' +
+      (cards.length ? cards.map(cardHTML).join("") : '<div class="empty">Nothing here — all clear</div>') +
+      '</div></section>';
+  }
+  board.innerHTML = h;
+}
+
+/* ---------- interactions ---------- */
+let toastTimer = null;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+document.getElementById("board").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-act]");
+  const card = e.target.closest(".card");
+  if(!card) return;
+  const s = FLEET.sessions.find(x => x.session_id === card.dataset.id);
+  if(btn){
+    e.stopPropagation();
+    const act = btn.dataset.act;
+    if(act === "live") toast("Opening live view — " + s.project + " on " + s.host + " (mockup)");
+    else if(act === "repair") toast("Repairing worktree for " + s.branch + " (mockup)");
+    else toast(act.charAt(0).toUpperCase() + act.slice(1) + " — " + s.project + " (" + s.resumeTier + " tier, mockup)");
+    return;
+  }
+  card.classList.toggle("open");
+  card.setAttribute("aria-expanded", card.classList.contains("open") ? "true" : "false");
+});
+document.getElementById("board").addEventListener("keydown", (e) => {
+  if((e.key === "Enter" || e.key === " ") && e.target.classList.contains("card")){
+    e.preventDefault();
+    e.target.classList.toggle("open");
+    e.target.setAttribute("aria-expanded", e.target.classList.contains("open") ? "true" : "false");
+  }
+});
+
+document.getElementById("segFilter").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-col]");
+  if(!b) return;
+  document.querySelectorAll("#segFilter button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  document.body.dataset.filter = b.dataset.col;
+});
+
+document.getElementById("demoToggle").addEventListener("click", function(){
+  const on = this.getAttribute("aria-pressed") === "true";
+  this.setAttribute("aria-pressed", on ? "false" : "true");
+  document.body.classList.toggle("demo-disabled", on);
+  toast(on ? "Demo mode off" : "Demo mode on");
+});
+
+renderHealth();
+renderBoard();
+</script>
+</body>
+</html>

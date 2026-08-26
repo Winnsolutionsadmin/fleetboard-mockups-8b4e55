@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Glass Gradient</title>
+<style>
+  :root{
+    --ink:#1e2233;
+    --ink-soft:#5a6178;
+    --ink-faint:#8b91a8;
+    --card-bg:rgba(255,255,255,0.65);
+    --card-bg-solid:rgba(255,255,255,0.88);
+    --card-border:rgba(255,255,255,0.9);
+    --shadow:0 8px 28px rgba(90,90,140,0.13), 0 2px 6px rgba(90,90,140,0.07);
+    --shadow-soft:0 4px 14px rgba(90,90,140,0.09);
+    --grad-hot:linear-gradient(135deg,#ff7ab6 0%,#ff9a62 55%,#ffc24b 100%);
+    --grad-cool:linear-gradient(135deg,#5aa8ff 0%,#7f7bff 60%,#b06dff 100%);
+    --grad-bar:linear-gradient(90deg,#5aa8ff,#9d7bff,#ff7ab6);
+    --r-card:20px;
+    --r-chip:999px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:#f7f6fb;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  /* ---- gradient mesh background ---- */
+  .mesh{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#f9f8fd}
+  .blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55}
+  .blob.b1{width:52vw;height:52vw;min-width:420px;min-height:420px;left:-12vw;top:-14vh;background:radial-gradient(circle,#bfe0ff 0%,rgba(191,224,255,0) 70%)}
+  .blob.b2{width:46vw;height:46vw;min-width:380px;min-height:380px;right:-10vw;top:6vh;background:radial-gradient(circle,#e3d4ff 0%,rgba(227,212,255,0) 70%)}
+  .blob.b3{width:44vw;height:44vw;min-width:360px;min-height:360px;left:22vw;bottom:-18vh;background:radial-gradient(circle,#ffe0cf 0%,rgba(255,224,207,0) 70%)}
+  .blob.b4{width:30vw;height:30vw;min-width:260px;min-height:260px;right:14vw;bottom:2vh;background:radial-gradient(circle,#d7f4e8 0%,rgba(215,244,232,0) 70%)}
+
+  .wrap{max-width:1380px;margin:0 auto;padding:20px 20px 56px}
+
+  /* ---- glass primitive + fallback ---- */
+  .glass{
+    background:var(--card-bg-solid);
+    border:1px solid var(--card-border);
+    border-radius:var(--r-card);
+    box-shadow:var(--shadow);
+  }
+  @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)){
+    .glass{background:var(--card-bg);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4)}
+  }
+
+  /* ---- top bar ---- */
+  header.top{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:14px 20px;margin-bottom:16px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:var(--grad-cool);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(127,123,255,.35)}
+  .brand .logo svg{width:19px;height:19px}
+  .top-spacer{flex:1}
+  .built{font-size:12px;color:var(--ink-faint)}
+  /* demo toggle */
+  .demo-toggle{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;min-height:44px;padding:0 6px}
+  .demo-toggle .lbl{font-size:13px;font-weight:600;color:var(--ink-soft)}
+  .switch{width:46px;height:27px;border-radius:999px;background:rgba(140,145,170,.35);position:relative;transition:background .25s;flex:none}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:left .25s}
+  .demo-toggle[aria-checked="true"] .switch{background:var(--grad-cool)}
+  .demo-toggle[aria-checked="true"] .switch::after{left:22px}
+
+  /* ---- fleet health strip ---- */
+  .strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;margin-bottom:20px}
+  .node-chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:var(--r-chip);background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.95);box-shadow:var(--shadow-soft);font-size:13px;font-weight:600;min-height:38px}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .dot.fresh{background:#22b573;box-shadow:0 0 0 4px rgba(34,181,115,.16)}
+  .dot.dead{background:#ff3b5c;box-shadow:0 0 0 4px rgba(255,59,92,.18);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 7px rgba(255,59,92,.06)}}
+  .node-chip .sub{font-weight:500;color:var(--ink-faint);font-size:12px}
+  .node-chip.dead-chip{color:#c1123a;background:rgba(255,235,240,.8);border-color:rgba(255,190,205,.9)}
+  .strip .totals{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .tot{padding:8px 13px;border-radius:var(--r-chip);font-size:12.5px;font-weight:600;color:var(--ink-soft);background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.9)}
+  .tot b{color:var(--ink);font-weight:800}
+  .tot.hot{background:var(--grad-hot);color:#fff;border:none;box-shadow:0 4px 14px rgba(255,122,150,.4)}
+  .tot.hot b{color:#fff}
+
+  /* ---- segmented filter (mobile) ---- */
+  .seg{display:none;gap:4px;padding:5px;margin-bottom:16px;border-radius:16px}
+  .seg button{flex:1;border:none;background:transparent;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink-soft);padding:10px 4px;border-radius:12px;cursor:pointer;min-height:44px}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(90,90,140,.15)}
+  .seg button .n{display:inline-block;margin-left:4px;font-size:11px;color:var(--ink-faint)}
+  .seg button.on.hot{background:var(--grad-hot);color:#fff}
+  .seg button.on.hot .n{color:rgba(255,255,255,.85)}
+
+  /* ---- board ---- */
+  .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start}
+  .col{border-radius:24px;padding:12px}
+  .col-head{display:flex;align-items:center;gap:9px;padding:10px 10px 14px}
+  .col-head .swatch{width:12px;height:12px;border-radius:4px;flex:none}
+  .col-head h2{font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+  .count{margin-left:auto;min-width:26px;height:24px;padding:0 8px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+  .stack{display:flex;flex-direction:column;gap:14px;min-height:60px}
+
+  .col.needs{background:rgba(255,240,244,.55);border:1px solid rgba(255,210,222,.8)}
+  .col.needs .swatch{background:var(--grad-hot)}
+  .col.needs .count{background:var(--grad-hot);box-shadow:0 3px 10px rgba(255,122,150,.45)}
+  .col.needs h2{background:var(--grad-hot);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .col.working .swatch{background:linear-gradient(135deg,#5aa8ff,#7f7bff)}
+  .col.working .count{background:linear-gradient(135deg,#5aa8ff,#7f7bff)}
+  .col.working h2{color:#4468e0}
+  .col.working{background:rgba(235,242,255,.5);border:1px solid rgba(205,222,255,.8)}
+  .col.waiting .swatch{background:linear-gradient(135deg,#b06dff,#8f7bff)}
+  .col.waiting .count{background:linear-gradient(135deg,#b06dff,#8f7bff)}
+  .col.waiting h2{color:#8256d6}
+  .col.waiting{background:rgba(243,238,255,.5);border:1px solid rgba(224,212,255,.8)}
+  .col.stale .swatch{background:#b7bccb}
+  .col.stale .count{background:#aeb4c4}
+  .col.stale h2{color:#8b91a8}
+  .col.stale{background:rgba(240,241,246,.45);border:1px solid rgba(224,227,236,.8)}
+  .col.stale .card{opacity:.82}
+
+  /* ---- card ---- */
+  .card{
+    border-radius:var(--r-card);
+    padding:15px 15px 13px;
+    cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s ease;
+    position:relative;
+  }
+  .card:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(90,90,140,.18),0 3px 8px rgba(90,90,140,.08)}
+  .card:active{transform:translateY(0)}
+  .card.needs-card{
+    border:1.5px solid rgba(255,140,175,.75);
+    box-shadow:0 0 0 4px rgba(255,122,182,.14), 0 10px 30px rgba(255,110,150,.22);
+    animation:glow 2.6s ease-in-out infinite;
+  }
+  @keyframes glow{
+    50%{box-shadow:0 0 0 8px rgba(255,122,182,.07), 0 10px 30px rgba(255,110,150,.28)}
+  }
+  .card-top{display:flex;align-items:flex-start;gap:8px}
+  .proj{font-size:15.5px;font-weight:800;letter-spacing:-.015em;line-height:1.25;word-break:break-word}
+  .branch{font-size:11.5px;color:var(--ink-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .pill{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+  .pill.needs{background:rgba(255,122,182,.18);color:#d6337f;border-color:rgba(255,150,195,.7)}
+  .pill.working{background:rgba(90,168,255,.16);color:#2f6fd8;border-color:rgba(140,190,255,.7)}
+  .pill.waiting{background:rgba(176,109,255,.14);color:#8256d6;border-color:rgba(200,165,255,.7)}
+  .pill.stale{background:rgba(150,156,175,.14);color:#7d8398;border-color:rgba(190,195,210,.7)}
+  .pill .pdot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .hostrow{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--ink-soft);flex-wrap:wrap}
+  .host-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.95);font-weight:600}
+  .host-chip svg{width:12px;height:12px;opacity:.7}
+  .host-chip.deadhost{color:#c1123a;background:rgba(255,235,240,.85)}
+  .model-chip{font-size:11px;font-weight:700;color:#8256d6;background:rgba(176,109,255,.12);padding:3px 9px;border-radius:999px;border:1px solid rgba(200,165,255,.5)}
+  .src-chip{font-size:11px;font-weight:600;color:var(--ink-faint);background:rgba(255,255,255,.6);padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.9)}
+
+  .now{margin-top:10px;font-size:13px;line-height:1.45;color:var(--ink-soft);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .card.open .now{-webkit-line-clamp:unset}
+  .detail{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(140,145,170,.3);font-size:12.5px;line-height:1.5;color:var(--ink-soft)}
+  .card.open .detail{display:block}
+  .detail .dl{display:flex;gap:8px;margin-bottom:6px}
+  .detail .dk{flex:none;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;padding:3px 8px;border-radius:999px;height:fit-content}
+  .detail .dk.next{background:linear-gradient(135deg,#5aa8ff,#7f7bff)}
+  .detail .dk.goal{background:linear-gradient(135deg,#ff9a62,#ffc24b)}
+  .detail .note{margin-top:6px;font-size:11.5px;color:#c1123a;background:rgba(255,235,240,.7);border-radius:10px;padding:7px 10px}
+
+  /* context bar */
+  .ctx{margin-top:12px}
+  .ctx-top{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--ink-faint);margin-bottom:4px}
+  .ctx-top b{color:var(--ink-soft)}
+  .bar{height:6px;border-radius:999px;background:rgba(140,145,170,.18);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:999px;background:var(--grad-bar);transition:width .4s}
+  .bar.warn i{background:linear-gradient(90deg,#ff9a62,#ff7ab6,#ff3b5c)}
+
+  /* numeric chips */
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--ink-soft);background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.95);border-radius:999px;padding:5px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+  .chip svg{width:12px;height:12px;flex:none}
+  .chip.tok svg{color:#4468e0}.chip.cost svg{color:#e08a2f}.chip.msg svg{color:#8256d6}.chip.time svg{color:#22a06b}
+
+  /* actions */
+  .actions{display:flex;gap:8px;margin-top:13px}
+  .btn{font:inherit;border:none;cursor:pointer;border-radius:14px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:800;font-size:13px;padding:0 14px;transition:filter .15s, transform .12s}
+  .btn:active{transform:scale(.97)}
+  .btn-live{flex:none;background:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,1);color:#2f6fd8;box-shadow:var(--shadow-soft);min-width:44px}
+  .btn-live svg{width:16px;height:16px}
+  .btn-live .lv{font-size:11px;letter-spacing:.05em}
+  .btn-primary{flex:1;color:#fff;background:var(--grad-cool);box-shadow:0 6px 18px rgba(127,123,255,.4)}
+  .btn-primary:hover{filter:brightness(1.06)}
+  .card.needs-card .btn-primary{background:var(--grad-hot);box-shadow:0 6px 18px rgba(255,122,150,.45)}
+  .btn-primary.repair{background:linear-gradient(135deg,#ffb54b,#ff7a5c);box-shadow:0 6px 18px rgba(255,150,90,.4)}
+  .tierbadge{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.45);padding:2px 7px;border-radius:999px}
+
+  .empty{padding:26px 12px;text-align:center;font-size:12.5px;color:var(--ink-faint);border:1.5px dashed rgba(150,156,175,.35);border-radius:16px;background:rgba(255,255,255,.35)}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(30,34,51,.92);color:#fff;font-size:13px;font-weight:600;padding:11px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50;max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---- responsive ---- */
+  @media (max-width:980px){
+    .board{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:640px){
+    .wrap{padding:12px 12px 48px}
+    .board{grid-template-columns:1fr;gap:14px}
+    .seg{display:flex}
+    .board .col{display:none}
+    .board .col.show{display:block}
+    .strip .totals{margin-left:0;width:100%}
+    header.top{padding:12px 14px}
+    .built{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="mesh" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+</div>
+
+<div class="wrap">
+  <header class="top glass">
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/></svg></span>
+      FleetBoard
+    </div>
+    <span class="built" id="builtAt"></span>
+    <div class="top-spacer"></div>
+    <div class="demo-toggle" id="demoToggle" role="switch" aria-checked="true" tabindex="0">
+      <span class="lbl">Demo mode</span>
+      <span class="switch"></span>
+    </div>
+  </header>
+
+  <section class="strip glass" id="strip" aria-label="Fleet health"></section>
+
+  <nav class="seg glass" id="seg" aria-label="Column filter"></nav>
+
+  <main class="board" id="board"></main>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script type="application/json" id="fleet-data">
+{
+  "schema": "fleet-board/1",
+  "self": "mactop",
+  "builtAt": "2026-08-26T02:30:00-07:00",
+  "nodes": {
+    "macbook": {"ok": true, "publishAgeSec": 4, "liveness": "fresh", "sessions": 3},
+    "mactop": {"ok": false, "publishAgeSec": 4500000, "liveness": "dead", "sessions": 2, "note": "publisher silently dead since Jul 5 — false-healthy bug demo"},
+    "mini": {"ok": true, "publishAgeSec": 7, "liveness": "fresh", "sessions": 3}
+  },
+  "totals": {"sessions": 8, "needsYou": 2, "tokensToday": 6400000, "estCostToday": 41.20},
+  "sessions": [
+    {
+      "session_id": "a8187667-686c-4342-85e7-b382a6af6fdd",
+      "project": "miscellaneous", "branch": "daybed-avenge", "host": "mactop", "model": "opus",
+      "status": "working", "source": "omnara",
+      "summary": {
+        "now": "Running /research-deliberate on the session-kanban dashboard; 6-model panel deliberating on the mini",
+        "next": "Parse panel matrix, adopt considerations, build variant mockups + written proposal",
+        "goal": "Full written + visual proposal for a fleet session kanban dashboard, ready for Jarred's review"
+      },
+      "contextPct": 62, "tokens": 3900000, "elapsedActive": "3h 40m", "idle": "0m", "msgs": 41, "cost": 18.40,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 2, "lastActivity": "just now"
+    },
+    {
+      "session_id": "4e8ffea7-c649-440f-96de-2f03cc6983c9",
+      "project": "gm-waitlist", "branch": "roman-impish", "host": "macbook", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "Waitlist demo flow blocked on a copy decision for the parent-facing confirmation step",
+        "next": "Needs Jarred: approve confirmation copy variant A or B, then wire the email template",
+        "goal": "Ship the waitlist demo flow to staging behind the kill-switch"
+      },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 05m", "idle": "42m", "msgs": 23, "cost": 6.10,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 6, "lastActivity": "42m ago"
+    },
+    {
+      "session_id": "77b1c2d3-1111-4aaa-9bbb-000000000001",
+      "project": "kindred-portal", "branch": "lic701-explainer", "host": "mini", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "LIC 701 validation built; upload-check rejects wrong docs and drafts parent guidance",
+        "next": "Needs Jarred: confirm the enrollment-flow explainer copy before merge to main",
+        "goal": "Parents can download, understand, and correctly upload the LIC 701 form"
+      },
+      "contextPct": 55, "tokens": 900000, "elapsedActive": "2h 20m", "idle": "1h 10m", "msgs": 31, "cost": 4.80,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 12, "lastActivity": "1h 10m ago"
+    },
+    {
+      "session_id": "88c2d3e4-2222-4bbb-8ccc-000000000002",
+      "project": "growingmindfully", "branch": "analyze-google-yelp-conversions", "host": "macbook", "model": "opus",
+      "status": "working",
+      "summary": {
+        "now": "Cross-referencing GA4 conversion exports against Google Ads + Yelp click data",
+        "next": "Produce attribution comparison table; flag the 2 legacy Contact-us conversions for removal",
+        "goal": "Defensible view of which channel actually drives GM tour bookings"
+      },
+      "contextPct": 78, "tokens": 2100000, "elapsedActive": "5h 02m", "idle": "3m", "msgs": 58, "cost": 9.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 3, "lastActivity": "3m ago"
+    },
+    {
+      "session_id": "99d3e4f5-3333-4ccc-9ddd-000000000003",
+      "project": "travel-planner", "branch": "travel-points-cash-comparison", "host": "mactop", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Points-vs-cash comparison engine complete; 22 commits ahead of main, tests green",
+        "next": "Open PR and merge, or extend to hotel-chain transfer partners",
+        "goal": "One-look answer: pay points or cash for any planned trip leg"
+      },
+      "contextPct": 34, "tokens": 800000, "elapsedActive": "1h 48m", "idle": "9d", "msgs": 27, "cost": 3.60,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 240, "lastActivity": "9d ago", "stale": true
+    },
+    {
+      "session_id": "aab4f5a6-4444-4ddd-8eee-000000000004",
+      "project": "client-alpha", "branch": "tweet-ai-trust-verification", "host": "mini", "model": "opus",
+      "status": "waiting",
+      "summary": {
+        "now": "Draft thread on AI trust verification staged; 8 commits unmerged, no PR",
+        "next": "Jarred review of thread copy, then merge or archive the branch",
+        "goal": "Publishable the client thread + reusable verification framing"
+      },
+      "contextPct": 88, "tokens": 3100000, "elapsedActive": "4h 15m", "idle": "5d", "msgs": 66, "cost": 14.70,
+      "resumeTier": "revive", "worktreeOk": true, "summaryAgeMin": 300, "lastActivity": "5d ago", "stale": true,
+      "note": "Context 88% — resume will hit 'Prompt is too long'; revive (distill + fork) is the offered action"
+    },
+    {
+      "session_id": "bbc5a6b7-5555-4eee-9fff-000000000005",
+      "project": "gm-waitlist", "branch": "backup/macbook-local-errfix", "host": "macbook", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Error-fix backup branch holding 1 commit of client-feedback fixes",
+        "next": "Cherry-pick into main or discard; worktree was pruned last week",
+        "goal": "No client-feedback fix lost from the Aug 12 session"
+      },
+      "contextPct": 22, "tokens": 400000, "elapsedActive": "38m", "idle": "12d", "msgs": 12, "cost": 1.40,
+      "resumeTier": "resume", "worktreeOk": false, "summaryAgeMin": 600, "lastActivity": "12d ago", "stale": true,
+      "note": "Worktree missing — resume gated behind repair (re-create worktree from branch)"
+    },
+    {
+      "session_id": "ccd6b7c8-6666-4fff-8aaa-000000000006",
+      "project": "gm-sage", "branch": "main", "host": "mini", "model": "sonnet",
+      "status": "working", "source": "launchd",
+      "summary": {
+        "now": "Hourly GM inbox triage pass: 3 new threads classified, 1 draft staged for approval",
+        "next": "Surface the staged draft + one family LIC 701 anomaly at next check-in",
+        "goal": "Zero unhandled GM inbound; every thread owned or routed"
+      },
+      "contextPct": 18, "tokens": 300000, "elapsedActive": "22m", "idle": "1m", "msgs": 9, "cost": 0.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 1, "lastActivity": "1m ago"
+    }
+  ]
+}
+</script>
+
+<script>
+"use strict";
+const FLEET = JSON.parse(document.getElementById("fleet-data").textContent);
+
+let demoMode = true;
+let mobileCol = "needs";
+
+const COLS = [
+  {key:"needs",   title:"Needs You", cls:"needs"},
+  {key:"working", title:"Working",   cls:"working"},
+  {key:"waiting", title:"Waiting",   cls:"waiting"},
+  {key:"stale",   title:"Stale",     cls:"stale"}
+];
+
+function colOf(s){
+  if (s.stale) return "stale";
+  if (s.status === "needs_input") return "needs";
+  if (s.status === "working") return "working";
+  return "waiting";
+}
+function fmtTokens(n){
+  if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,"") + "M";
+  if (n >= 1e3) return Math.round(n/1e3) + "K";
+  return String(n);
+}
+function fmtCost(c){
+  return "$" + (c >= 10 ? String(Math.round(c)) : c.toFixed(2));
+}
+function esc(t){
+  const d = document.createElement("div");
+  d.textContent = t;
+  return d.innerHTML;
+}
+const ICON = {
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  tok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8.5 9.5h7"/></svg>',
+  cost: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 6.5c0-1.9-2.2-3-5-3s-5 1.1-5 3 1.8 2.7 5 3.3 5 1.6 5 3.7-2.2 3-5 3-5-1.1-5-3"/></svg>',
+  msg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.5A8 8 0 1 1 21 12z"/></svg>',
+  time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  host: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M14.7 6.3a4.5 4.5 0 0 0-6 6L3 18l3 3 5.7-5.7a4.5 4.5 0 0 0 6-6l-3 3-3-3 3-3z"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M7 4.5v15l12-7.5-12-7.5z"/></svg>'
+};
+
+function statusPill(s){
+  const col = colOf(s);
+  const label = col === "needs" ? "Needs you" : col === "working" ? "Working" : col === "stale" ? "Stale" : "Waiting";
+  return '<span class="pill ' + col + '"><span class="pdot"></span>' + label + '</span>';
+}
+
+function cardHTML(s){
+  const col = colOf(s);
+  const deadHost = FLEET.nodes[s.host] && !FLEET.nodes[s.host].ok;
+  const needsCls = col === "needs" ? " needs-card" : "";
+  const repair = !s.worktreeOk;
+  const tier = repair ? "repair" : s.resumeTier;
+  const btnLabel = repair ? "Repair" : (s.resumeTier.charAt(0).toUpperCase() + s.resumeTier.slice(1));
+  const warn = s.contextPct >= 75 ? " warn" : "";
+  return '' +
+  '<article class="card glass' + needsCls + '" data-sid="' + esc(s.session_id) + '" tabindex="0" role="button" aria-expanded="false">' +
+    '<div class="card-top">' +
+      '<div style="min-width:0">' +
+        '<div class="proj">' + esc(s.project) + '</div>' +
+        '<div class="branch">' + esc(s.branch) + '</div>' +
+      '</div>' +
+      statusPill(s) +
+    '</div>' +
+    '<div class="hostrow">' +
+      '<span class="host-chip' + (deadHost ? " deadhost" : "") + '">' + ICON.host + esc(s.host) + (deadHost ? " · dead" : "") + '</span>' +
+      '<span class="model-chip">' + esc(s.model) + '</span>' +
+      (s.source ? '<span class="src-chip">' + esc(s.source) + '</span>' : '') +
+      '<span class="src-chip">' + esc(s.lastActivity) + '</span>' +
+    '</div>' +
+    '<p class="now">' + esc(s.summary.now) + '</p>' +
+    '<div class="detail">' +
+      '<div class="dl"><span class="dk next">Next</span><span>' + esc(s.summary.next) + '</span></div>' +
+      '<div class="dl"><span class="dk goal">Goal</span><span>' + esc(s.summary.goal) + '</span></div>' +
+      (s.note ? '<div class="note">' + esc(s.note) + '</div>' : '') +
+    '</div>' +
+    '<div class="ctx">' +
+      '<div class="ctx-top"><span>Context</span><b>' + s.contextPct + '%</b></div>' +
+      '<div class="bar' + warn + '"><i style="width:' + s.contextPct + '%"></i></div>' +
+    '</div>' +
+    '<div class="chips">' +
+      '<span class="chip tok">' + ICON.tok + fmtTokens(s.tokens) + '</span>' +
+      '<span class="chip cost">' + ICON.cost.replace('<svg','<svg') + fmtCost(s.cost) + '</span>' +
+      '<span class="chip msg">' + ICON.msg + s.msgs + '</span>' +
+      '<span class="chip time">' + ICON.time + esc(s.elapsedActive) + '</span>' +
+    '</div>' +
+    '<div class="actions">' +
+      '<button class="btn btn-live" data-act="live" aria-label="Open live view">' + ICON.eye + '<span class="lv">LIVE</span></button>' +
+      '<button class="btn btn-primary' + (repair ? " repair" : "") + '" data-act="resume">' +
+        (repair ? ICON.wrench : ICON.play) + btnLabel +
+        '<span class="tierbadge">' + esc(tier) + '</span>' +
+      '</button>' +
+    '</div>' +
+  '</article>';
+}
+
+function render(){
+  const board = document.getElementById("board");
+  const groups = {needs:[], working:[], waiting:[], stale:[]};
+  if (demoMode){
+    FLEET.sessions.forEach(function(s){ groups[colOf(s)].push(s); });
+  }
+  board.innerHTML = COLS.map(function(c){
+    const list = groups[c.key];
+    const cards = list.length
+      ? list.map(cardHTML).join("")
+      : '<div class="empty">' + (demoMode ? "Nothing here right now" : "Demo mode off — no live feed wired in this mockup") + '</div>';
+    const show = (c.key === mobileCol) ? " show" : "";
+    return '<section class="col ' + c.cls + show + '" data-col="' + c.key + '">' +
+      '<div class="col-head"><span class="swatch"></span><h2>' + c.title + '</h2>' +
+      '<span class="count">' + list.length + '</span></div>' +
+      '<div class="stack">' + cards + '</div>' +
+    '</section>';
+  }).join("");
+
+  // segmented filter
+  const seg = document.getElementById("seg");
+  seg.innerHTML = COLS.map(function(c){
+    const on = c.key === mobileCol;
+    return '<button data-col="' + c.key + '" class="' + (on ? "on" : "") + (on && c.key === "needs" ? " hot" : "") + '">' +
+      c.title + '<span class="n">' + groups[c.key].length + '</span></button>';
+  }).join("");
+}
+
+function renderStrip(){
+  const strip = document.getElementById("strip");
+  const t = FLEET.totals;
+  let html = "";
+  Object.keys(FLEET.nodes).forEach(function(name){
+    const n = FLEET.nodes[name];
+    const dead = !n.ok;
+    html += '<span class="node-chip' + (dead ? " dead-chip" : "") + '">' +
+      '<span class="dot ' + (dead ? "dead" : "fresh") + '"></span>' +
+      esc(name) + (dead ? " DEAD" : "") +
+      '<span class="sub">' + n.sessions + ' sess</span></span>';
+  });
+  const vals = demoMode ? t : {sessions:0, needsYou:0, tokensToday:0, estCostToday:0};
+  html += '<span class="totals">' +
+    '<span class="tot"><b>' + vals.sessions + '</b> sessions</span>' +
+    '<span class="tot hot"><b>' + vals.needsYou + '</b> need you</span>' +
+    '<span class="tot"><b>' + fmtTokens(vals.tokensToday) + '</b> tok today</span>' +
+    '<span class="tot"><b>' + fmtCost(vals.estCostToday) + '</b> est today</span>' +
+  '</span>';
+  strip.innerHTML = html;
+}
+
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ el.classList.remove("show"); }, 2200);
+}
+
+// event delegation
+document.getElementById("board").addEventListener("click", function(e){
+  const btn = e.target.closest("button[data-act]");
+  const card = e.target.closest(".card");
+  if (btn && card){
+    const sid = card.getAttribute("data-sid");
+    const s = FLEET.sessions.find(function(x){ return x.session_id === sid; });
+    if (!s) return;
+    if (btn.getAttribute("data-act") === "live"){
+      toast("Live view — would attach a read-only stream to " + s.project + " on " + s.host);
+    } else {
+      const tier = s.worktreeOk ? s.resumeTier : "repair";
+      toast(tier.charAt(0).toUpperCase() + tier.slice(1) + " — would run the " + tier + " flow for " + s.project);
+    }
+    return;
+  }
+  if (card){
+    card.classList.toggle("open");
+    card.setAttribute("aria-expanded", card.classList.contains("open") ? "true" : "false");
+  }
+});
+document.getElementById("board").addEventListener("keydown", function(e){
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("card")){
+    e.preventDefault();
+    e.target.click();
+  }
+});
+
+document.getElementById("seg").addEventListener("click", function(e){
+  const b = e.target.closest("button[data-col]");
+  if (!b) return;
+  mobileCol = b.getAttribute("data-col");
+  render();
+});
+
+const demoToggle = document.getElementById("demoToggle");
+function flipDemo(){
+  demoMode = !demoMode;
+  demoToggle.setAttribute("aria-checked", demoMode ? "true" : "false");
+  render();
+  renderStrip();
+  toast(demoMode ? "Demo mode on — sample fleet data" : "Demo mode off");
+}
+demoToggle.addEventListener("click", flipDemo);
+demoToggle.addEventListener("keydown", function(e){
+  if (e.key === "Enter" || e.key === " "){ e.preventDefault(); flipDemo(); }
+});
+
+// built-at stamp
+(function(){
+  const d = new Date(FLEET.builtAt);
+  document.getElementById("builtAt").textContent =
+    "snapshot " + d.toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"});
+})();
+
+renderStrip();
+render();
+</script>
+</body>
+</html>

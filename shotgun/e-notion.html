@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Notion Soft</title>
+<style>
+  :root{
+    --canvas:#fffefb;
+    --col-bg:#faf9f6;
+    --card:#ffffff;
+    --ink:#37352f;
+    --ink-2:#57564f;
+    --ink-3:#8f8e86;
+    --line:#eceae4;
+    --shadow:0 1px 2px rgba(15,15,15,.04), 0 2px 6px rgba(15,15,15,.03);
+    --shadow-hover:0 2px 4px rgba(15,15,15,.06), 0 6px 16px rgba(15,15,15,.06);
+    --red-bg:#ffe2dd;    --red-tx:#93362c;
+    --orange-bg:#fadec9; --orange-tx:#9c4b1d;
+    --yellow-bg:#fdecc8; --yellow-tx:#8a6116;
+    --green-bg:#dbeddb;  --green-tx:#35634a;
+    --blue-bg:#d3e5ef;   --blue-tx:#2b5a75;
+    --purple-bg:#e8deee; --purple-tx:#5a3d78;
+    --gray-bg:#f1f0ef;   --gray-tx:#6f6e69;
+    --brown-bg:#eee0da;  --brown-tx:#7a4f3c;
+    --radius:8px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--canvas);
+    color:var(--ink);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size:15px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:48px;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+
+  /* ---------- header ---------- */
+  header{padding:26px 0 6px}
+  .titlebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .doc-icon{
+    width:36px;height:36px;border-radius:9px;background:var(--yellow-bg);
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .doc-icon svg{width:20px;height:20px;stroke:var(--yellow-tx)}
+  h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .subtitle{color:var(--ink-3);font-size:13.5px;margin:2px 0 0}
+  .spacer{flex:1}
+  /* demo toggle */
+  .demo-toggle{
+    display:flex;align-items:center;gap:9px;min-height:44px;padding:0 6px;
+    background:none;border:none;cursor:pointer;font:inherit;color:var(--ink-2);font-size:13.5px;
+  }
+  .switch{
+    width:38px;height:22px;border-radius:11px;background:#dcdad3;position:relative;transition:background .18s;flex:0 0 auto;
+  }
+  .switch::after{
+    content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(15,15,15,.18);transition:transform .18s;
+  }
+  .demo-toggle[aria-checked="true"] .switch{background:var(--green-tx)}
+  .demo-toggle[aria-checked="true"] .switch::after{transform:translateX(16px)}
+
+  /* ---------- fleet health strip ---------- */
+  .healthstrip{
+    margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .node-chip{
+    display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+    font-size:13px;font-weight:500;background:var(--gray-bg);color:var(--gray-tx);
+  }
+  .node-chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .node-chip.fresh{background:var(--green-bg);color:var(--green-tx)}
+  .node-chip.fresh .dot{background:#4b9f6f}
+  .node-chip.dead{background:var(--red-bg);color:var(--red-tx);font-weight:600}
+  .node-chip.dead .dot{background:#d3453a;animation:blink 1.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+  .strip-sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+  .totals{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--ink-2);font-size:13.5px}
+  .totals b{font-weight:600;color:var(--ink)}
+  .totals .mid{color:#d5d3cb}
+  .totals .hot{color:var(--red-tx);font-weight:600}
+
+  /* ---------- segmented filter (mobile) ---------- */
+  .seg{display:none;margin-top:14px;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .seg button{
+    flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;
+    border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+    font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;
+  }
+  .seg button .cnt{
+    font-size:12px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--gray-bg);color:var(--gray-tx);
+  }
+  .seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fffefb}
+  .seg button[aria-pressed="true"] .cnt{background:rgba(255,255,255,.22);color:#fffefb}
+
+  /* ---------- board ---------- */
+  .board{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:20px;align-items:start;
+  }
+  .col{border-radius:10px;padding:10px 10px 14px;background:var(--col-bg)}
+  .col.needs_you{background:#fdf1ee}
+  .col.stale{background:#fafaf9}
+  .col-head{display:flex;align-items:center;gap:8px;padding:6px 6px 12px}
+  .col-head .cicon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .col-head .cicon svg{width:13px;height:13px}
+  .col-head h2{font-size:13.5px;font-weight:600;margin:0;color:var(--ink-2);letter-spacing:.01em}
+  .count-pill{font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px}
+  .col.needs_you .col-head h2{color:var(--red-tx);font-weight:700}
+  .col.needs_you .cicon{background:var(--red-bg)}   .col.needs_you .cicon svg{stroke:var(--red-tx)}
+  .col.needs_you .count-pill{background:var(--red-bg);color:var(--red-tx)}
+  .col.working .cicon{background:var(--blue-bg)}    .col.working .cicon svg{stroke:var(--blue-tx)}
+  .col.working .count-pill{background:var(--blue-bg);color:var(--blue-tx)}
+  .col.waiting .cicon{background:var(--yellow-bg)}  .col.waiting .cicon svg{stroke:var(--yellow-tx)}
+  .col.waiting .count-pill{background:var(--yellow-bg);color:var(--yellow-tx)}
+  .col.stale .cicon{background:var(--gray-bg)}      .col.stale .cicon svg{stroke:var(--gray-tx)}
+  .col.stale .count-pill{background:var(--gray-bg);color:var(--gray-tx)}
+  .col.stale .col-head h2{color:var(--ink-3)}
+  .cards{display:flex;flex-direction:column;gap:10px}
+
+  .empty{
+    border:1.5px dashed #e3e1d9;border-radius:var(--radius);padding:22px 14px;text-align:center;
+    color:var(--ink-3);font-size:13px;
+  }
+
+  /* ---------- card ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:12px 14px 12px;cursor:pointer;position:relative;
+    transition:box-shadow .15s, transform .15s;
+  }
+  .card:hover{box-shadow:var(--shadow-hover);transform:translateY(-1px)}
+  .card:active{transform:translateY(0)}
+  .col.needs_you .card{border-color:#f4cfc7;box-shadow:0 1px 2px rgba(147,54,44,.06), 0 3px 10px rgba(147,54,44,.07)}
+  .col.needs_you .card::before{
+    content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:#e8a89d;
+  }
+  .col.stale .card{opacity:.72}
+  .col.stale .card:hover{opacity:1}
+
+  .card-top{display:flex;align-items:flex-start;gap:10px}
+  .card-title-wrap{min-width:0;flex:1}
+  .card-title{font-size:15px;font-weight:600;letter-spacing:-.005em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .host-chip{
+    font-size:11.5px;font-weight:600;padding:1.5px 8px;border-radius:999px;flex:0 0 auto;
+  }
+  .host-macbook{background:var(--blue-bg);color:var(--blue-tx)}
+  .host-mactop{background:var(--orange-bg);color:var(--orange-tx)}
+  .host-mini{background:var(--green-bg);color:var(--green-tx)}
+
+  .attn-pill{
+    display:inline-flex;align-items:center;gap:5px;margin-top:7px;
+    font-size:12px;font-weight:600;padding:2.5px 9px;border-radius:999px;background:var(--red-bg);color:var(--red-tx);
+  }
+  .attn-pill .pdot{width:6px;height:6px;border-radius:50%;background:#d3453a;animation:blink 1.6s ease-in-out infinite}
+
+  .summary{
+    margin-top:7px;color:var(--ink-2);font-size:13.5px;line-height:1.5;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .col.stale .summary{color:var(--ink-3)}
+
+  /* context ring */
+  .ring{flex:0 0 auto;width:38px;height:38px;position:relative}
+  .ring svg{width:38px;height:38px;transform:rotate(-90deg)}
+  .ring .track{fill:none;stroke:#efeee8;stroke-width:4}
+  .ring .val{fill:none;stroke-width:4;stroke-linecap:round}
+  .ring .pct{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;color:var(--ink-2);
+  }
+
+  .chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{
+    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;
+    padding:2.5px 9px;border-radius:999px;background:var(--gray-bg);color:var(--gray-tx);
+  }
+  .chip svg{width:11px;height:11px;stroke:currentColor;flex:0 0 auto}
+  .chip.tok{background:var(--purple-bg);color:var(--purple-tx)}
+  .chip.cost{background:var(--green-bg);color:var(--green-tx)}
+  .chip.model{background:var(--brown-bg);color:var(--brown-tx)}
+  .chip.age{background:transparent;color:var(--ink-3);padding-left:2px}
+
+  /* actions — always visible; subtle at rest, saturate on hover */
+  .actions{
+    display:flex;align-items:center;gap:8px;margin-top:11px;
+    opacity:.88;transition:opacity .16s;
+  }
+  .card:hover .actions,.card:focus-within .actions,.card.open .actions{opacity:1}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    min-height:36px;padding:0 13px;border-radius:7px;border:1px solid transparent;
+    font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .btn svg{width:14px;height:14px;stroke:currentColor;flex:0 0 auto}
+  .btn-live{background:var(--card);border-color:var(--line);color:var(--ink-2)}
+  .btn-live:hover{background:var(--gray-bg)}
+  .btn-live .live-dot{width:7px;height:7px;border-radius:50%;background:#4b9f6f;animation:blink 1.6s ease-in-out infinite}
+  .btn-primary{background:var(--blue-bg);color:var(--blue-tx)}
+  .btn-primary:hover{background:#c4dcea}
+  .btn-hot{background:var(--red-tx);color:#fff5f3}
+  .btn-hot:hover{background:#7d2c23}
+  .btn-repair{background:var(--yellow-bg);color:var(--yellow-tx)}
+  .btn-repair:hover{background:#f8e2b4}
+  .tier{
+    font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.55);
+  }
+  .btn-hot .tier{background:rgba(255,255,255,.22)}
+
+  /* expand */
+  .details{display:none;margin-top:11px;border-top:1px solid var(--line);padding-top:11px}
+  .card.open .details{display:block}
+  .drow{display:flex;gap:9px;margin-bottom:8px;font-size:13px;line-height:1.5}
+  .drow:last-child{margin-bottom:0}
+  .dlabel{
+    flex:0 0 auto;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:2px 8px;border-radius:999px;height:fit-content;margin-top:1px;
+  }
+  .dlabel.next{background:var(--orange-bg);color:var(--orange-tx)}
+  .dlabel.goal{background:var(--purple-bg);color:var(--purple-tx)}
+  .dlabel.note{background:var(--yellow-bg);color:var(--yellow-tx)}
+  .dtext{color:var(--ink-2)}
+  .meta-line{margin-top:9px;color:var(--ink-3);font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .meta-line .mid{color:#d5d3cb}
+
+  /* demo-off state */
+  .offboard{
+    margin-top:22px;background:var(--card);border:1.5px dashed #e3e1d9;border-radius:12px;
+    padding:56px 24px;text-align:center;color:var(--ink-3);
+  }
+  .offboard .big{font-size:15px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+
+  footer{margin-top:34px;color:#b9b7ae;font-size:12px;text-align:center}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:980px){
+    .board{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media (max-width:640px){
+    body{font-size:16px}
+    .board{grid-template-columns:1fr;gap:14px}
+    .seg{display:flex}
+    .board .col{display:none}
+    .board .col.show{display:block}
+    .btn{min-height:44px;padding:0 16px}
+    .actions{flex-wrap:wrap}
+    .healthstrip{row-gap:8px}
+    .strip-sep{display:none}
+    .summary{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  }
+</style>
+</head>
+<body>
+<script type="application/json" id="fleet-data">
+{
+  "schema": "fleet-board/1",
+  "self": "mactop",
+  "builtAt": "2026-08-26T02:30:00-07:00",
+  "nodes": {
+    "macbook": {"ok": true, "publishAgeSec": 4, "liveness": "fresh", "sessions": 3},
+    "mactop": {"ok": false, "publishAgeSec": 4500000, "liveness": "dead", "sessions": 2, "note": "publisher silently dead since Jul 5 — false-healthy bug demo"},
+    "mini": {"ok": true, "publishAgeSec": 7, "liveness": "fresh", "sessions": 3}
+  },
+  "totals": {"sessions": 8, "needsYou": 2, "tokensToday": 6400000, "estCostToday": 41.20},
+  "sessions": [
+    {
+      "session_id": "a8187667-686c-4342-85e7-b382a6af6fdd",
+      "project": "miscellaneous", "branch": "daybed-avenge", "host": "mactop", "model": "opus",
+      "status": "working", "source": "omnara",
+      "summary": {
+        "now": "Running /research-deliberate on the session-kanban dashboard; 6-model panel deliberating on the mini",
+        "next": "Parse panel matrix, adopt considerations, build variant mockups + written proposal",
+        "goal": "Full written + visual proposal for a fleet session kanban dashboard, ready for Jarred's review"
+      },
+      "contextPct": 62, "tokens": 3900000, "elapsedActive": "3h 40m", "idle": "0m", "msgs": 41, "cost": 18.40,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 2, "lastActivity": "just now"
+    },
+    {
+      "session_id": "4e8ffea7-c649-440f-96de-2f03cc6983c9",
+      "project": "gm-waitlist", "branch": "roman-impish", "host": "macbook", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "Waitlist demo flow blocked on a copy decision for the parent-facing confirmation step",
+        "next": "Needs Jarred: approve confirmation copy variant A or B, then wire the email template",
+        "goal": "Ship the waitlist demo flow to staging behind the kill-switch"
+      },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 05m", "idle": "42m", "msgs": 23, "cost": 6.10,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 6, "lastActivity": "42m ago"
+    },
+    {
+      "session_id": "77b1c2d3-1111-4aaa-9bbb-000000000001",
+      "project": "kindred-portal", "branch": "lic701-explainer", "host": "mini", "model": "sonnet",
+      "status": "needs_input",
+      "summary": {
+        "now": "LIC 701 validation built; upload-check rejects wrong docs and drafts parent guidance",
+        "next": "Needs Jarred: confirm the enrollment-flow explainer copy before merge to main",
+        "goal": "Parents can download, understand, and correctly upload the LIC 701 form"
+      },
+      "contextPct": 55, "tokens": 900000, "elapsedActive": "2h 20m", "idle": "1h 10m", "msgs": 31, "cost": 4.80,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 12, "lastActivity": "1h 10m ago"
+    },
+    {
+      "session_id": "88c2d3e4-2222-4bbb-8ccc-000000000002",
+      "project": "growingmindfully", "branch": "analyze-google-yelp-conversions", "host": "macbook", "model": "opus",
+      "status": "working",
+      "summary": {
+        "now": "Cross-referencing GA4 conversion exports against Google Ads + Yelp click data",
+        "next": "Produce attribution comparison table; flag the 2 legacy Contact-us conversions for removal",
+        "goal": "Defensible view of which channel actually drives GM tour bookings"
+      },
+      "contextPct": 78, "tokens": 2100000, "elapsedActive": "5h 02m", "idle": "3m", "msgs": 58, "cost": 9.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 3, "lastActivity": "3m ago"
+    },
+    {
+      "session_id": "99d3e4f5-3333-4ccc-9ddd-000000000003",
+      "project": "travel-planner", "branch": "travel-points-cash-comparison", "host": "mactop", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Points-vs-cash comparison engine complete; 22 commits ahead of main, tests green",
+        "next": "Open PR and merge, or extend to hotel-chain transfer partners",
+        "goal": "One-look answer: pay points or cash for any planned trip leg"
+      },
+      "contextPct": 34, "tokens": 800000, "elapsedActive": "1h 48m", "idle": "9d", "msgs": 27, "cost": 3.60,
+      "resumeTier": "resume", "worktreeOk": true, "summaryAgeMin": 240, "lastActivity": "9d ago", "stale": true
+    },
+    {
+      "session_id": "aab4f5a6-4444-4ddd-8eee-000000000004",
+      "project": "client-alpha", "branch": "tweet-ai-trust-verification", "host": "mini", "model": "opus",
+      "status": "waiting",
+      "summary": {
+        "now": "Draft thread on AI trust verification staged; 8 commits unmerged, no PR",
+        "next": "Jarred review of thread copy, then merge or archive the branch",
+        "goal": "Publishable the client thread + reusable verification framing"
+      },
+      "contextPct": 88, "tokens": 3100000, "elapsedActive": "4h 15m", "idle": "5d", "msgs": 66, "cost": 14.70,
+      "resumeTier": "revive", "worktreeOk": true, "summaryAgeMin": 300, "lastActivity": "5d ago", "stale": true,
+      "note": "Context 88% — resume will hit 'Prompt is too long'; revive (distill + fork) is the offered action"
+    },
+    {
+      "session_id": "bbc5a6b7-5555-4eee-9fff-000000000005",
+      "project": "gm-waitlist", "branch": "backup/macbook-local-errfix", "host": "macbook", "model": "sonnet",
+      "status": "waiting",
+      "summary": {
+        "now": "Error-fix backup branch holding 1 commit of client-feedback fixes",
+        "next": "Cherry-pick into main or discard; worktree was pruned last week",
+        "goal": "No client-feedback fix lost from the Aug 12 session"
+      },
+      "contextPct": 22, "tokens": 400000, "elapsedActive": "38m", "idle": "12d", "msgs": 12, "cost": 1.40,
+      "resumeTier": "resume", "worktreeOk": false, "summaryAgeMin": 600, "lastActivity": "12d ago", "stale": true,
+      "note": "Worktree missing — resume gated behind repair (re-create worktree from branch)"
+    },
+    {
+      "session_id": "ccd6b7c8-6666-4fff-8aaa-000000000006",
+      "project": "gm-sage", "branch": "main", "host": "mini", "model": "sonnet",
+      "status": "working", "source": "launchd",
+      "summary": {
+        "now": "Hourly GM inbox triage pass: 3 new threads classified, 1 draft staged for approval",
+        "next": "Surface the staged draft + one family LIC 701 anomaly at next check-in",
+        "goal": "Zero unhandled GM inbound; every thread owned or routed"
+      },
+      "contextPct": 18, "tokens": 300000, "elapsedActive": "22m", "idle": "1m", "msgs": 9, "cost": 0.90,
+      "resumeTier": "attach", "worktreeOk": true, "summaryAgeMin": 1, "lastActivity": "1m ago"
+    }
+  ]
+}
+</script>
+
+<div class="wrap">
+  <header>
+    <div class="titlebar">
+      <div class="doc-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/><path d="M15 4v16"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Fleet Board</h1>
+        <p class="subtitle" id="subtitle">Sessions across the fleet</p>
+      </div>
+      <div class="spacer"></div>
+      <button class="demo-toggle" id="demoToggle" role="switch" aria-checked="true">
+        <span>Demo data</span><span class="switch" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div class="healthstrip" id="healthstrip"></div>
+    <div class="seg" id="seg" role="tablist" aria-label="Column filter"></div>
+  </header>
+
+  <main id="main"></main>
+
+  <footer>FleetBoard mockup E — “Notion Soft” · demo data, no live connections</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const FLEET = JSON.parse(document.getElementById("fleet-data").textContent);
+
+  const ICONS = {
+    hand: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M12 21a7 7 0 0 0 7-7v-3"/><path d="M12 21a7 7 0 0 1-7-7v-3"/><path d="M8 6l4-3 4 3"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z"/></svg>',
+    clock:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    moon: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.5A8 8 0 1 1 10.5 4a6.5 6.5 0 0 0 9.5 9.5z"/></svg>',
+    eye:  '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    zap:  '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H13z"/></svg>',
+    wrench:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4.5 4.5 0 0 0-6 6L3 18l3 3 5.5-5.5a4.5 4.5 0 0 0 6-6L14 13l-3-3z"/></svg>',
+    coins:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.5 9.8c0-1 1.1-1.8 2.5-1.8s2.5.8 2.5 1.8-1.1 1.7-2.5 1.9-2.5.9-2.5 1.9 1.1 1.8 2.5 1.8 2.5-.8 2.5-1.8"/></svg>',
+    spark:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>'
+  };
+
+  const COLS = [
+    {key:"needs_you", title:"Needs You", icon:ICONS.hand},
+    {key:"working",   title:"Working",   icon:ICONS.play},
+    {key:"waiting",   title:"Waiting",   icon:ICONS.clock},
+    {key:"stale",     title:"Stale",     icon:ICONS.moon}
+  ];
+  const EMPTY_MSG = {
+    needs_you:"Nothing needs you right now 🎉",
+    working:"No sessions working",
+    waiting:"Nothing parked — all caught up",
+    stale:"No stale sessions"
+  };
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function fmtTokens(n){
+    if(n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,"") + "M";
+    if(n >= 1e3) return Math.round(n/1e3) + "k";
+    return String(n);
+  }
+  function fmtCost(n){ return "$" + (n >= 10 ? Math.round(n) : n.toFixed(2).replace(/0$/,"")); }
+  function classify(s){
+    if(s.stale) return "stale";
+    if(s.status === "needs_input") return "needs_you";
+    if(s.status === "working") return "working";
+    return "waiting";
+  }
+  function ringColor(p){
+    if(p >= 80) return "#d3453a";
+    if(p >= 60) return "#c98a2e";
+    return "#4b9f6f";
+  }
+  function ring(pct){
+    const r = 15, c = 2 * Math.PI * r;
+    const off = c * (1 - pct/100);
+    return '<div class="ring" title="Context ' + pct + '% used" aria-label="Context ' + pct + ' percent">'
+      + '<svg viewBox="0 0 38 38"><circle class="track" cx="19" cy="19" r="' + r + '"/>'
+      + '<circle class="val" cx="19" cy="19" r="' + r + '" stroke="' + ringColor(pct) + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/></svg>'
+      + '<span class="pct">' + pct + '%</span></div>';
+  }
+  function resumeBtn(s, hot){
+    if(!s.worktreeOk){
+      return '<button class="btn btn-repair" data-act="repair">' + ICONS.wrench + 'Repair <span class="tier">worktree</span></button>';
+    }
+    const labels = {attach:"Attach", resume:"Resume", revive:"Revive"};
+    const cls = hot ? "btn-hot" : "btn-primary";
+    return '<button class="btn ' + cls + '" data-act="resume">' + ICONS.zap + (labels[s.resumeTier] || "Resume")
+      + ' <span class="tier">' + esc(s.resumeTier) + '</span></button>';
+  }
+
+  function cardHTML(s, colKey){
+    const hot = colKey === "needs_you";
+    let h = '<article class="card" tabindex="0" role="button" aria-expanded="false" data-sid="' + esc(s.session_id) + '">';
+    h += '<div class="card-top"><div class="card-title-wrap">';
+    h += '<div class="card-title"><span>' + esc(s.project) + '</span>'
+       + '<span class="host-chip host-' + esc(s.host) + '">' + esc(s.host) + '</span></div>';
+    if(hot){
+      h += '<span class="attn-pill"><span class="pdot"></span>waiting on you · ' + esc(s.idle) + '</span>';
+    }
+    h += '<p class="summary">' + esc(s.summary.now) + '</p>';
+    h += '</div>' + ring(s.contextPct) + '</div>';
+
+    h += '<div class="chips">'
+       + '<span class="chip tok">' + ICONS.coins + fmtTokens(s.tokens) + '</span>'
+       + '<span class="chip cost">' + fmtCost(s.cost) + '</span>'
+       + '<span class="chip model">' + ICONS.spark + esc(s.model) + '</span>'
+       + '<span class="chip age">' + esc(s.lastActivity) + '</span>'
+       + '</div>';
+
+    h += '<div class="actions">'
+       + '<button class="btn btn-live" data-act="live" aria-label="Watch live">' + '<span class="live-dot"></span>' + ICONS.eye + 'Live</button>'
+       + resumeBtn(s, hot)
+       + '</div>';
+
+    h += '<div class="details">';
+    h += '<div class="drow"><span class="dlabel next">Next</span><span class="dtext">' + esc(s.summary.next) + '</span></div>';
+    h += '<div class="drow"><span class="dlabel goal">Goal</span><span class="dtext">' + esc(s.summary.goal) + '</span></div>';
+    if(s.note){
+      h += '<div class="drow"><span class="dlabel note">Note</span><span class="dtext">' + esc(s.note) + '</span></div>';
+    }
+    h += '<div class="meta-line"><span>' + esc(s.branch) + '</span><span class="mid">·</span>'
+       + '<span>' + s.msgs + ' msgs</span><span class="mid">·</span>'
+       + '<span>' + esc(s.elapsedActive) + ' active</span><span class="mid">·</span>'
+       + '<span>idle ' + esc(s.idle) + '</span></div>';
+    h += '</div></article>';
+    return h;
+  }
+
+  function renderHealth(){
+    const el = document.getElementById("healthstrip");
+    let h = "";
+    for(const [name, n] of Object.entries(FLEET.nodes)){
+      const cls = n.liveness === "fresh" ? "fresh" : "dead";
+      const label = n.liveness === "dead" ? "DEAD" : "fresh";
+      h += '<span class="node-chip ' + cls + '"' + (n.note ? ' title="' + esc(n.note) + '"' : '') + '>'
+         + '<span class="dot"></span>' + esc(name) + ' · ' + label + '</span>';
+    }
+    const t = FLEET.totals;
+    h += '<span class="strip-sep"></span><span class="totals">'
+       + '<span><b>' + t.sessions + '</b> sessions</span><span class="mid">·</span>'
+       + '<span class="hot">' + t.needsYou + ' need you</span><span class="mid">·</span>'
+       + '<span><b>' + fmtTokens(t.tokensToday) + '</b> tok today</span><span class="mid">·</span>'
+       + '<span><b>$' + t.estCostToday.toFixed(2) + '</b> today</span></span>';
+    el.innerHTML = h;
+  }
+
+  let activeFilter = "needs_you";
+  function renderSeg(groups){
+    const seg = document.getElementById("seg");
+    let h = "";
+    for(const c of COLS){
+      const on = c.key === activeFilter;
+      h += '<button role="tab" aria-pressed="' + on + '" data-col="' + c.key + '">'
+         + esc(c.title) + '<span class="cnt">' + groups[c.key].length + '</span></button>';
+    }
+    seg.innerHTML = h;
+    seg.querySelectorAll("button").forEach(b => {
+      b.addEventListener("click", () => {
+        activeFilter = b.dataset.col;
+        renderBoard();
+      });
+    });
+  }
+
+  function renderBoard(){
+    const main = document.getElementById("main");
+    const groups = {needs_you:[], working:[], waiting:[], stale:[]};
+    for(const s of FLEET.sessions) groups[classify(s)].push(s);
+
+    let h = '<div class="board">';
+    for(const c of COLS){
+      const list = groups[c.key];
+      h += '<section class="col ' + c.key + (c.key === activeFilter ? ' show' : '') + '" aria-label="' + esc(c.title) + '">';
+      h += '<div class="col-head"><span class="cicon">' + c.icon + '</span><h2>' + esc(c.title) + '</h2>'
+         + '<span class="count-pill">' + list.length + '</span></div>';
+      h += '<div class="cards">';
+      if(list.length === 0){
+        h += '<div class="empty">' + EMPTY_MSG[c.key] + '</div>';
+      } else {
+        for(const s of list) h += cardHTML(s, c.key);
+      }
+      h += '</div></section>';
+    }
+    h += '</div>';
+    main.innerHTML = h;
+    renderSeg(groups);
+
+    // interactions
+    main.querySelectorAll(".card").forEach(card => {
+      card.addEventListener("click", e => {
+        if(e.target.closest("button")) return;
+        const open = card.classList.toggle("open");
+        card.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      card.addEventListener("keydown", e => {
+        if((e.key === "Enter" || e.key === " ") && !e.target.closest("button")){
+          e.preventDefault();
+          const open = card.classList.toggle("open");
+          card.setAttribute("aria-expanded", open ? "true" : "false");
+        }
+      });
+    });
+    main.querySelectorAll("button[data-act]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        // Mockup: actions are inert. Give a tiny visual acknowledgment.
+        btn.style.transform = "scale(.96)";
+        setTimeout(() => { btn.style.transform = ""; }, 120);
+      });
+    });
+  }
+
+  function renderOff(){
+    document.getElementById("main").innerHTML =
+      '<div class="offboard"><div class="big">Demo data is off</div>'
+      + 'Flip the toggle back on to see the sample fleet. (Live mode is not wired in this mockup.)</div>';
+    document.getElementById("seg").innerHTML = "";
+  }
+
+  // header subtitle
+  const nodeCount = Object.keys(FLEET.nodes).length;
+  document.getElementById("subtitle").textContent =
+    FLEET.totals.sessions + " sessions across " + nodeCount + " machines · viewed from " + FLEET.self;
+
+  // demo toggle
+  let demoOn = true;
+  const toggle = document.getElementById("demoToggle");
+  toggle.addEventListener("click", () => {
+    demoOn = !demoOn;
+    toggle.setAttribute("aria-checked", demoOn ? "true" : "false");
+    if(demoOn) renderBoard(); else renderOff();
+  });
+
+  renderHealth();
+  renderBoard();
+})();
+</script>
+</body>
+</html>
