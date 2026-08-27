@@ -246,17 +246,123 @@
   .btn-primary.repair{background:#e5484d;box-shadow:0 2px 6px rgba(229,72,77,.35)}
   .btn-primary.repair:hover{background:#c93b40}
 
-  .more{display:none;margin-top:11px;border-top:1px solid var(--line);padding-top:10px}
-  .card.open .more{display:block}
-  .more .row{display:flex;gap:8px;margin-bottom:8px;font-size:12.5px;line-height:1.4}
-  .more .k{
-    flex:none;width:44px;font-size:10.5px;font-weight:700;letter-spacing:.5px;
+  /* ── Expanded session dialog ─────────────── */
+  body.dlg-open{overflow:hidden}
+  .overlay{
+    position:fixed;inset:0;z-index:50;background:rgba(42,46,67,.45);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .overlay[hidden]{display:none}
+  .dialog{
+    background:#fff;border-radius:14px;overflow:hidden;
+    box-shadow:0 24px 70px rgba(20,24,45,.4);
+    width:92vw;max-width:1280px;height:88vh;
+    display:flex;flex-direction:column;
+  }
+  .dlg-head{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 16px;border-bottom:2px solid var(--brand-soft);background:#fff;
+  }
+  .dlg-proj{display:flex;align-items:center;gap:10px;min-width:0}
+  .dlg-proj .host-avatar{width:32px;height:32px;font-size:12px}
+  .dlg-proj h2{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dlg-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .status-pill{
+    font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    color:#fff;border-radius:999px;padding:4px 10px;
+  }
+  .dlg-stats{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+  .dlg-close{
+    width:44px;height:44px;border-radius:10px;flex:none;
+    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+  }
+  .dlg-close:hover{background:var(--brand-soft);color:var(--brand-dark)}
+  .dlg-tabs{display:none}
+  .dlg-body{flex:1;display:flex;min-height:0}
+  .dlg-term{flex:62 1 0;min-width:0;display:flex;flex-direction:column;background:#23273a}
+  .term-bar{
+    display:flex;align-items:center;gap:10px;padding:8px 14px;
+    background:#2c3049;border-bottom:1px solid #3a3f5c;
+    color:#aab1cc;font-size:12px;font-weight:600;
+  }
+  .term-bar .dots{display:flex;gap:5px}
+  .term-bar .dots i{width:9px;height:9px;border-radius:50%;display:block}
+  .term-bar .tb-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .live-badge{
+    margin-left:auto;display:flex;align-items:center;gap:6px;flex:none;
+    background:rgba(39,174,96,.18);color:#5fdb96;border-radius:999px;
+    padding:3px 10px;font-size:10.5px;font-weight:700;letter-spacing:.5px;
+  }
+  .live-badge .live-dot{width:7px;height:7px;border-radius:50%;background:#3ecf7a;animation:pulse 1.4s infinite}
+  .frozen-badge{margin-left:auto;flex:none;color:#8b91ad;font-size:11px;font-weight:600}
+  .term-scroll{
+    flex:1;overflow-y:auto;padding:12px 16px;
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12px;line-height:1.7;color:#c9d0e8;
+  }
+  .tline{white-space:pre-wrap;word-break:break-word}
+  .tline.warn{color:#ffb454}
+  .tline.dim{color:#7d84a3}
+  .tline.spin{color:#9d8ffb}
+  .tline.frozen-note{color:#8b91ad;font-style:italic;border-top:1px dashed #3a3f5c;margin-top:8px;padding-top:8px}
+  .dlg-rail{
+    flex:38 1 0;min-width:0;border-left:1px solid var(--line);
+    background:#fff;overflow-y:auto;padding:14px 16px;
+  }
+  .rail-h{
+    font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--brand-dark);margin:16px 0 8px;
+  }
+  .rail-h:first-child{margin-top:0}
+  .task{
+    display:flex;gap:9px;align-items:flex-start;
+    padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+    margin-bottom:6px;font-size:13px;line-height:1.35;background:#fff;
+  }
+  .task .tk-ic{
+    flex:none;width:18px;height:18px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  .task.done{color:var(--ink-faint)}
+  .task.done .tk-title{text-decoration:line-through}
+  .task.done .tk-ic{background:var(--brand);color:#fff}
+  .task.in_progress{border-color:#bcd8ff;background:#f4f9ff}
+  .task.in_progress .tk-ic{border:2px solid #4c9aff}
+  .task.in_progress .tk-ic i{width:8px;height:8px;border-radius:50%;background:#4c9aff;display:block;animation:pulse 1.2s infinite}
+  .task.blocked{border-color:#f6c7cb;background:#fdf1f2;color:#a1333b}
+  .task.blocked .tk-ic{color:#e5484d}
+  .task.pending .tk-ic{border:2px solid #ccd2e0}
+  .tk-sub{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+  .task.blocked .tk-sub{color:#c02b34}
+  .task.in_progress .tk-sub{color:#2f7fe0}
+  .sumrow{display:flex;gap:8px;margin-bottom:8px;font-size:12.5px;line-height:1.45}
+  .sumrow .k{
+    flex:none;width:40px;font-size:10px;font-weight:700;letter-spacing:.5px;
     text-transform:uppercase;color:var(--ink-faint);padding-top:2px;
   }
-  .more .v{color:var(--ink-soft)}
-  .more .note{background:#fff8e6;border:1px solid #f2e2b3;color:#8a6a12;
-    border-radius:8px;padding:7px 10px;font-size:12px;margin-bottom:8px}
-  .more .meta{display:flex;gap:12px;flex-wrap:wrap;color:var(--ink-faint);font-size:11.5px}
+  .sumrow .v{color:var(--ink-soft)}
+  .stamp{font-size:11px;color:var(--ink-faint);margin:2px 0 10px}
+  .rail-note{
+    background:#fff8e6;border:1px solid #f2e2b3;color:#8a6a12;
+    border-radius:8px;padding:7px 10px;font-size:12px;margin-bottom:8px;
+  }
+  .rail-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .rail-actions .btn{width:100%}
+  @media (max-width:899px){
+    .overlay{padding:0}
+    .dialog{width:100%;max-width:none;height:100vh;height:100dvh;border-radius:0}
+    .dlg-tabs{display:flex;border-bottom:1px solid var(--line);background:#fff}
+    .dlg-tabs button{
+      flex:1;min-height:44px;font-size:13.5px;font-weight:600;
+      color:var(--ink-soft);border-bottom:2px solid transparent;
+    }
+    .dlg-tabs button.active{color:var(--brand-dark);border-bottom-color:var(--brand)}
+    .dlg-body{flex-direction:column}
+    .dlg-term,.dlg-rail{flex:1;border-left:0}
+    .dialog[data-tab="term"] .dlg-rail{display:none}
+    .dialog[data-tab="tasks"] .dlg-term{display:none}
+  }
 
   /* ── Responsive ──────────────────────────── */
   @media (max-width:860px){
@@ -320,6 +426,23 @@
 <div class="seg" id="seg" role="tablist" aria-label="Column filter"></div>
 
 <main class="board" id="board" data-filter="all"></main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="dialog" id="dialog" role="dialog" aria-modal="true" aria-label="Session detail" data-tab="term">
+    <div class="dlg-head" id="dlgHead"></div>
+    <div class="dlg-tabs" role="tablist" aria-label="Dialog panes">
+      <button type="button" class="active" data-tab="term" role="tab">Terminal</button>
+      <button type="button" data-tab="tasks" role="tab">Tasks</button>
+    </div>
+    <div class="dlg-body">
+      <div class="dlg-term">
+        <div class="term-bar" id="termBar"></div>
+        <div class="term-scroll" id="termScroll"></div>
+      </div>
+      <aside class="dlg-rail" id="dlgRail"></aside>
+    </div>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -435,6 +558,136 @@ const FLEET = {
   ]
 };
 
+const DIALOG = {
+  "_readme": "Merge into each session of FLEET by session_id: adds tasks[] and terminal[]. Used by the card-click expanded dialog.",
+  "a8187667-686c-4342-85e7-b382a6af6fdd": {
+    "tasks": [
+      {"title": "Run 6-model deliberate panel + adopt considerations", "status": "done"},
+      {"title": "Build 3 variant mockups + QA loop", "status": "done"},
+      {"title": "Write final proposal + package for review", "status": "done"},
+      {"title": "Design shotgun: 6 light re-skins", "status": "in_progress"},
+      {"title": "Fold winning direction into proposal", "status": "pending"}
+    ],
+    "terminal": [
+      "02:30:05  ● Bash(ssh mini 'python3 counsel.py --mode deliberate …')",
+      "02:30:11  │  counsel[R1]: gemini ok · codex ok · claude ok",
+      "02:30:19  │  counsel[R2]: cross-examination … 6/6 seats",
+      "02:30:24  ● rd.py parse — 12 adopt / 0 reject / 0 contested",
+      "02:30:31  ● Write(rd/adopted.md) · Write(rd/brief.md)",
+      "02:30:44  ● Agent(mockup-a) Agent(mockup-b) Agent(mockup-c) — fable",
+      "02:31:02  │  variant-a-fleetboard.html written (54.7KB, parse clean)",
+      "02:31:19  ● browse screenshot /tmp/qa-a-desktop.png — 0 console errors",
+      "02:31:26  ⠋ streaming…"
+    ]
+  },
+  "4e8ffea7-c649-440f-96de-2f03cc6983c9": {
+    "tasks": [
+      {"title": "Build waitlist demo flow", "status": "done"},
+      {"title": "Confirmation-step copy — variant A vs B", "status": "blocked"},
+      {"title": "Wire confirmation email template", "status": "pending"},
+      {"title": "Stage behind kill-switch, verify revert", "status": "pending"}
+    ],
+    "terminal": [
+      "22:41:08  ● Edit(src/waitlist/ConfirmStep.tsx)",
+      "22:41:15  ● Bash(npm test -- confirm-step) — 14 passed",
+      "22:41:40  ● Two copy variants staged for the confirmation screen",
+      "22:42:02  ⚠ NEEDS INPUT: approve copy variant A or B before email wiring",
+      "22:42:02  ⏸ turn ended — waiting on Jarred (idle 42m)"
+    ]
+  },
+  "77b1c2d3-1111-4aaa-9bbb-000000000001": {
+    "tasks": [
+      {"title": "LIC 701 upload validation (reject wrong docs)", "status": "done"},
+      {"title": "Parent guidance copy on rejection", "status": "done"},
+      {"title": "Enrollment-flow explainer step", "status": "blocked"},
+      {"title": "Blank-form download link in checklist", "status": "pending"},
+      {"title": "Merge to main + deploy portal", "status": "pending"}
+    ],
+    "terminal": [
+      "21:12:33  ● Edit(solace-api/validators/lic701.ts)",
+      "21:13:01  ● Bash(npm test -- lic701) — 9 passed, 0 failed",
+      "21:14:20  ● Write(portal/enrollment/Lic701Explainer.tsx)",
+      "21:15:44  ⚠ NEEDS INPUT: confirm explainer copy before merge",
+      "21:15:44  ⏸ turn ended — waiting on Jarred (idle 1h 10m)"
+    ]
+  },
+  "88c2d3e4-2222-4bbb-8ccc-000000000002": {
+    "tasks": [
+      {"title": "Pull GA4 conversion exports", "status": "done"},
+      {"title": "Join against Google Ads + Yelp click data", "status": "in_progress"},
+      {"title": "Attribution comparison table", "status": "pending"},
+      {"title": "Flag 2 legacy Contact-us conversions", "status": "pending"}
+    ],
+    "terminal": [
+      "09:02:10  ● Bash(bq query --use_legacy_sql=false 'SELECT …')",
+      "09:02:31  │  1,204 rows — ga4_conversions_aug.csv",
+      "09:03:12  ● Read(exports/google-ads-clicks-aug.csv)",
+      "09:04 45  ● python3 join_attribution.py — matching on gclid/session",
+      "09:05:03  │  match rate 87.4% · 152 unmatched rows queued for review",
+      "09:05:20  ⠙ working…"
+    ]
+  },
+  "99d3e4f5-3333-4ccc-9ddd-000000000003": {
+    "tasks": [
+      {"title": "Points-vs-cash comparison engine", "status": "done"},
+      {"title": "Test suite (22 commits, green)", "status": "done"},
+      {"title": "Open PR and merge to main", "status": "pending"},
+      {"title": "Hotel transfer-partner extension", "status": "pending"}
+    ],
+    "terminal": [
+      "14:20:11  ● Bash(npm test) — 61 passed",
+      "14:21:37  ● git log --oneline — 22 commits ahead of main",
+      "14:22:00  ⏸ idle 9 days — branch unmerged, no PR",
+      "14:22:00  💤 stale — summary frozen at last activity"
+    ]
+  },
+  "aab4f5a6-4444-4ddd-8eee-000000000004": {
+    "tasks": [
+      {"title": "Draft AI-trust-verification thread", "status": "done"},
+      {"title": "Jarred review of thread copy", "status": "blocked"},
+      {"title": "Merge or archive branch (8 commits)", "status": "pending"}
+    ],
+    "terminal": [
+      "11:45:20  ● Write(threads/ai-trust-verification-draft.md)",
+      "11:47:55  │  8 commits staged on branch, no PR",
+      "11:48:30  ⚠ context 88% — 'Prompt is too long' on plain resume",
+      "11:48:30  💤 idle 5 days — REVIVE (distill + fork) is the offered action"
+    ]
+  },
+  "bbc5a6b7-5555-4eee-9fff-000000000005": {
+    "tasks": [
+      {"title": "Error-fix commit from Aug 12 session", "status": "done"},
+      {"title": "Cherry-pick into main or discard", "status": "pending"},
+      {"title": "Re-create pruned worktree", "status": "blocked"}
+    ],
+    "terminal": [
+      "16:03:40  ● git commit -m 'client-feedback error fixes' (1 commit)",
+      "16:04:12  ⏸ idle 12 days",
+      "16:04:12  ⚠ worktree pruned — resume gated behind Repair",
+      "16:04:12  💤 stale"
+    ]
+  },
+  "ccd6b7c8-6666-4fff-8aaa-000000000006": {
+    "tasks": [
+      {"title": "Hourly inbox triage pass", "status": "in_progress"},
+      {"title": "Classify 3 new threads", "status": "done"},
+      {"title": "Stage 1 reply draft for approval", "status": "done"},
+      {"title": "Surface staged draft at next check-in", "status": "pending"}
+    ],
+    "terminal": [
+      "10:00:02  ● gog gmail search 'newer_than:1h' — 3 new threads",
+      "10:00:19  ● classify: enrollment-question · vendor-invoice · tour-request",
+      "10:00:58  ● Write(staged/reply-family.md) — awaiting approval",
+      "10:01:04  ● TaskUpdate(board) — 3 routed, 1 staged",
+      "10:01:11  ⠹ working…"
+    ]
+  }
+};
+FLEET.sessions.forEach(function(s){
+  const d = DIALOG[s.session_id];
+  if (d){ s.tasks = d.tasks; s.terminal = d.terminal; }
+});
+
 /* ── helpers ─────────────────────────────────── */
 function el(tag, cls, text){
   const n = document.createElement(tag);
@@ -531,7 +784,7 @@ function buildCard(s, colId){
   card.style.setProperty("--edge", EDGE[colId] || "#ccc");
   card.tabIndex = 0;
   card.setAttribute("role","button");
-  card.setAttribute("aria-expanded","false");
+  card.setAttribute("aria-haspopup","dialog");
 
   // top row: avatar + project + host + chevron
   const top = el("div","card-top");
@@ -585,6 +838,27 @@ function buildCard(s, colId){
   live.appendChild(el("span", null, "Live"));
   actions.appendChild(live);
 
+  const primary = makePrimary(s);
+  actions.appendChild(primary);
+  card.appendChild(actions);
+
+  // interactions — card click/keyboard opens the expanded session dialog
+  card.addEventListener("click", function(e){
+    if (e.target.closest(".btn")) return;
+    openDialog(s, colId);
+  });
+  card.addEventListener("keydown", function(e){
+    if ((e.key === "Enter" || e.key === " ") && e.target === card){
+      e.preventDefault(); openDialog(s, colId);
+    }
+  });
+  live.addEventListener("click", function(e){ e.stopPropagation(); });
+  primary.addEventListener("click", function(e){ e.stopPropagation(); });
+
+  return card;
+}
+
+function makePrimary(s){
   const primary = el("button","btn btn-primary");
   primary.type = "button";
   if (!s.worktreeOk){
@@ -600,47 +874,201 @@ function buildCard(s, colId){
     primary.appendChild(el("span","tier", s.resumeTier));
     primary.setAttribute("aria-label", s.resumeTier + " session " + s.project);
   }
-  actions.appendChild(primary);
-  card.appendChild(actions);
-
-  // expandable detail
-  const more = el("div","more");
-  if (s.note) more.appendChild(el("div","note", s.note));
-  const rNext = el("div","row");
-  rNext.appendChild(el("div","k","Next"));
-  rNext.appendChild(el("div","v", s.summary.next));
-  more.appendChild(rNext);
-  const rGoal = el("div","row");
-  rGoal.appendChild(el("div","k","Goal"));
-  rGoal.appendChild(el("div","v", s.summary.goal));
-  more.appendChild(rGoal);
-  const meta = el("div","meta");
-  meta.appendChild(el("span", null, "active " + s.elapsedActive));
-  meta.appendChild(el("span", null, "idle " + s.idle));
-  meta.appendChild(el("span", null, "summary " + s.summaryAgeMin + "m old"));
-  meta.appendChild(el("span", null, s.session_id.slice(0,8)));
-  more.appendChild(meta);
-  card.appendChild(more);
-
-  // interactions
-  function toggle(){
-    const open = card.classList.toggle("open");
-    card.setAttribute("aria-expanded", open ? "true" : "false");
-  }
-  card.addEventListener("click", function(e){
-    if (e.target.closest(".btn")) return;
-    toggle();
-  });
-  card.addEventListener("keydown", function(e){
-    if ((e.key === "Enter" || e.key === " ") && e.target === card){
-      e.preventDefault(); toggle();
-    }
-  });
-  live.addEventListener("click", function(e){ e.stopPropagation(); });
-  primary.addEventListener("click", function(e){ e.stopPropagation(); });
-
-  return card;
+  return primary;
 }
+
+/* ── expanded session dialog ─────────────────── */
+const overlay = document.getElementById("overlay");
+const dlgEl = document.getElementById("dialog");
+let dlgTimers = [];
+function clearDlgTimers(){
+  dlgTimers.forEach(function(t){ clearTimeout(t); clearInterval(t); });
+  dlgTimers = [];
+}
+const STATUS_LABEL = {needs_you:"Needs You", working:"Working", waiting:"Waiting", stale:"Stale"};
+const SPIN_CHARS = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"];
+const SPIN_RE = /[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/;
+
+function lineClass(t){
+  if (t.indexOf("⚠") !== -1) return "tline warn";
+  if (t.indexOf("💤") !== -1 || t.indexOf("⏸") !== -1) return "tline dim";
+  if (t.indexOf("streaming…") !== -1 || t.indexOf("working…") !== -1) return "tline spin";
+  if (t.indexOf("│") !== -1) return "tline dim";
+  return "tline";
+}
+function startSpin(lastEl){
+  let i = 0;
+  const base = lastEl.textContent;
+  const m = base.match(SPIN_RE);
+  if (m){
+    dlgTimers.push(setInterval(function(){
+      i = (i + 1) % SPIN_CHARS.length;
+      lastEl.textContent = base.replace(m[0], SPIN_CHARS[i]);
+    }, 110));
+  } else {
+    const c = el("div","tline spin","▋");
+    lastEl.parentNode.appendChild(c);
+    dlgTimers.push(setInterval(function(){
+      c.style.visibility = c.style.visibility === "hidden" ? "" : "hidden";
+    }, 500));
+  }
+}
+function taskRow(t){
+  const row = el("div","task " + t.status);
+  const ic = el("span","tk-ic");
+  if (t.status === "done"){
+    ic.appendChild(icon(["M5 13l4 4L19 7"], 11));
+  } else if (t.status === "in_progress"){
+    ic.appendChild(el("i"));
+  } else if (t.status === "blocked"){
+    ic.appendChild(icon(["M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z","M12 9v4","M12 17h.01"], 14));
+  }
+  row.appendChild(ic);
+  const body = el("div", null);
+  body.appendChild(el("div","tk-title", t.title));
+  if (t.status === "blocked") body.appendChild(el("div","tk-sub","blocked"));
+  if (t.status === "in_progress") body.appendChild(el("div","tk-sub","in progress"));
+  row.appendChild(body);
+  return row;
+}
+function sumRow(k, v){
+  const r = el("div","sumrow");
+  r.appendChild(el("div","k", k));
+  r.appendChild(el("div","v", v));
+  return r;
+}
+function openDialog(s, colId){
+  clearDlgTimers();
+  const host = HOSTS[s.host] || {label:s.host, init:(s.host||"??").slice(0,2).toUpperCase(), color:"#98a1b3"};
+
+  // header: project + branch/host chips + status pill + numeric chips
+  const head = document.getElementById("dlgHead");
+  head.textContent = "";
+  const proj = el("div","dlg-proj");
+  const av = el("div","host-avatar", host.init);
+  av.style.background = host.color;
+  proj.appendChild(av);
+  proj.appendChild(el("h2", null, s.project));
+  head.appendChild(proj);
+  const chips = el("div","dlg-chips");
+  const pill = el("span","status-pill", STATUS_LABEL[colId] || s.status);
+  pill.style.background = EDGE[colId] || "#98a1b3";
+  chips.appendChild(pill);
+  const bch = el("span","tag", s.branch); bch.title = s.branch;
+  chips.appendChild(bch);
+  const hch = el("span","tag", host.label);
+  hch.style.background = host.color + "22";
+  hch.style.color = host.color;
+  chips.appendChild(hch);
+  chips.appendChild(el("span","tag model", s.model));
+  head.appendChild(chips);
+  const stats = el("div","dlg-stats");
+  stats.appendChild(ringNode(s.contextPct));
+  const tok = stat(I.zap, fmtTokens(s.tokens)); tok.title = s.tokens.toLocaleString() + " tokens";
+  stats.appendChild(tok);
+  stats.appendChild(stat(null, fmtCost(s.cost)));
+  stats.appendChild(stat(I.msg, String(s.msgs)));
+  stats.appendChild(stat(I.clock, "active " + s.elapsedActive + " · idle " + s.idle));
+  head.appendChild(stats);
+  const x = el("button","dlg-close");
+  x.type = "button";
+  x.setAttribute("aria-label","Close dialog");
+  x.appendChild(icon(["M18 6 6 18","M6 6l12 12"], 18));
+  x.addEventListener("click", closeDialog);
+  head.appendChild(x);
+
+  // terminal bar
+  const bar = document.getElementById("termBar");
+  bar.textContent = "";
+  const dots = el("span","dots");
+  ["#f0555f","#f0a92e","#27ae60"].forEach(function(c){
+    const i2 = el("i"); i2.style.background = c; dots.appendChild(i2);
+  });
+  bar.appendChild(dots);
+  bar.appendChild(el("span","tb-label", "terminal — " + host.label.toLowerCase() + " · " + s.branch));
+  if (s.status === "working"){
+    const lb = el("span","live-badge");
+    lb.appendChild(el("span","live-dot"));
+    lb.appendChild(el("span", null, "LIVE"));
+    bar.appendChild(lb);
+  } else if (s.stale){
+    bar.appendChild(el("span","frozen-badge","frozen at last activity · " + s.lastActivity));
+  } else {
+    bar.appendChild(el("span","frozen-badge","paused · " + s.lastActivity));
+  }
+
+  // terminal body: stream when demo on + working, else render at once
+  const scroll = document.getElementById("termScroll");
+  scroll.textContent = "";
+  const lines = s.terminal || [];
+  function addLine(t){
+    const d = el("div", lineClass(t), t);
+    scroll.appendChild(d);
+    scroll.scrollTop = scroll.scrollHeight;
+    return d;
+  }
+  const demoOn = document.getElementById("demoToggle").checked;
+  if (demoOn && s.status === "working" && lines.length){
+    lines.forEach(function(t, i){
+      dlgTimers.push(setTimeout(function(){
+        const d = addLine(t);
+        if (i === lines.length - 1) startSpin(d);
+      }, 100 + 150 * i));
+    });
+  } else {
+    lines.forEach(addLine);
+    if (!lines.length) addLine("(no terminal capture for this session)");
+    if (s.stale){
+      const fz = el("div","tline frozen-note","frozen at last activity — " + s.lastActivity);
+      scroll.appendChild(fz);
+      scroll.scrollTop = scroll.scrollHeight;
+    }
+  }
+
+  // tasks rail
+  const rail = document.getElementById("dlgRail");
+  rail.textContent = "";
+  rail.appendChild(el("div","rail-h","Tasks"));
+  (s.tasks || []).forEach(function(t){ rail.appendChild(taskRow(t)); });
+  rail.appendChild(el("div","rail-h","AI Summary"));
+  rail.appendChild(el("div","stamp","summary " + s.summaryAgeMin + "m old · last activity " + s.lastActivity));
+  rail.appendChild(sumRow("Now", s.summary.now));
+  rail.appendChild(sumRow("Next", s.summary.next));
+  rail.appendChild(sumRow("Goal", s.summary.goal));
+  if (s.note) rail.appendChild(el("div","rail-note", s.note));
+  rail.appendChild(el("div","rail-h","Actions"));
+  const acts = el("div","rail-actions");
+  acts.appendChild(makePrimary(s));
+  rail.appendChild(acts);
+
+  // reset mobile tab to Terminal
+  dlgEl.dataset.tab = "term";
+  dlgEl.querySelectorAll(".dlg-tabs button").forEach(function(b){
+    b.classList.toggle("active", b.dataset.tab === "term");
+  });
+
+  overlay.hidden = false;
+  document.body.classList.add("dlg-open");
+  x.focus();
+}
+function closeDialog(){
+  clearDlgTimers();
+  overlay.hidden = true;
+  document.body.classList.remove("dlg-open");
+}
+overlay.addEventListener("click", function(e){
+  if (e.target === overlay) closeDialog();
+});
+document.addEventListener("keydown", function(e){
+  if (e.key === "Escape" && !overlay.hidden) closeDialog();
+});
+dlgEl.querySelectorAll(".dlg-tabs button").forEach(function(b){
+  b.addEventListener("click", function(){
+    dlgEl.querySelectorAll(".dlg-tabs button").forEach(function(y){ y.classList.remove("active"); });
+    b.classList.add("active");
+    dlgEl.dataset.tab = b.dataset.tab;
+  });
+});
 
 /* ── board ───────────────────────────────────── */
 function renderBoard(){

@@ -228,6 +228,116 @@
   .meta-line{margin-top:9px;color:var(--ink-3);font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .meta-line .mid{color:#d5d3cb}
 
+  /* ---------- expanded session dialog ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    background:rgba(55,53,47,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  }
+  .overlay[hidden]{display:none}
+  .dialog{
+    background:var(--canvas);width:92vw;max-width:1280px;height:88vh;border-radius:14px;
+    border:1px solid var(--line);box-shadow:0 18px 60px rgba(15,15,15,.24);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .dlg-head{
+    display:flex;align-items:flex-start;gap:14px;padding:16px 16px 14px 20px;
+    border-bottom:1px solid var(--line);background:var(--card);
+  }
+  .dlg-head-main{min-width:0;flex:1}
+  .dlg-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .dlg-title .pname{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .branch-chip{
+    font-size:11.5px;font-weight:600;padding:1.5px 9px;border-radius:999px;
+    background:var(--gray-bg);color:var(--gray-tx);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .stpill{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;letter-spacing:.02em}
+  .stpill.needs_you{background:var(--red-bg);color:var(--red-tx)}
+  .stpill.working{background:var(--blue-bg);color:var(--blue-tx)}
+  .stpill.waiting{background:var(--yellow-bg);color:var(--yellow-tx)}
+  .stpill.stale{background:var(--gray-bg);color:var(--gray-tx)}
+  .dlg-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .dlg-close{
+    width:44px;height:44px;border-radius:9px;border:none;background:transparent;cursor:pointer;
+    color:var(--ink-3);display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .dlg-close:hover{background:var(--gray-bg);color:var(--ink)}
+  .dlg-close svg{width:18px;height:18px;stroke:currentColor}
+  .dlg-tabs{display:none}
+  .dlg-body{flex:1;display:flex;min-height:0}
+
+  /* left pane — terminal framed in skin chrome */
+  .pane-term{flex:0 0 62%;min-width:0;display:flex;flex-direction:column;padding:16px}
+  .term-frame{
+    flex:1;min-height:0;display:flex;flex-direction:column;background:#2b2a27;border-radius:10px;
+    overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05), var(--shadow);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;padding:9px 14px;background:#232220;
+    color:#a3a199;font-size:12px;font-weight:500;
+  }
+  .term-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;opacity:.75}
+  .term-title{margin-left:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .term-badge{
+    margin-left:auto;display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
+    font-size:11px;font-weight:700;letter-spacing:.05em;padding:2px 9px;border-radius:999px;
+  }
+  .term-badge.live{background:rgba(75,159,111,.22);color:#a4d6b8}
+  .term-badge.live .live-dot{width:6px;height:6px;border-radius:50%;background:#6fc492;animation:blink 1.4s ease-in-out infinite}
+  .term-badge.frozen{background:rgba(255,255,255,.08);color:#9b998f;letter-spacing:.02em;font-weight:600;text-transform:none}
+  .term-scroll{
+    flex:1;overflow-y:auto;padding:13px 16px 15px;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size:12.5px;line-height:1.75;color:#d6d4cb;
+  }
+  .tl{white-space:pre-wrap;word-break:break-word}
+  .tl .t{color:#7c7a71;margin-right:9px}
+  .tl.warn{color:#f0bc8d}
+  .tl.pause{color:#e6d08e}
+  .tl.sleep{color:#8f8d84}
+  .tl.frozen-note{color:#8f8d84;font-style:italic;margin-top:6px}
+  .cursorline{display:flex;align-items:center;gap:8px;color:#8f8d84;margin-top:2px}
+  .cursor{display:inline-block;width:8px;height:15px;border-radius:2px;background:#a4d6b8;animation:blink 1s steps(2) infinite}
+
+  /* right pane — tasks rail */
+  .pane-tasks{flex:1;min-width:0;border-left:1px solid var(--line);overflow-y:auto;padding:16px 18px 22px;background:var(--col-bg)}
+  .rail-label{
+    font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--ink-3);margin:0 0 9px;
+  }
+  .rail-label.later{margin-top:18px}
+  .task{
+    display:flex;align-items:flex-start;gap:10px;padding:9px 11px;margin-bottom:7px;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);font-size:13.5px;line-height:1.45;color:var(--ink);
+  }
+  .task .tick{width:18px;height:18px;border-radius:5px;flex:0 0 auto;margin-top:1px;display:flex;align-items:center;justify-content:center}
+  .task .tick svg{width:11px;height:11px;stroke:currentColor;stroke-width:2.6}
+  .task.done{color:var(--ink-3)}
+  .task.done .ttitle{text-decoration:line-through;text-decoration-color:#cfcdc5}
+  .task.done .tick{background:var(--green-bg);color:var(--green-tx)}
+  .task.in_progress .tick{
+    border:2.5px solid var(--blue-bg);border-top-color:var(--blue-tx);border-radius:50%;
+    animation:spin 1s linear infinite;
+  }
+  .task.in_progress{border-color:#c4dcea}
+  .task.blocked{background:#fff6f4;border-color:#f4cfc7;color:var(--red-tx)}
+  .task.blocked .tick{background:var(--red-bg);color:var(--red-tx);font-weight:800;font-size:12px}
+  .task.pending .tick{border:1.5px solid #d9d7cf;border-radius:50%}
+  .task .tstate{margin-left:auto;flex:0 0 auto;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:1px 7px;border-radius:999px;margin-top:2px}
+  .task.blocked .tstate{background:var(--red-bg);color:var(--red-tx)}
+  .task.in_progress .tstate{background:var(--blue-bg);color:var(--blue-tx)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .rail-summary{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:12px 13px;
+  }
+  .rail-summary .drow{font-size:13px}
+  .dlabel.now{background:var(--blue-bg);color:var(--blue-tx)}
+  .stamp{margin-top:9px;font-size:11.5px;color:var(--ink-3)}
+  .dlg-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+  .dlg-actions .btn{width:100%;min-height:44px;font-size:13.5px}
+
   /* demo-off state */
   .offboard{
     margin-top:22px;background:var(--card);border:1.5px dashed #e3e1d9;border-radius:12px;
@@ -252,6 +362,25 @@
     .healthstrip{row-gap:8px}
     .strip-sep{display:none}
     .summary{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  }
+
+  /* dialog goes full-screen sheet with tabs under 900px */
+  @media (max-width:899px){
+    .overlay{align-items:stretch;justify-content:stretch}
+    .dialog{width:100vw;max-width:none;height:100vh;height:100dvh;border-radius:0;border:none}
+    .dlg-head{padding:12px 10px 12px 16px}
+    .dlg-title .pname{font-size:16px}
+    .dlg-tabs{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+    .dlg-tabs button{
+      flex:1;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--canvas);
+      font:inherit;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer;
+    }
+    .dlg-tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fffefb}
+    .dlg-body{flex-direction:column}
+    .pane-term{display:none;flex:1;padding:12px}
+    .pane-tasks{display:none;border-left:none}
+    .dialog.tab-term .pane-term{display:flex}
+    .dialog.tab-tasks .pane-tasks{display:block;flex:1}
   }
 </style>
 </head>
@@ -369,6 +498,132 @@
   ]
 }
 </script>
+<script type="application/json" id="dialog-data">
+{
+  "a8187667-686c-4342-85e7-b382a6af6fdd": {
+    "tasks": [
+      {"title": "Run 6-model deliberate panel + adopt considerations", "status": "done"},
+      {"title": "Build 3 variant mockups + QA loop", "status": "done"},
+      {"title": "Write final proposal + package for review", "status": "done"},
+      {"title": "Design shotgun: 6 light re-skins", "status": "in_progress"},
+      {"title": "Fold winning direction into proposal", "status": "pending"}
+    ],
+    "terminal": [
+      "02:30:05  ● Bash(ssh mini 'python3 counsel.py --mode deliberate …')",
+      "02:30:11  │  counsel[R1]: gemini ok · codex ok · claude ok",
+      "02:30:19  │  counsel[R2]: cross-examination … 6/6 seats",
+      "02:30:24  ● rd.py parse — 12 adopt / 0 reject / 0 contested",
+      "02:30:31  ● Write(rd/adopted.md) · Write(rd/brief.md)",
+      "02:30:44  ● Agent(mockup-a) Agent(mockup-b) Agent(mockup-c) — fable",
+      "02:31:02  │  variant-a-fleetboard.html written (54.7KB, parse clean)",
+      "02:31:19  ● browse screenshot /tmp/qa-a-desktop.png — 0 console errors",
+      "02:31:26  ⠋ streaming…"
+    ]
+  },
+  "4e8ffea7-c649-440f-96de-2f03cc6983c9": {
+    "tasks": [
+      {"title": "Build waitlist demo flow", "status": "done"},
+      {"title": "Confirmation-step copy — variant A vs B", "status": "blocked"},
+      {"title": "Wire confirmation email template", "status": "pending"},
+      {"title": "Stage behind kill-switch, verify revert", "status": "pending"}
+    ],
+    "terminal": [
+      "22:41:08  ● Edit(src/waitlist/ConfirmStep.tsx)",
+      "22:41:15  ● Bash(npm test -- confirm-step) — 14 passed",
+      "22:41:40  ● Two copy variants staged for the confirmation screen",
+      "22:42:02  ⚠ NEEDS INPUT: approve copy variant A or B before email wiring",
+      "22:42:02  ⏸ turn ended — waiting on Jarred (idle 42m)"
+    ]
+  },
+  "77b1c2d3-1111-4aaa-9bbb-000000000001": {
+    "tasks": [
+      {"title": "LIC 701 upload validation (reject wrong docs)", "status": "done"},
+      {"title": "Parent guidance copy on rejection", "status": "done"},
+      {"title": "Enrollment-flow explainer step", "status": "blocked"},
+      {"title": "Blank-form download link in checklist", "status": "pending"},
+      {"title": "Merge to main + deploy portal", "status": "pending"}
+    ],
+    "terminal": [
+      "21:12:33  ● Edit(solace-api/validators/lic701.ts)",
+      "21:13:01  ● Bash(npm test -- lic701) — 9 passed, 0 failed",
+      "21:14:20  ● Write(portal/enrollment/Lic701Explainer.tsx)",
+      "21:15:44  ⚠ NEEDS INPUT: confirm explainer copy before merge",
+      "21:15:44  ⏸ turn ended — waiting on Jarred (idle 1h 10m)"
+    ]
+  },
+  "88c2d3e4-2222-4bbb-8ccc-000000000002": {
+    "tasks": [
+      {"title": "Pull GA4 conversion exports", "status": "done"},
+      {"title": "Join against Google Ads + Yelp click data", "status": "in_progress"},
+      {"title": "Attribution comparison table", "status": "pending"},
+      {"title": "Flag 2 legacy Contact-us conversions", "status": "pending"}
+    ],
+    "terminal": [
+      "09:02:10  ● Bash(bq query --use_legacy_sql=false 'SELECT …')",
+      "09:02:31  │  1,204 rows — ga4_conversions_aug.csv",
+      "09:03:12  ● Read(exports/google-ads-clicks-aug.csv)",
+      "09:04 45  ● python3 join_attribution.py — matching on gclid/session",
+      "09:05:03  │  match rate 87.4% · 152 unmatched rows queued for review",
+      "09:05:20  ⠙ working…"
+    ]
+  },
+  "99d3e4f5-3333-4ccc-9ddd-000000000003": {
+    "tasks": [
+      {"title": "Points-vs-cash comparison engine", "status": "done"},
+      {"title": "Test suite (22 commits, green)", "status": "done"},
+      {"title": "Open PR and merge to main", "status": "pending"},
+      {"title": "Hotel transfer-partner extension", "status": "pending"}
+    ],
+    "terminal": [
+      "14:20:11  ● Bash(npm test) — 61 passed",
+      "14:21:37  ● git log --oneline — 22 commits ahead of main",
+      "14:22:00  ⏸ idle 9 days — branch unmerged, no PR",
+      "14:22:00  💤 stale — summary frozen at last activity"
+    ]
+  },
+  "aab4f5a6-4444-4ddd-8eee-000000000004": {
+    "tasks": [
+      {"title": "Draft AI-trust-verification thread", "status": "done"},
+      {"title": "Jarred review of thread copy", "status": "blocked"},
+      {"title": "Merge or archive branch (8 commits)", "status": "pending"}
+    ],
+    "terminal": [
+      "11:45:20  ● Write(threads/ai-trust-verification-draft.md)",
+      "11:47:55  │  8 commits staged on branch, no PR",
+      "11:48:30  ⚠ context 88% — 'Prompt is too long' on plain resume",
+      "11:48:30  💤 idle 5 days — REVIVE (distill + fork) is the offered action"
+    ]
+  },
+  "bbc5a6b7-5555-4eee-9fff-000000000005": {
+    "tasks": [
+      {"title": "Error-fix commit from Aug 12 session", "status": "done"},
+      {"title": "Cherry-pick into main or discard", "status": "pending"},
+      {"title": "Re-create pruned worktree", "status": "blocked"}
+    ],
+    "terminal": [
+      "16:03:40  ● git commit -m 'client-feedback error fixes' (1 commit)",
+      "16:04:12  ⏸ idle 12 days",
+      "16:04:12  ⚠ worktree pruned — resume gated behind Repair",
+      "16:04:12  💤 stale"
+    ]
+  },
+  "ccd6b7c8-6666-4fff-8aaa-000000000006": {
+    "tasks": [
+      {"title": "Hourly inbox triage pass", "status": "in_progress"},
+      {"title": "Classify 3 new threads", "status": "done"},
+      {"title": "Stage 1 reply draft for approval", "status": "done"},
+      {"title": "Surface staged draft at next check-in", "status": "pending"}
+    ],
+    "terminal": [
+      "10:00:02  ● gog gmail search 'newer_than:1h' — 3 new threads",
+      "10:00:19  ● classify: enrollment-question · vendor-invoice · tour-request",
+      "10:00:58  ● Write(staged/reply-family.md) — awaiting approval",
+      "10:01:04  ● TaskUpdate(board) — 3 routed, 1 staged",
+      "10:01:11  ⠹ working…"
+    ]
+  }
+}
+</script>
 
 <div class="wrap">
   <header>
@@ -396,10 +651,17 @@
   <footer>FleetBoard mockup E — “Notion Soft” · demo data, no live connections</footer>
 </div>
 
+<div class="overlay" id="overlay" hidden role="dialog" aria-modal="true" aria-label="Session detail"></div>
+
 <script>
 (function(){
   "use strict";
   const FLEET = JSON.parse(document.getElementById("fleet-data").textContent);
+  const DIALOG_DATA = JSON.parse(document.getElementById("dialog-data").textContent);
+  for(const s of FLEET.sessions){
+    const d = DIALOG_DATA[s.session_id];
+    if(d){ s.tasks = d.tasks; s.terminal = d.terminal; }
+  }
 
   const ICONS = {
     hand: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M12 21a7 7 0 0 0 7-7v-3"/><path d="M12 21a7 7 0 0 1-7-7v-3"/><path d="M8 6l4-3 4 3"/></svg>',
@@ -466,7 +728,7 @@
 
   function cardHTML(s, colKey){
     const hot = colKey === "needs_you";
-    let h = '<article class="card" tabindex="0" role="button" aria-expanded="false" data-sid="' + esc(s.session_id) + '">';
+    let h = '<article class="card" tabindex="0" role="button" aria-haspopup="dialog" data-sid="' + esc(s.session_id) + '">';
     h += '<div class="card-top"><div class="card-title-wrap">';
     h += '<div class="card-title"><span>' + esc(s.project) + '</span>'
        + '<span class="host-chip host-' + esc(s.host) + '">' + esc(s.host) + '</span></div>';
@@ -488,17 +750,7 @@
        + resumeBtn(s, hot)
        + '</div>';
 
-    h += '<div class="details">';
-    h += '<div class="drow"><span class="dlabel next">Next</span><span class="dtext">' + esc(s.summary.next) + '</span></div>';
-    h += '<div class="drow"><span class="dlabel goal">Goal</span><span class="dtext">' + esc(s.summary.goal) + '</span></div>';
-    if(s.note){
-      h += '<div class="drow"><span class="dlabel note">Note</span><span class="dtext">' + esc(s.note) + '</span></div>';
-    }
-    h += '<div class="meta-line"><span>' + esc(s.branch) + '</span><span class="mid">·</span>'
-       + '<span>' + s.msgs + ' msgs</span><span class="mid">·</span>'
-       + '<span>' + esc(s.elapsedActive) + ' active</span><span class="mid">·</span>'
-       + '<span>idle ' + esc(s.idle) + '</span></div>';
-    h += '</div></article>';
+    h += '</article>';
     return h;
   }
 
@@ -561,18 +813,21 @@
     main.innerHTML = h;
     renderSeg(groups);
 
-    // interactions
+    // interactions — card tap/click opens the expanded session dialog
+    function sessionOf(card){
+      return FLEET.sessions.find(x => x.session_id === card.dataset.sid);
+    }
     main.querySelectorAll(".card").forEach(card => {
       card.addEventListener("click", e => {
         if(e.target.closest("button")) return;
-        const open = card.classList.toggle("open");
-        card.setAttribute("aria-expanded", open ? "true" : "false");
+        const s = sessionOf(card);
+        if(s) openDialog(s);
       });
       card.addEventListener("keydown", e => {
         if((e.key === "Enter" || e.key === " ") && !e.target.closest("button")){
           e.preventDefault();
-          const open = card.classList.toggle("open");
-          card.setAttribute("aria-expanded", open ? "true" : "false");
+          const s = sessionOf(card);
+          if(s) openDialog(s);
         }
       });
     });
@@ -585,6 +840,156 @@
       });
     });
   }
+
+  // ---------- expanded session dialog ----------
+  const overlay = document.getElementById("overlay");
+  let streamTimer = null;
+  let lastFocus = null;
+  const X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  function statusMeta(s){
+    const key = classify(s);
+    const labels = {needs_you:"Needs you", working:"Working", waiting:"Waiting", stale:"Stale"};
+    return {key: key, label: labels[key]};
+  }
+  function termLine(raw){
+    let cls = "tl";
+    const str = String(raw);
+    if(str.indexOf("⚠") !== -1) cls += " warn";
+    else if(str.indexOf("💤") !== -1) cls += " sleep";
+    else if(str.indexOf("⏸") !== -1) cls += " pause";
+    const m = str.match(/^(\d{2}:\d{2}[: ]\d{2})\s+([\s\S]*)$/);
+    if(m) return '<div class="' + cls + '"><span class="t">' + esc(m[1]) + '</span>' + esc(m[2]) + '</div>';
+    return '<div class="' + cls + '">' + esc(str) + '</div>';
+  }
+  function taskHTML(t){
+    const st = ["done","in_progress","blocked","pending"].indexOf(t.status) !== -1 ? t.status : "pending";
+    let tick;
+    if(st === "done"){
+      tick = '<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+    } else if(st === "in_progress"){
+      tick = '<span class="tick" aria-label="in progress"></span>';
+    } else if(st === "blocked"){
+      tick = '<span class="tick">!</span>';
+    } else {
+      tick = '<span class="tick"></span>';
+    }
+    let state = "";
+    if(st === "blocked") state = '<span class="tstate">blocked</span>';
+    else if(st === "in_progress") state = '<span class="tstate">now</span>';
+    return '<div class="task ' + st + '">' + tick + '<span class="ttitle">' + esc(t.title) + '</span>' + state + '</div>';
+  }
+  function stampText(s){
+    const m = s.summaryAgeMin;
+    const age = m >= 60 ? Math.round(m/60) + "h" : m + "m";
+    return "Summary updated " + age + " ago · last activity " + s.lastActivity;
+  }
+
+  function openDialog(s){
+    closeDialog();
+    lastFocus = document.activeElement;
+    const st = statusMeta(s);
+    const working = st.key === "working";
+    let badge;
+    if(working) badge = '<span class="term-badge live"><span class="live-dot"></span>LIVE</span>';
+    else if(s.stale) badge = '<span class="term-badge frozen">frozen at last activity</span>';
+    else badge = '<span class="term-badge frozen">paused — needs input</span>';
+
+    let h = '<div class="dialog tab-term" id="dlg">';
+    h += '<div class="dlg-head"><div class="dlg-head-main">';
+    h += '<div class="dlg-title"><span class="pname">' + esc(s.project) + '</span>'
+       + '<span class="branch-chip">' + esc(s.branch) + '</span>'
+       + '<span class="host-chip host-' + esc(s.host) + '">' + esc(s.host) + '</span>'
+       + '<span class="stpill ' + st.key + '">' + st.label + '</span></div>';
+    h += '<div class="dlg-chips">'
+       + '<span class="chip tok">' + ICONS.coins + fmtTokens(s.tokens) + '</span>'
+       + '<span class="chip cost">' + fmtCost(s.cost) + '</span>'
+       + '<span class="chip model">' + ICONS.spark + esc(s.model) + '</span>'
+       + '<span class="chip">' + s.msgs + ' msgs</span>'
+       + '<span class="chip">' + esc(s.elapsedActive) + ' active</span>'
+       + '<span class="chip age">idle ' + esc(s.idle) + '</span>'
+       + '</div></div>';
+    h += ring(s.contextPct);
+    h += '<button class="dlg-close" id="dlgClose" aria-label="Close dialog">' + X_ICON + '</button></div>';
+    h += '<div class="dlg-tabs" role="tablist">'
+       + '<button role="tab" aria-selected="true" data-tab="term">Terminal</button>'
+       + '<button role="tab" aria-selected="false" data-tab="tasks">Tasks</button></div>';
+    h += '<div class="dlg-body">';
+    h += '<div class="pane-term"><div class="term-frame">'
+       + '<div class="term-bar">'
+       + '<span class="term-dot" style="background:#e8a89d"></span>'
+       + '<span class="term-dot" style="background:#f0d090"></span>'
+       + '<span class="term-dot" style="background:#a8cbb4"></span>'
+       + '<span class="term-title">' + esc(s.project) + ' · ' + esc(s.host) + ' · ' + esc(s.model) + '</span>'
+       + badge + '</div>'
+       + '<div class="term-scroll" id="termScroll" aria-label="Terminal session"></div>'
+       + '</div></div>';
+    h += '<div class="pane-tasks"><p class="rail-label">Tasks</p>';
+    for(const t of (s.tasks || [])) h += taskHTML(t);
+    h += '<p class="rail-label later">Summary</p><div class="rail-summary">';
+    h += '<div class="drow"><span class="dlabel now">Now</span><span class="dtext">' + esc(s.summary.now) + '</span></div>';
+    h += '<div class="drow"><span class="dlabel next">Next</span><span class="dtext">' + esc(s.summary.next) + '</span></div>';
+    h += '<div class="drow"><span class="dlabel goal">Goal</span><span class="dtext">' + esc(s.summary.goal) + '</span></div>';
+    if(s.note) h += '<div class="drow"><span class="dlabel note">Note</span><span class="dtext">' + esc(s.note) + '</span></div>';
+    h += '<div class="stamp">' + esc(stampText(s)) + '</div></div>';
+    h += '<div class="dlg-actions">' + resumeBtn(s, st.key === "needs_you")
+       + '<button class="btn btn-live" data-act="live"><span class="live-dot"></span>' + ICONS.eye + 'Watch live</button>'
+       + '</div></div>';
+    h += '</div></div>';
+
+    overlay.innerHTML = h;
+    overlay.hidden = false;
+
+    document.getElementById("dlgClose").addEventListener("click", closeDialog);
+    overlay.querySelectorAll(".dlg-tabs button").forEach(b => {
+      b.addEventListener("click", () => {
+        const dlg = document.getElementById("dlg");
+        dlg.classList.toggle("tab-term", b.dataset.tab === "term");
+        dlg.classList.toggle("tab-tasks", b.dataset.tab === "tasks");
+        overlay.querySelectorAll(".dlg-tabs button").forEach(x => x.setAttribute("aria-selected", x === b ? "true" : "false"));
+      });
+    });
+    overlay.querySelectorAll("button[data-act]").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        btn.style.transform = "scale(.97)";
+        setTimeout(() => { btn.style.transform = ""; }, 120);
+      });
+    });
+    document.getElementById("dlgClose").focus();
+
+    // progressive terminal stream (demo mode), then live cursor / frozen note
+    const scroller = document.getElementById("termScroll");
+    const lines = s.terminal || [];
+    let i = 0;
+    function push(){
+      if(i < lines.length){
+        scroller.insertAdjacentHTML("beforeend", termLine(lines[i++]));
+        scroller.scrollTop = scroller.scrollHeight;
+        streamTimer = setTimeout(push, 170);
+      } else {
+        if(working){
+          scroller.insertAdjacentHTML("beforeend", '<div class="cursorline"><span class="cursor"></span>streaming…</div>');
+        } else if(s.stale){
+          scroller.insertAdjacentHTML("beforeend", '<div class="tl frozen-note">— frozen at last activity (' + esc(s.lastActivity) + ') —</div>');
+        }
+        scroller.scrollTop = scroller.scrollHeight;
+        streamTimer = null;
+      }
+    }
+    push();
+  }
+
+  function closeDialog(){
+    if(streamTimer){ clearTimeout(streamTimer); streamTimer = null; }
+    if(overlay.hidden) return;
+    overlay.hidden = true;
+    overlay.innerHTML = "";
+    if(lastFocus && lastFocus.focus) lastFocus.focus();
+    lastFocus = null;
+  }
+  overlay.addEventListener("click", e => { if(e.target === overlay) closeDialog(); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape" && !overlay.hidden) closeDialog(); });
 
   function renderOff(){
     document.getElementById("main").innerHTML =

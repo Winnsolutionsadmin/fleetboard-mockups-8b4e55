@@ -155,9 +155,8 @@
   .src-chip{font-size:11px;font-weight:600;color:var(--ink-faint);background:rgba(255,255,255,.6);padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.9)}
 
   .now{margin-top:10px;font-size:13px;line-height:1.45;color:var(--ink-soft);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-  .card.open .now{-webkit-line-clamp:unset}
-  .detail{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(140,145,170,.3);font-size:12.5px;line-height:1.5;color:var(--ink-soft)}
-  .card.open .detail{display:block}
+  .detail{display:none;font-size:12.5px;line-height:1.5;color:var(--ink-soft)}
+  .rail .detail{display:block}
   .detail .dl{display:flex;gap:8px;margin-bottom:6px}
   .detail .dk{flex:none;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;padding:3px 8px;border-radius:999px;height:fit-content}
   .detail .dk.next{background:linear-gradient(135deg,#5aa8ff,#7f7bff)}
@@ -196,6 +195,80 @@
   /* toast */
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(30,34,51,.92);color:#fff;font-size:13px;font-weight:600;padding:11px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:50;max-width:88vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---- expanded session dialog ---- */
+  .overlay{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(70,70,110,.32)}
+  @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)){
+    .overlay{-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2)}
+  }
+  .overlay.on{display:flex}
+  .dlg{width:92vw;max-width:1280px;height:88vh;display:flex;flex-direction:column;border-radius:26px;overflow:hidden;box-shadow:0 30px 80px rgba(60,60,110,.35)}
+  .dlg-head{padding:16px 18px 12px;border-bottom:1px solid rgba(255,255,255,.7);flex:none}
+  .dh-row1{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .dh-title{font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .dh-close{margin-left:auto;flex:none;width:44px;height:44px;border:none;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,1);box-shadow:var(--shadow-soft);color:var(--ink-soft);font-size:0;display:flex;align-items:center;justify-content:center}
+  .dh-close svg{width:17px;height:17px}
+  .dh-close:hover{color:var(--ink)}
+  .dh-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .dlg-tabs{display:none;flex:none;gap:4px;padding:8px 14px 0}
+  .dlg-tabs button{flex:1;border:none;background:rgba(255,255,255,.5);font:inherit;font-size:13px;font-weight:800;color:var(--ink-soft);padding:0 10px;min-height:44px;border-radius:14px 14px 0 0;cursor:pointer}
+  .dlg-tabs button.on{background:#fff;color:var(--ink);box-shadow:0 -2px 8px rgba(90,90,140,.1)}
+  .dlg-body{flex:1;display:flex;min-height:0}
+  .pane{min-height:0}
+  .term-pane{flex:0 0 62%;max-width:62%;padding:14px 8px 14px 14px;display:flex}
+  .rail{flex:1;padding:14px 16px 14px 8px;overflow-y:auto}
+  /* terminal — natively dark, framed in glass chrome */
+  .term-frame{flex:1;display:flex;flex-direction:column;min-width:0;border-radius:18px;overflow:hidden;background:#181b28;border:1px solid rgba(255,255,255,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),var(--shadow-soft)}
+  .term-bar{flex:none;display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.08);font-size:11.5px;font-weight:600;color:#aab2cc}
+  .term-bar .tdots{display:flex;gap:5px}
+  .term-bar .tdots i{width:9px;height:9px;border-radius:50%;display:block}
+  .term-bar .tdots i:nth-child(1){background:#ff7a92}
+  .term-bar .tdots i:nth-child(2){background:#ffc24b}
+  .term-bar .tdots i:nth-child(3){background:#4cd08a}
+  .term-bar .tinfo{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .term-bar .tright{margin-left:auto;flex:none;display:flex;align-items:center;gap:6px}
+  .live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.08em;color:#fff;background:var(--grad-hot);padding:4px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(255,122,150,.5)}
+  .live-badge .ldot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.4s ease-in-out infinite}
+  .frozen-note{font-size:10.5px;font-weight:600;color:#8b91a8;background:rgba(255,255,255,.08);padding:4px 9px;border-radius:999px}
+  .term-scroll{flex:1;overflow-y:auto;padding:12px 14px 16px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.7}
+  .tl{white-space:pre-wrap;word-break:break-word;color:#c8d0e8}
+  .tl.pipe{color:#7e88a8}
+  .tl.warn{color:#ffb054}
+  .tl.dim{color:#8089a6}
+  .tl.cursor{color:#9aa6c8}
+  .tl.cursor::after{content:"▍";margin-left:2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  /* tasks rail */
+  .rail h3{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin:14px 2px 8px}
+  .rail h3:first-child{margin-top:2px}
+  .task{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.95);box-shadow:var(--shadow-soft);margin-bottom:8px;font-size:13px;line-height:1.4;min-height:44px}
+  .task .tick{flex:none;width:20px;height:20px;border-radius:50%;margin-top:1px;display:flex;align-items:center;justify-content:center}
+  .task.done .tick{background:linear-gradient(135deg,#34c98a,#22a06b);box-shadow:0 2px 6px rgba(34,160,107,.4)}
+  .task.done .tick svg{width:11px;height:11px}
+  .task.done .tt{color:var(--ink-faint);text-decoration:line-through}
+  .task.in_progress .tick{background:rgba(90,168,255,.15);border:2px solid transparent;position:relative}
+  .task.in_progress .tick::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(90,168,255,.3);border-top-color:#4a86ff;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .task.in_progress .tt{font-weight:700}
+  .task.blocked{background:rgba(255,241,232,.75);border-color:rgba(255,205,175,.9)}
+  .task.blocked .tick{background:rgba(255,150,80,.18);color:#e07020;font-size:12px;font-weight:800}
+  .task.blocked .tt{color:#b35a10;font-weight:700}
+  .task.blocked .why{display:block;font-size:11px;font-weight:600;color:#d6803a;margin-top:2px}
+  .task.pending .tick{border:2px dashed rgba(140,145,170,.5)}
+  .task.pending .tt{color:var(--ink-soft)}
+  .rail .detail{margin-bottom:4px;padding:12px;border-radius:14px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.9)}
+  .stamp{font-size:10.5px;font-weight:600;color:var(--ink-faint);margin-top:2px}
+  .rail .actions{margin-top:12px;position:sticky;bottom:0}
+  /* dialog responsive */
+  @media (max-width:900px){
+    .overlay{padding:0}
+    .dlg{width:100vw;max-width:none;height:100vh;height:100dvh;border-radius:0}
+    .dlg-tabs{display:flex}
+    .dlg-body{flex-direction:column}
+    .term-pane,.rail{flex:1;max-width:none;width:100%;padding:12px;display:none}
+    .term-pane.on{display:flex}
+    .rail.on{display:block}
+  }
 
   /* ---- responsive ---- */
   @media (max-width:980px){
@@ -237,6 +310,25 @@
   <nav class="seg glass" id="seg" aria-label="Column filter"></nav>
 
   <main class="board" id="board"></main>
+</div>
+
+<div class="overlay" id="overlay" aria-hidden="true">
+  <div class="dlg glass" role="dialog" aria-modal="true" aria-label="Session detail">
+    <div class="dlg-head" id="dlgHead"></div>
+    <div class="dlg-tabs" id="dlgTabs" role="tablist">
+      <button data-tab="term" class="on" role="tab" aria-selected="true">Terminal</button>
+      <button data-tab="tasks" role="tab" aria-selected="false">Tasks</button>
+    </div>
+    <div class="dlg-body">
+      <div class="pane term-pane on" id="termPane">
+        <div class="term-frame">
+          <div class="term-bar" id="termBar"></div>
+          <div class="term-scroll" id="termScroll"></div>
+        </div>
+      </div>
+      <div class="pane rail on" id="railPane"></div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -355,9 +447,142 @@
 }
 </script>
 
+<script type="application/json" id="dialog-data">
+{
+  "_readme": "Merge into each session of FLEET by session_id: adds tasks[] and terminal[]. Used by the card-click expanded dialog.",
+  "a8187667-686c-4342-85e7-b382a6af6fdd": {
+    "tasks": [
+      {"title": "Run 6-model deliberate panel + adopt considerations", "status": "done"},
+      {"title": "Build 3 variant mockups + QA loop", "status": "done"},
+      {"title": "Write final proposal + package for review", "status": "done"},
+      {"title": "Design shotgun: 6 light re-skins", "status": "in_progress"},
+      {"title": "Fold winning direction into proposal", "status": "pending"}
+    ],
+    "terminal": [
+      "02:30:05  ● Bash(ssh mini 'python3 counsel.py --mode deliberate …')",
+      "02:30:11  │  counsel[R1]: gemini ok · codex ok · claude ok",
+      "02:30:19  │  counsel[R2]: cross-examination … 6/6 seats",
+      "02:30:24  ● rd.py parse — 12 adopt / 0 reject / 0 contested",
+      "02:30:31  ● Write(rd/adopted.md) · Write(rd/brief.md)",
+      "02:30:44  ● Agent(mockup-a) Agent(mockup-b) Agent(mockup-c) — fable",
+      "02:31:02  │  variant-a-fleetboard.html written (54.7KB, parse clean)",
+      "02:31:19  ● browse screenshot /tmp/qa-a-desktop.png — 0 console errors",
+      "02:31:26  ⠋ streaming…"
+    ]
+  },
+  "4e8ffea7-c649-440f-96de-2f03cc6983c9": {
+    "tasks": [
+      {"title": "Build waitlist demo flow", "status": "done"},
+      {"title": "Confirmation-step copy — variant A vs B", "status": "blocked"},
+      {"title": "Wire confirmation email template", "status": "pending"},
+      {"title": "Stage behind kill-switch, verify revert", "status": "pending"}
+    ],
+    "terminal": [
+      "22:41:08  ● Edit(src/waitlist/ConfirmStep.tsx)",
+      "22:41:15  ● Bash(npm test -- confirm-step) — 14 passed",
+      "22:41:40  ● Two copy variants staged for the confirmation screen",
+      "22:42:02  ⚠ NEEDS INPUT: approve copy variant A or B before email wiring",
+      "22:42:02  ⏸ turn ended — waiting on Jarred (idle 42m)"
+    ]
+  },
+  "77b1c2d3-1111-4aaa-9bbb-000000000001": {
+    "tasks": [
+      {"title": "LIC 701 upload validation (reject wrong docs)", "status": "done"},
+      {"title": "Parent guidance copy on rejection", "status": "done"},
+      {"title": "Enrollment-flow explainer step", "status": "blocked"},
+      {"title": "Blank-form download link in checklist", "status": "pending"},
+      {"title": "Merge to main + deploy portal", "status": "pending"}
+    ],
+    "terminal": [
+      "21:12:33  ● Edit(solace-api/validators/lic701.ts)",
+      "21:13:01  ● Bash(npm test -- lic701) — 9 passed, 0 failed",
+      "21:14:20  ● Write(portal/enrollment/Lic701Explainer.tsx)",
+      "21:15:44  ⚠ NEEDS INPUT: confirm explainer copy before merge",
+      "21:15:44  ⏸ turn ended — waiting on Jarred (idle 1h 10m)"
+    ]
+  },
+  "88c2d3e4-2222-4bbb-8ccc-000000000002": {
+    "tasks": [
+      {"title": "Pull GA4 conversion exports", "status": "done"},
+      {"title": "Join against Google Ads + Yelp click data", "status": "in_progress"},
+      {"title": "Attribution comparison table", "status": "pending"},
+      {"title": "Flag 2 legacy Contact-us conversions", "status": "pending"}
+    ],
+    "terminal": [
+      "09:02:10  ● Bash(bq query --use_legacy_sql=false 'SELECT …')",
+      "09:02:31  │  1,204 rows — ga4_conversions_aug.csv",
+      "09:03:12  ● Read(exports/google-ads-clicks-aug.csv)",
+      "09:04 45  ● python3 join_attribution.py — matching on gclid/session",
+      "09:05:03  │  match rate 87.4% · 152 unmatched rows queued for review",
+      "09:05:20  ⠙ working…"
+    ]
+  },
+  "99d3e4f5-3333-4ccc-9ddd-000000000003": {
+    "tasks": [
+      {"title": "Points-vs-cash comparison engine", "status": "done"},
+      {"title": "Test suite (22 commits, green)", "status": "done"},
+      {"title": "Open PR and merge to main", "status": "pending"},
+      {"title": "Hotel transfer-partner extension", "status": "pending"}
+    ],
+    "terminal": [
+      "14:20:11  ● Bash(npm test) — 61 passed",
+      "14:21:37  ● git log --oneline — 22 commits ahead of main",
+      "14:22:00  ⏸ idle 9 days — branch unmerged, no PR",
+      "14:22:00  💤 stale — summary frozen at last activity"
+    ]
+  },
+  "aab4f5a6-4444-4ddd-8eee-000000000004": {
+    "tasks": [
+      {"title": "Draft AI-trust-verification thread", "status": "done"},
+      {"title": "Jarred review of thread copy", "status": "blocked"},
+      {"title": "Merge or archive branch (8 commits)", "status": "pending"}
+    ],
+    "terminal": [
+      "11:45:20  ● Write(threads/ai-trust-verification-draft.md)",
+      "11:47:55  │  8 commits staged on branch, no PR",
+      "11:48:30  ⚠ context 88% — 'Prompt is too long' on plain resume",
+      "11:48:30  💤 idle 5 days — REVIVE (distill + fork) is the offered action"
+    ]
+  },
+  "bbc5a6b7-5555-4eee-9fff-000000000005": {
+    "tasks": [
+      {"title": "Error-fix commit from Aug 12 session", "status": "done"},
+      {"title": "Cherry-pick into main or discard", "status": "pending"},
+      {"title": "Re-create pruned worktree", "status": "blocked"}
+    ],
+    "terminal": [
+      "16:03:40  ● git commit -m 'client-feedback error fixes' (1 commit)",
+      "16:04:12  ⏸ idle 12 days",
+      "16:04:12  ⚠ worktree pruned — resume gated behind Repair",
+      "16:04:12  💤 stale"
+    ]
+  },
+  "ccd6b7c8-6666-4fff-8aaa-000000000006": {
+    "tasks": [
+      {"title": "Hourly inbox triage pass", "status": "in_progress"},
+      {"title": "Classify 3 new threads", "status": "done"},
+      {"title": "Stage 1 reply draft for approval", "status": "done"},
+      {"title": "Surface staged draft at next check-in", "status": "pending"}
+    ],
+    "terminal": [
+      "10:00:02  ● gog gmail search 'newer_than:1h' — 3 new threads",
+      "10:00:19  ● classify: enrollment-question · vendor-invoice · tour-request",
+      "10:00:58  ● Write(staged/reply-family.md) — awaiting approval",
+      "10:01:04  ● TaskUpdate(board) — 3 routed, 1 staged",
+      "10:01:11  ⠹ working…"
+    ]
+  }
+}
+</script>
+
 <script>
 "use strict";
 const FLEET = JSON.parse(document.getElementById("fleet-data").textContent);
+const DIALOG_DATA = JSON.parse(document.getElementById("dialog-data").textContent);
+FLEET.sessions.forEach(function(s){
+  const d = DIALOG_DATA[s.session_id];
+  if (d){ s.tasks = d.tasks; s.terminal = d.terminal; }
+});
 
 let demoMode = true;
 let mobileCol = "needs";
@@ -414,7 +639,7 @@ function cardHTML(s){
   const btnLabel = repair ? "Repair" : (s.resumeTier.charAt(0).toUpperCase() + s.resumeTier.slice(1));
   const warn = s.contextPct >= 75 ? " warn" : "";
   return '' +
-  '<article class="card glass' + needsCls + '" data-sid="' + esc(s.session_id) + '" tabindex="0" role="button" aria-expanded="false">' +
+  '<article class="card glass' + needsCls + '" data-sid="' + esc(s.session_id) + '" tabindex="0" role="button" aria-haspopup="dialog">' +
     '<div class="card-top">' +
       '<div style="min-width:0">' +
         '<div class="proj">' + esc(s.project) + '</div>' +
@@ -429,11 +654,6 @@ function cardHTML(s){
       '<span class="src-chip">' + esc(s.lastActivity) + '</span>' +
     '</div>' +
     '<p class="now">' + esc(s.summary.now) + '</p>' +
-    '<div class="detail">' +
-      '<div class="dl"><span class="dk next">Next</span><span>' + esc(s.summary.next) + '</span></div>' +
-      '<div class="dl"><span class="dk goal">Goal</span><span>' + esc(s.summary.goal) + '</span></div>' +
-      (s.note ? '<div class="note">' + esc(s.note) + '</div>' : '') +
-    '</div>' +
     '<div class="ctx">' +
       '<div class="ctx-top"><span>Context</span><b>' + s.contextPct + '%</b></div>' +
       '<div class="bar' + warn + '"><i style="width:' + s.contextPct + '%"></i></div>' +
@@ -512,26 +732,176 @@ function toast(msg){
   toast._t = setTimeout(function(){ el.classList.remove("show"); }, 2200);
 }
 
-// event delegation
+function actToast(s, act){
+  if (act === "live"){
+    toast("Live view — would attach a read-only stream to " + s.project + " on " + s.host);
+  } else {
+    const tier = s.worktreeOk ? s.resumeTier : "repair";
+    toast(tier.charAt(0).toUpperCase() + tier.slice(1) + " — would run the " + tier + " flow for " + s.project);
+  }
+}
+
+// event delegation — card tap opens the expanded dialog; buttons keep their own behavior
 document.getElementById("board").addEventListener("click", function(e){
   const btn = e.target.closest("button[data-act]");
   const card = e.target.closest(".card");
   if (btn && card){
-    const sid = card.getAttribute("data-sid");
-    const s = FLEET.sessions.find(function(x){ return x.session_id === sid; });
-    if (!s) return;
-    if (btn.getAttribute("data-act") === "live"){
-      toast("Live view — would attach a read-only stream to " + s.project + " on " + s.host);
-    } else {
-      const tier = s.worktreeOk ? s.resumeTier : "repair";
-      toast(tier.charAt(0).toUpperCase() + tier.slice(1) + " — would run the " + tier + " flow for " + s.project);
-    }
+    const s = FLEET.sessions.find(function(x){ return x.session_id === card.getAttribute("data-sid"); });
+    if (s) actToast(s, btn.getAttribute("data-act"));
     return;
   }
-  if (card){
-    card.classList.toggle("open");
-    card.setAttribute("aria-expanded", card.classList.contains("open") ? "true" : "false");
+  if (card) openDialog(card.getAttribute("data-sid"));
+});
+
+/* ===== expanded session dialog ===== */
+const overlay = document.getElementById("overlay");
+let curS = null, streamTimer = null;
+
+function isWorking(s){ return colOf(s) === "working"; }
+
+function tlClass(t){
+  if (t.indexOf("⚠") >= 0) return "tl warn";
+  if (t.indexOf("💤") >= 0 || t.indexOf("⏸") >= 0) return "tl dim";
+  if (t.trim().charAt(0) === "│") return "tl pipe";
+  return "tl";
+}
+function appendLine(t){
+  const sc = document.getElementById("termScroll");
+  const d = document.createElement("div");
+  d.className = tlClass(t);
+  d.textContent = t;
+  sc.appendChild(d);
+  sc.scrollTop = sc.scrollHeight;
+}
+function appendCursor(){
+  const sc = document.getElementById("termScroll");
+  const d = document.createElement("div");
+  d.className = "tl cursor";
+  d.textContent = "streaming…";
+  sc.appendChild(d);
+  sc.scrollTop = sc.scrollHeight;
+}
+
+function taskHTML(t){
+  let tick = "";
+  if (t.status === "done") tick = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>';
+  else if (t.status === "blocked") tick = "⚠";
+  return '<div class="task ' + esc(t.status) + '">' +
+    '<span class="tick">' + tick + '</span>' +
+    '<span style="min-width:0"><span class="tt">' + esc(t.title) + '</span>' +
+    (t.status === "blocked" ? '<span class="why">blocked — needs a decision</span>' : "") +
+    '</span></div>';
+}
+
+function openDialog(sid){
+  const s = FLEET.sessions.find(function(x){ return x.session_id === sid; });
+  if (!s) return;
+  curS = s;
+  const working = isWorking(s);
+  const deadHost = FLEET.nodes[s.host] && !FLEET.nodes[s.host].ok;
+  const repair = !s.worktreeOk;
+  const tier = repair ? "repair" : s.resumeTier;
+  const btnLabel = repair ? "Repair" : (s.resumeTier.charAt(0).toUpperCase() + s.resumeTier.slice(1));
+
+  document.getElementById("dlgHead").innerHTML =
+    '<div class="dh-row1">' +
+      '<div style="min-width:0"><div class="dh-title">' + esc(s.project) + '</div></div>' +
+      '<span class="src-chip" style="margin-top:3px">' + esc(s.branch) + '</span>' +
+      '<span class="host-chip' + (deadHost ? " deadhost" : "") + '" style="margin-top:1px">' + ICON.host + esc(s.host) + (deadHost ? " · dead" : "") + '</span>' +
+      '<span class="model-chip" style="margin-top:3px">' + esc(s.model) + '</span>' +
+      statusPill(s) +
+      '<button class="dh-close" id="dlgClose" aria-label="Close dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>' +
+    '</div>' +
+    '<div class="dh-chips">' +
+      '<span class="chip"><b>' + s.contextPct + '%</b>&nbsp;context</span>' +
+      '<span class="chip tok">' + ICON.tok + fmtTokens(s.tokens) + '</span>' +
+      '<span class="chip cost">' + ICON.cost + fmtCost(s.cost) + '</span>' +
+      '<span class="chip msg">' + ICON.msg + s.msgs + ' msgs</span>' +
+      '<span class="chip time">' + ICON.time + esc(s.elapsedActive) + ' active</span>' +
+      '<span class="chip">idle ' + esc(s.idle) + '</span>' +
+    '</div>';
+
+  document.getElementById("termBar").innerHTML =
+    '<span class="tdots"><i></i><i></i><i></i></span>' +
+    '<span class="tinfo">' + esc(s.project) + ' · ' + esc(s.host) + ' · ' + esc(s.session_id.slice(0, 8)) + '</span>' +
+    '<span class="tright">' +
+      (working ? '<span class="live-badge"><span class="ldot"></span>LIVE</span>' : "") +
+      (s.stale ? '<span class="frozen-note">frozen at last activity · ' + esc(s.lastActivity) + '</span>' : "") +
+    '</span>';
+
+  const sc = document.getElementById("termScroll");
+  sc.innerHTML = "";
+  clearInterval(streamTimer);
+  const lines = s.terminal || [];
+  if (demoMode && working && lines.length){
+    let i = 0;
+    streamTimer = setInterval(function(){
+      if (i < lines.length){ appendLine(lines[i]); i++; }
+      else { clearInterval(streamTimer); appendCursor(); }
+    }, 190);
+  } else {
+    lines.forEach(appendLine);
+    if (working) appendCursor();
   }
+
+  const ageStamp = s.summaryAgeMin >= 60
+    ? Math.round(s.summaryAgeMin / 60) + "h old"
+    : s.summaryAgeMin + "m old";
+  document.getElementById("railPane").innerHTML =
+    '<h3>Tasks</h3>' +
+    (s.tasks || []).map(taskHTML).join("") +
+    '<h3>AI summary <span style="text-transform:none;letter-spacing:0;font-weight:600">· ' + ageStamp + '</span></h3>' +
+    '<div class="detail">' +
+      '<div class="dl"><span class="dk" style="background:linear-gradient(135deg,#ff7ab6,#ff9a62)">Now</span><span>' + esc(s.summary.now) + '</span></div>' +
+      '<div class="dl"><span class="dk next">Next</span><span>' + esc(s.summary.next) + '</span></div>' +
+      '<div class="dl"><span class="dk goal">Goal</span><span>' + esc(s.summary.goal) + '</span></div>' +
+      (s.note ? '<div class="note">' + esc(s.note) + '</div>' : "") +
+    '</div>' +
+    '<div class="actions">' +
+      '<button class="btn btn-live" data-act="live" aria-label="Open live view">' + ICON.eye + '<span class="lv">LIVE</span></button>' +
+      '<button class="btn btn-primary' + (repair ? " repair" : "") + (colOf(s) === "needs" ? "" : "") + '" data-act="resume" style="' + (colOf(s) === "needs" ? "background:var(--grad-hot);box-shadow:0 6px 18px rgba(255,122,150,.45)" : "") + '">' +
+        (repair ? ICON.wrench : ICON.play) + btnLabel +
+        '<span class="tierbadge">' + esc(tier) + '</span>' +
+      '</button>' +
+    '</div>';
+
+  // reset mobile tabs to Terminal
+  setTab("term");
+  overlay.classList.add("on");
+  overlay.setAttribute("aria-hidden", "false");
+  const closeBtn = document.getElementById("dlgClose");
+  if (closeBtn) closeBtn.focus();
+}
+
+function closeDialog(){
+  clearInterval(streamTimer);
+  streamTimer = null;
+  curS = null;
+  overlay.classList.remove("on");
+  overlay.setAttribute("aria-hidden", "true");
+}
+
+function setTab(which){
+  document.getElementById("termPane").classList.toggle("on", which === "term");
+  document.getElementById("railPane").classList.toggle("on", which === "tasks");
+  document.querySelectorAll("#dlgTabs button").forEach(function(b){
+    const on = b.getAttribute("data-tab") === which;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+}
+document.getElementById("dlgTabs").addEventListener("click", function(e){
+  const b = e.target.closest("button[data-tab]");
+  if (b) setTab(b.getAttribute("data-tab"));
+});
+overlay.addEventListener("click", function(e){
+  if (e.target === overlay){ closeDialog(); return; }
+  if (e.target.closest("#dlgClose")){ closeDialog(); return; }
+  const btn = e.target.closest("button[data-act]");
+  if (btn && curS) actToast(curS, btn.getAttribute("data-act"));
+});
+document.addEventListener("keydown", function(e){
+  if (e.key === "Escape" && overlay.classList.contains("on")) closeDialog();
 });
 document.getElementById("board").addEventListener("keydown", function(e){
   if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("card")){
