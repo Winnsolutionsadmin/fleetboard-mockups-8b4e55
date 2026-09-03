@@ -1,0 +1,435 @@
+<!-- variant: h-kanban · thesis: your thumb is the filter — the four states a session can be in (Needs you · Working · Waiting · Idle/Stale) are four full-width pages you swipe between, so triage is a gesture instead of a sort menu. · signature: the paged columns — snap-scrolling full-bleed pages with an editorial count header and a dot rail whose Needs-you dot burns red, reused verbatim on the org screen as pages of P0…P3. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>FleetBoard — Columns</title>
+<style>
+:root{
+  --ground:#f4f5f7; --paper:#fff; --ink:#14161c; --soft:#697182; --faint:#a2a8b4;
+  --line:#e5e7ec; --line-2:#eef0f4;
+  --GM:#1f9e6b; --Ws:#4b5ee8; --P:#d97706;
+  --p0:#dc2626; --p1:#ea580c; --p2:#2563eb; --p3:#6b7280;
+  --mactop:#6a2bc4; --mini:#9e2790; --macbook:#b32d63;
+  --c-needs:#dc2626; --c-work:#2563eb; --c-wait:#d97706; --c-idle:#64748b;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
+  background:var(--ground); color:var(--ink);
+  -webkit-font-smoothing:antialiased; font-size:15px; line-height:1.4;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid #0a84ff;outline-offset:2px;border-radius:8px}
+.screen{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;width:100%;overflow:hidden}
+.vscroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+
+/* ── header ──────────────────────────────────────── */
+.nav{background:var(--paper);border-bottom:1px solid var(--line);padding-top:var(--sat);flex:none;z-index:20}
+.nav-row{display:flex;align-items:center;gap:9px;padding:5px 14px;min-height:50px}
+.mark{width:27px;height:27px;border-radius:8px;flex:none;background:var(--ink);color:#fff;font:700 12px/27px -apple-system,sans-serif;text-align:center;letter-spacing:-.4px}
+.picker{display:flex;align-items:center;gap:5px;min-height:44px;font-size:17px;font-weight:700;letter-spacing:-.4px}
+.grow{flex:1;min-width:0}
+.iconbtn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:22px;flex:none}
+.iconbtn:active{background:var(--line-2)}
+.back{display:flex;align-items:center;gap:2px;min-height:44px;padding-right:6px;color:#0a84ff;font-size:16px;font-weight:500}
+.machines{display:flex;gap:5px;padding:0 14px 9px;overflow-x:auto;scrollbar-width:none}
+.machines::-webkit-scrollbar{display:none}
+.mchip{display:flex;align-items:center;gap:5px;flex:none;height:32px;padding:0 10px;border-radius:16px;background:#eef0f4;font-size:13px;font-weight:600;color:#4e5665;white-space:nowrap}
+.mchip[aria-pressed="true"]{background:var(--ink);color:#fff}
+.mchip .dot{width:7px;height:7px;border-radius:4px;background:currentColor}
+.mchip .n{font:600 12px var(--mono);opacity:.6}
+.searchwrap{padding:0 14px 10px}
+.search{display:flex;align-items:center;gap:8px;height:38px;padding:0 11px;background:#eceef2;border-radius:10px;color:#8a909c}
+.search input{border:0;background:none;outline:none;width:100%;font-size:16px}
+
+/* ── the dot rail: page dots that double as a count meter ── */
+.rail{display:flex;gap:6px;padding:0 14px 9px;flex:none;background:var(--paper);border-bottom:1px solid var(--line)}
+.rseg{flex:1;min-width:0;min-height:44px;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 1px}
+.rseg .bar{height:4px;border-radius:2px;background:var(--c);opacity:.22;transition:opacity .18s}
+.rseg .lab{display:flex;align-items:baseline;gap:4px;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden}
+.rseg .lab b{font:700 11.5px var(--mono);color:var(--faint)}
+.rseg[aria-selected="true"] .bar{opacity:1;height:5px}
+.rseg[aria-selected="true"] .lab{color:var(--ink)}
+.rseg[aria-selected="true"] .lab b{color:var(--c)}
+.rseg.alert .lab b{color:var(--c-needs)}
+.rseg.alert:not([aria-selected="true"]) .bar{opacity:.55}
+@media(prefers-reduced-motion:reduce){.rseg .bar{transition:none}}
+
+/* ── the pager: an INNER horizontal scroller, never the document ── */
+.pager{
+  flex:1;min-height:0;display:flex;width:100%;
+  overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+}
+.pager::-webkit-scrollbar{display:none}
+.col{flex:0 0 100%;width:100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.colhead{flex:none;padding:14px 16px 10px;display:flex;align-items:flex-start;gap:12px}
+.colhead .ch{flex:1;min-width:0;padding-top:2px}
+.bigcount{font:800 40px/1 -apple-system,system-ui,sans-serif;letter-spacing:-2.4px;color:var(--c);flex:none;font-variant-numeric:tabular-nums}
+.colname{display:block;font-size:20px;font-weight:750;letter-spacing:-.55px;line-height:1.15}
+.colsub{display:block;font-size:12.5px;color:var(--soft);margin-top:4px;line-height:1.35}
+.colbody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 12px 20px}
+
+/* ── cards ───────────────────────────────────────── */
+.kcard{display:block;width:100%;text-align:left;background:var(--paper);border-radius:13px;padding:12px 13px;margin-bottom:9px;
+  box-shadow:0 1px 2px rgba(20,22,28,.07);position:relative;overflow:hidden}
+.kcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3.5px;background:var(--c);opacity:.42}
+.kcard.hot{box-shadow:0 2px 10px rgba(220,38,38,.16),inset 0 0 0 1.5px #f6c9c6}
+.kcard.hot::before{opacity:1;width:4.5px}
+.ktop{display:flex;gap:9px;align-items:flex-start}
+.ktitle{font-size:16.5px;font-weight:650;letter-spacing:-.35px;line-height:1.25;flex:1;min-width:0;overflow-wrap:anywhere}
+.kage{font:12px var(--mono);color:var(--faint);flex:none;padding-top:3px}
+.kmeta{font:12px/1.35 var(--mono);color:var(--soft);margin-top:4px;overflow-wrap:anywhere}
+.kmeta .sl{color:#c9ccd4}
+.ktags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;align-items:center}
+.know{font-size:13px;color:var(--soft);margin-top:8px;line-height:1.4;overflow-wrap:anywhere}
+
+/* ── needs-you gets the loudest treatment on the board ── */
+.gateq{margin-top:10px;background:#fff3f2;border-radius:9px;padding:10px 11px;font-size:13.5px;line-height:1.4;color:#8f1f1f;font-weight:550;overflow-wrap:anywhere}
+.gateq .lead{display:block;font:700 10.5px var(--mono);letter-spacing:.6px;color:var(--c-needs);margin-bottom:4px}
+.kacts{display:flex;gap:8px;margin-top:9px}
+.kact{flex:1;min-height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:650}
+.kact.ok{background:var(--GM);color:#fff}
+.kact.no{background:#fff;color:var(--c-needs);box-shadow:inset 0 0 0 1.5px #f3c4c1}
+.kact.go{background:#f1f2f6;color:var(--ink)}
+
+/* ── tags ────────────────────────────────────────── */
+.tag{display:inline-flex;align-items:center;gap:4px;height:19px;padding:0 6px;border-radius:5px;font:600 11.5px/1 var(--mono);letter-spacing:.2px;white-space:nowrap}
+.tag.org{background:color-mix(in srgb,var(--c) 13%,#fff);color:var(--c);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 26%,#fff)}
+.tag.org b{width:6px;height:6px;border-radius:2px;background:var(--c)}
+.tag.pri{background:var(--c);color:#fff}
+.tag.pri.lo{background:#fff;color:var(--c);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 40%,#fff)}
+.tag.host{background:#f3f4f7;color:#5c6270;box-shadow:inset 0 0 0 1px #e6e8ed}
+.tag.host b{width:6px;height:6px;border-radius:3px;background:var(--c)}
+.tag.needs{background:var(--c-needs);color:#fff;letter-spacing:.6px}
+.tag.st{background:#f1f2f5;color:#6b7280}
+.dots{display:inline-flex;gap:2.5px;align-items:center;height:19px}
+.dots i{width:4px;height:4px;border-radius:2px;background:#9aa1ad;animation:bl 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}
+@keyframes bl{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.65}}
+
+/* ── pinned strip above the pager ────────────────── */
+.pinstrip{flex:none;display:flex;align-items:center;gap:9px;padding:9px 14px;background:var(--paper);border-bottom:1px solid var(--line);width:100%;text-align:left}
+.pinstrip .pg{color:var(--soft);flex:none}
+.pinstrip .pb{flex:1;min-width:0}
+.pinstrip .pt{font-size:14.5px;font-weight:650;letter-spacing:-.25px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pinstrip .pm{font:11.5px var(--mono);color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.empty{padding:26px 8px;text-align:center;color:var(--soft);font-size:14.5px;line-height:1.5}
+.empty b{display:block;font-size:16px;color:var(--ink);margin-bottom:5px;font-weight:650}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + var(--sab));z-index:40;
+  display:flex;align-items:center;gap:8px;height:50px;padding:0 22px;border-radius:25px;background:var(--ink);color:#fff;
+  font-size:16px;font-weight:600;box-shadow:0 6px 20px rgba(20,22,28,.3)}
+.fab:active{transform:translateX(-50%) scale(.97)}
+
+/* ── session detail (light card transcript) ──────── */
+.dhead{padding:0 15px 11px}
+.dtitle{font-size:20px;font-weight:750;letter-spacing:-.55px;line-height:1.2}
+.dtags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;align-items:center}
+.tstream{padding:13px 12px 8px}
+.msg{margin-bottom:11px;display:flex;gap:9px}
+.msg .who{flex:none;width:26px;height:26px;border-radius:13px;display:flex;align-items:center;justify-content:center;font:700 10.5px var(--mono);color:#fff}
+.msg.u .who{background:var(--ink)} .msg.a .who{background:var(--c-work)}
+.msg .bub{flex:1;min-width:0;background:var(--paper);border-radius:12px;padding:10px 12px;font-size:14.5px;line-height:1.45;box-shadow:0 1px 2px rgba(20,22,28,.06);overflow-wrap:anywhere}
+.msg.u .bub{background:#e9ebf0}
+.toolrow{display:flex;align-items:center;gap:8px;margin:0 0 11px 35px;font:11.5px var(--mono);color:var(--soft);overflow-wrap:anywhere}
+.toolrow .nm{color:var(--c-work);font-weight:600}
+.toolrow .cv{flex:none;color:#b7bcc6}
+.gatecard{background:var(--paper);border-radius:14px;padding:14px;margin:4px 0 8px;box-shadow:0 3px 16px rgba(220,38,38,.14),inset 0 0 0 1.5px #f4c8c5}
+.gatecard .lead{font:700 10.5px var(--mono);letter-spacing:.7px;color:var(--c-needs)}
+.gatecard .q{font-size:17px;font-weight:650;line-height:1.3;margin-top:7px;letter-spacing:-.3px}
+.gateacts{display:flex;gap:8px;margin-top:12px}
+.gateacts button{flex:1;min-height:48px;border-radius:11px;font-size:15.5px;font-weight:650}
+.gateacts .ok{background:var(--GM);color:#fff}
+.gateacts .ed{background:#f1f2f6;color:var(--ink)}
+.gateacts .no{background:#fff;color:var(--c-needs);box-shadow:inset 0 0 0 1.5px #f3c4c1}
+.composer{flex:none;display:flex;gap:8px;align-items:center;padding:9px 12px calc(10px + var(--sab));background:var(--paper);border-top:1px solid var(--line)}
+.composer .field{flex:1;min-height:44px;display:flex;align-items:center;padding:0 14px;border-radius:22px;background:#eef0f4;font-size:15px;color:#9298a4}
+.send{width:44px;height:44px;border-radius:22px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.veil{position:fixed;inset:0;background:rgba(20,22,28,.32);z-index:60}
+.sheet{position:fixed;left:10px;right:10px;bottom:calc(10px + var(--sab));z-index:61;background:var(--paper);border-radius:15px;overflow:hidden;box-shadow:0 12px 40px rgba(20,22,28,.3)}
+.sheet .st{padding:11px 14px;font-size:12.5px;color:var(--soft);border-bottom:1px solid var(--line-2);text-align:center}
+.sheet button{display:flex;align-items:center;width:100%;min-height:52px;padding:0 16px;font-size:16.5px;text-align:left}
+.sheet button+button{border-top:1px solid var(--line-2)}
+.sheet button.danger{color:var(--c-needs)}
+.sheet .cancel{justify-content:center;font-weight:650}
+
+/* ── new session + org pages ─────────────────────── */
+.fgroup{background:var(--paper);border-radius:13px;overflow:hidden;margin-bottom:15px;box-shadow:0 1px 2px rgba(20,22,28,.06)}
+.flabel{padding:0 4px 7px;font-size:12.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--soft)}
+.frow{display:flex;align-items:center;gap:10px;min-height:50px;padding:8px 13px}
+.frow+.frow{border-top:1px solid var(--line-2)}
+.frow .k{font-size:15px;color:var(--soft);flex:none;width:74px}
+.frow input,.frow textarea{flex:1;min-width:0;border:0;background:none;outline:none;font:13.5px var(--mono);color:var(--ink)}
+.frow textarea{resize:none;min-height:74px;padding:9px 0;line-height:1.55}
+.hosts{display:flex;gap:8px;padding:11px 13px}
+.hostbtn{flex:1;min-height:66px;border-radius:11px;background:#f3f4f7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:inset 0 0 0 1px #e6e8ed}
+.hostbtn[aria-pressed="true"]{background:#fff;box-shadow:inset 0 0 0 2px var(--c)}
+.hostbtn .hn{font-size:15px;font-weight:650}
+.hostbtn .hs{font:10.5px var(--mono);color:var(--soft);text-align:center;padding:0 4px;line-height:1.25}
+.hostbtn.dis{opacity:.55}
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:11px 13px}
+.chip{min-height:38px;padding:0 13px;border-radius:9px;background:#f3f4f7;display:flex;align-items:center;font-size:14px;font-weight:600;box-shadow:inset 0 0 0 1px #e6e8ed}
+.chip[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 12%,#fff);color:var(--c);box-shadow:inset 0 0 0 2px var(--c)}
+.primary{width:100%;min-height:52px;border-radius:13px;background:var(--ink);color:#fff;font-size:17px;font-weight:650;display:flex;align-items:center;justify-content:center;gap:8px}
+.hint{font:12px/1.45 var(--mono);color:var(--soft);padding:2px 4px 18px}
+.task{background:var(--paper);border-radius:13px;margin-bottom:9px;overflow:hidden;box-shadow:0 1px 2px rgba(20,22,28,.06)}
+.thead{display:flex;gap:10px;padding:12px 13px;width:100%;text-align:left;align-items:flex-start}
+.tbody{flex:1;min-width:0}
+.tname{font-size:16px;font-weight:640;letter-spacing:-.3px;line-height:1.3}
+.tmeta{font:11.5px var(--mono);color:var(--soft);margin-top:5px;overflow-wrap:anywhere}
+.tchev{flex:none;color:#b9bdc7;padding-top:5px}
+.sub{border-top:1px solid var(--line-2);padding:9px 13px 9px 15px;display:flex;gap:9px;align-items:center;font-size:14.5px}
+.sub.hot{background:#fff5f4}
+.sbox{width:17px;height:17px;border-radius:5px;flex:none;box-shadow:inset 0 0 0 1.5px #c9cdd6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.sbox.done{background:var(--GM);box-shadow:none}
+.sbox.hot{background:var(--c-needs);box-shadow:none}
+.sstat{margin-left:auto;font:10.5px var(--mono);color:var(--soft);letter-spacing:.3px;text-transform:uppercase;flex:none}
+.slink{display:flex;gap:8px;align-items:center;padding:10px 13px;border-top:1px solid var(--line-2);width:100%;text-align:left;background:#fbfbfd;min-height:44px}
+.slink .sn{font-size:14.5px;font-weight:550;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slink .ag{font:12px var(--mono);color:var(--faint);flex:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="./data.js"></script>
+<script>
+(function(){
+const F = window.FLEET, app = document.getElementById('app');
+const E = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const org = id => F.orgs.find(o=>o.id===id) || {id:id,label:id,color:'#888'};
+const pri = id => F.priorities.find(p=>p.id===id) || {id:id,label:id,color:'#888'};
+const host = id => F.hosts.find(h=>h.id===id) || {id:id,label:id,color:'#888'};
+const sess = id => F.sessions.find(s=>s.id===id);
+const ico = {
+  back:'<svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true"><path d="M10 1 2 10l8 9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  more:'<svg width="21" height="21" viewBox="0 0 21 21" aria-hidden="true"><circle cx="10.5" cy="10.5" r="9.2" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".45"/><circle cx="6.4" cy="10.5" r="1.4" fill="currentColor"/><circle cx="10.5" cy="10.5" r="1.4" fill="currentColor"/><circle cx="14.6" cy="10.5" r="1.4" fill="currentColor"/></svg>',
+  acct:'<svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="13" r="11.2" stroke="currentColor" stroke-width="1.5" opacity=".5"/><circle cx="13" cy="10.4" r="3.5" fill="currentColor" opacity=".72"/><path d="M5.6 21.4c1.5-3.4 4.2-5.1 7.4-5.1s5.9 1.7 7.4 5.1" stroke="currentColor" stroke-width="1.5" opacity=".72" stroke-linecap="round"/></svg>',
+  search:'<svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.4" cy="6.4" r="4.9" stroke="currentColor" stroke-width="1.7"/><path d="m10.2 10.2 3.2 3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  pen:'<svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><path d="M11.6 1.9 15.1 5.4 5.6 14.9 1.4 15.6l.7-4.2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  pin:'<svg width="14" height="14" viewBox="0 0 13 13" fill="currentColor" aria-hidden="true"><path d="M8.4.6 12.4 4.6l-1.5 1.5-.7-.2-2.6 2.6.3 2.3-1.2 1.2-2.6-2.6-3 2.3 2.3-3L.8 6.1 2 4.9l2.3.3L6.9 2.6l-.2-.7z"/></svg>',
+  chev:'<svg width="8" height="13" viewBox="0 0 8 13" fill="none" aria-hidden="true"><path d="m1.4 1.4 5.2 5.1-5.2 5.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  down:'<svg width="11" height="7" viewBox="0 0 11 7" fill="none" aria-hidden="true"><path d="m1 1 4.5 4.4L10 1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  up:'<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 14.5v-11M4 8.3 9 3.4l5 4.9" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+function tagOrg(id){const o=org(id);return `<span class="tag org" style="--c:${o.color}" title="${E(o.label)}"><b></b>${E(o.id)}</span>`;}
+function tagPri(id){const p=pri(id);const lo=(id==='P2'||id==='P3');return `<span class="tag pri${lo?' lo':''}" style="--c:${p.color}" title="${E(p.label)}">${E(p.id)}</span>`;}
+function tagHost(id){const h=host(id);return `<span class="tag host" style="--c:${h.color}"><b></b>${E(h.id)}</span>`;}
+function tagState(s){
+  if(s.status==='needs_you') return '<span class="tag needs">NEEDS YOU</span>';
+  if(s.status==='working') return '<span class="dots" aria-label="working"><i></i><i></i><i></i></span>';
+  return `<span class="tag st">${E(s.status)}</span>`;
+}
+const COLS = [
+  { id:'needs', name:'Needs you', c:'var(--c-needs)', match:s=>s.status==='needs_you',
+    sub:n=>n?`${n} session${n===1?'':'s'} stopped at a prompt. Nothing moves until you answer.`:'Nothing is waiting on you.' },
+  { id:'work',  name:'Working',   c:'var(--c-work)',  match:s=>s.status==='working',
+    sub:n=>`${n} running right now. No input needed.` },
+  { id:'wait',  name:'Waiting',   c:'var(--c-wait)',  match:s=>s.status==='waiting'||s.status==='parked',
+    sub:n=>`${n} blocked on someone or something else.` },
+  { id:'idle',  name:'Idle · Stale', c:'var(--c-idle)', match:s=>['idle','stale'].includes(s.status),
+    sub:n=>`${n} finished or drifted. Close them or pick them back up.` }
+];
+const ST = { machine:'all', page:0, orgPage:0, sheet:false, openTask:'86ey1a3c', newHost:'mactop', newOrg:'GM', newPri:'P1' };
+function agoMin(a){ if(a==='now') return 0; const n=parseFloat(a)||0; return a.endsWith('d')?n*1440:a.endsWith('h')?n*60:n; }
+function pool(){ return F.sessions.filter(s => ST.machine==='all' || s.host===ST.machine); }
+function cardHTML(s, c){
+  const hot = s.status==='needs_you';
+  return `<a class="kcard${hot?' hot':''}" style="--c:${c}" href="#session/${s.id}">
+    <div class="ktop"><span class="ktitle">${E(s.title)}</span><span class="kage">${E(s.ago)}</span></div>
+    <div class="kmeta">${E(s.repo)} <span class="sl">|</span> ${E(s.branch)}</div>
+    <div class="ktags">${tagOrg(s.org)}${tagPri(s.priority)}${tagHost(s.host)}${hot?'':tagState(s)}</div>
+    ${hot && s.question
+      ? `<div class="gateq"><span class="lead">STOPPED — NEEDS YOU</span>${E(s.question)}</div>
+         <div class="kacts"><span class="kact ok">Approve</span><span class="kact no">Deny</span><span class="kact go">Open</span></div>`
+      : `<div class="know">${E(s.now)}</div>`}
+  </a>`;
+}
+function screenList(){
+  const list = pool(), p = sess(F.pinned);
+  const c = {all:F.sessions.length};
+  F.hosts.forEach(h=>c[h.id]=F.sessions.filter(s=>s.host===h.id).length);
+  const P = {P0:0,P1:1,P2:2,P3:3};
+  const buckets = COLS.map(col => list.filter(col.match)
+    .sort((a,b)=>P[a.priority]-P[b.priority] || agoMin(a.ago)-agoMin(b.ago)));
+  const mach = [{id:'all',label:'All',color:'#14161c',live:true}].concat(F.hosts).map(h=>
+    `<button class="mchip" aria-pressed="${ST.machine===h.id}" data-m="${h.id}">
+      <span class="dot" style="background:${h.id==='all'?'currentColor':h.color}"></span>${E(h.label)}
+      <span class="n">${c[h.id]}${h.live===false?' off':''}</span></button>`).join('');
+  const rail = COLS.map((col,i)=>`<button class="rseg${i===0&&buckets[0].length?' alert':''}" role="tab"
+      aria-selected="${ST.page===i}" style="--c:${col.c}" data-page="${i}">
+      <span class="bar"></span><span class="lab">${E(col.name)} <b>${buckets[i].length}</b></span></button>`).join('');
+  const pages = COLS.map((col,i)=>{
+    const b = buckets[i];
+    return `<section class="col" style="--c:${col.c}" aria-label="${E(col.name)}">
+      <div class="colhead"><span class="bigcount">${b.length}</span>
+        <span class="ch"><span class="colname">${E(col.name)}</span><span class="colsub">${E(col.sub(b.length))}</span></span></div>
+      <div class="colbody">${b.length ? b.map(s=>cardHTML(s,col.c)).join('')
+        : `<div class="empty"><b>Clear</b>Swipe to the next column.</div>`}
+        <div style="height:70px"></div></div></section>`;}).join('');
+  return `<div class="screen">
+    <header class="nav">
+      <div class="nav-row"><div class="mark">fb</div>
+        <button class="picker">All Machines ${ico.down}</button><span class="grow"></span>
+        <button class="iconbtn" aria-label="Account">${ico.acct}</button></div>
+      <div class="machines">${mach}</div>
+      <div class="searchwrap"><div class="search">${ico.search}<input placeholder="Search all ${list.length} sessions" aria-label="Search sessions"></div></div>
+    </header>
+    ${p?`<a class="pinstrip" href="#session/${p.id}"><span class="pg">${ico.pin}</span>
+      <span class="pb"><span class="pt">${E(p.title)}</span>
+      <span class="pm">${E(p.repo)} | ${E(p.branch)} · ${E(p.ago)}</span></span>
+      ${tagOrg(p.org)}${tagPri(p.priority)}</a>`:''}
+    <div class="rail" role="tablist" aria-label="Columns">${rail}</div>
+    <div class="pager" id="pager">${pages}</div>
+    <a class="fab" href="#new">${ico.pen} New Session</a>
+  </div>`;
+}
+function screenSession(id){
+  const s = sess(id) || F.sessions[0], gate = F.transcript.find(t=>t.role==='gate');
+  const stream = F.transcript.map(t=>{
+    if(t.role==='user')      return `<div class="msg u"><span class="who">YOU</span><div class="bub">${E(t.text)}</div></div>`;
+    if(t.role==='assistant') return `<div class="msg a"><span class="who">FB</span><div class="bub">${E(t.text)}</div></div>`;
+    if(t.role==='tool')      return `<div class="toolrow"><span class="nm">${E(t.name)}</span><span>${E(t.text)}</span><span class="cv">${ico.chev}</span></div>`;
+    if(t.role==='gate')      return `<div class="gatecard"><div class="lead">STOPPED — NEEDS YOU</div>
+        <div class="q">${E(t.text)}</div><div class="gateacts">
+        <button class="ok">Approve</button><button class="ed">Edit first</button><button class="no">Deny</button>
+        </div></div>`;
+    return '';
+  }).join('');
+  return `<div class="screen">
+    <header class="nav">
+      <div class="nav-row"><a class="back" href="#list">${ico.back} Board</a><span class="grow"></span>
+        <button class="iconbtn" id="morebtn" aria-label="More actions">${ico.more}</button></div>
+      <div class="dhead"><div class="dtitle">${E(s.title)}</div>
+        <div class="dtags"><a href="#org/${encodeURIComponent(s.org)}" aria-label="Open ${E(org(s.org).label)}">${tagOrg(s.org)}</a>${tagPri(s.priority)}${tagHost(s.host)}${tagState(s)}
+          <span class="tag st">${s.ctx}% ctx</span><span class="tag st">$${s.cost.toFixed(2)}</span></div>
+        <div class="colsub" style="margin-top:7px">${E(s.repo)} | ${E(s.branch)} · ${E(s.model)} · ${E(s.ago)}</div>
+      </div></header>
+    <div class="vscroll"><div class="tstream">${stream}
+      <div class="hint">Next up: ${E(s.next)}</div><div style="height:8px"></div></div></div>
+    <div class="composer"><div class="field">${gate?'Or type what to change…':'Type a message…'}</div>
+      <button class="send" aria-label="Send">${ico.up}</button></div>
+    ${ST.sheet?`<div class="veil" id="veil"></div><div class="sheet">
+      <div class="st">${E(s.title)}</div><button>Hibernate session</button><button>Open on Mac</button>
+      <button class="danger">End session</button><button class="cancel" id="cancel">Cancel</button></div>`:''}
+  </div>`;
+}
+function screenNew(){
+  const hb = F.hosts.map(h=>`<button class="hostbtn${h.live?'':' dis'}" style="--c:${h.color}"
+      aria-pressed="${ST.newHost===h.id}" data-h="${h.id}" ${h.live?'':'disabled'}>
+      <span class="hn">${E(h.label)}</span>
+      <span class="hs">${h.live?h.sessions+' running':'offline since 6:40p'}</span></button>`).join('');
+  const oc = F.orgs.map(o=>`<button class="chip" style="--c:${o.color}" aria-pressed="${ST.newOrg===o.id}" data-o="${o.id}">${E(o.id)} · ${E(o.label)}</button>`).join('');
+  const pc = F.priorities.map(p=>`<button class="chip" style="--c:${p.color}" aria-pressed="${ST.newPri===p.id}" data-p="${p.id}">${E(p.id)} ${E(p.label)}</button>`).join('');
+  const hl = host(ST.newHost);
+  return `<div class="screen">
+    <header class="nav"><div class="nav-row"><a class="back" href="#list">${ico.back} Board</a>
+      <span class="grow"></span><span class="picker" style="font-size:16px">New session</span>
+      <span class="grow"></span><span style="width:44px"></span></div></header>
+    <div class="vscroll"><div style="padding:14px">
+      <div class="flabel">Run it on</div><div class="fgroup"><div class="hosts">${hb}</div></div>
+      <div class="flabel">Where</div><div class="fgroup">
+        <div class="frow"><span class="k">Directory</span><input value="~/Projects/recruiting" aria-label="Directory"></div>
+        <div class="frow"><span class="k">Branch</span><input value="offer-letter-1137" aria-label="Branch"></div>
+        <div class="frow"><span class="k">Task id</span><input value="" placeholder="optional" aria-label="Task id"></div></div>
+      <div class="flabel">Org — inferred from the repo</div><div class="fgroup"><div class="chips">${oc}</div></div>
+      <div class="flabel">Priority — orders it inside its column</div><div class="fgroup"><div class="chips">${pc}</div></div>
+      <div class="flabel">First prompt</div><div class="fgroup"><div class="frow" style="align-items:flex-start">
+        <textarea aria-label="First prompt">Draft the second offer letter from the template and stage it for approval.</textarea></div></div>
+      <button class="primary">${ico.pen} Start on ${E(hl.label)}</button>
+      <div class="hint" style="padding-top:10px">Lands in Working. It moves itself to Needs you the moment it hits a gate.</div>
+      <div style="height:20px"></div></div></div></div>`;
+}
+function screenOrg(oid){
+  const o = org(oid), tasks = (F.orgTasks[oid]||[]);
+  const groups = F.priorities.map(p => ({ p, items: tasks.filter(t=>t.priority===p.id)
+      .sort((a,b)=>String(a.due).localeCompare(String(b.due))) }));
+  const nu = tasks.reduce((n,t)=>n+(t.subtasks||[]).filter(s=>s.status==='needs you').length,0);
+  const rail = groups.map((g,i)=>{
+    const hot = g.items.some(t=>(t.subtasks||[]).some(s=>s.status==='needs you'));
+    return `<button class="rseg${hot?' alert':''}" role="tab" aria-selected="${ST.orgPage===i}"
+      style="--c:${g.p.color}" data-opage="${i}"><span class="bar"></span>
+      <span class="lab">${E(g.p.id)} ${E(g.p.label)} <b>${g.items.length}</b></span></button>`;}).join('');
+  const taskHTML = t => {
+    const open = ST.openTask===t.id, subs = t.subtasks||[];
+    const hot = subs.some(s=>s.status==='needs you');
+    const linked = F.sessions.filter(s=>s.task===t.id);
+    return `<div class="task">
+      <button class="thead" data-t="${t.id}">
+        <div class="tbody"><div class="tname">${E(t.name)}</div>
+          <div class="tmeta">${E(t.status)} · due ${E(t.due)} · ${subs.length} subtask${subs.length===1?'':'s'} · ${linked.length} session${linked.length===1?'':'s'}</div>
+          <div class="ktags" style="margin-top:8px">${tagPri(t.priority)}${tagOrg(oid)}${hot?'<span class="tag needs">NEEDS YOU</span>':''}</div></div>
+        <span class="tchev" style="transform:rotate(${open?90:0}deg)">${ico.chev}</span></button>
+      ${open?subs.map(s=>{const h=s.status==='needs you',d=s.status==='done';
+        return `<div class="sub${h?' hot':''}"><span class="sbox${d?' done':''}${h?' hot':''}">${d?'✓':h?'!':''}</span>
+          <span style="flex:1;min-width:0">${E(s.name)}</span><span class="sstat">${E(s.status)}</span></div>`;}).join(''):''}
+      ${open?linked.map(s=>`<a class="slink" href="#session/${s.id}">${tagHost(s.host)}
+        <span class="sn">${E(s.title)}</span><span class="ag">${E(s.ago)}</span>${ico.chev}</a>`).join(''):''}
+    </div>`;};
+  const pages = groups.map(g=>`<section class="col" style="--c:${g.p.color}" aria-label="${E(g.p.id)}">
+      <div class="colhead"><span class="bigcount">${g.items.length}</span>
+        <span class="ch"><span class="colname">${E(g.p.id)} · ${E(g.p.label)}</span>
+        <span class="colsub">${g.items.length?`${g.items.length} task${g.items.length===1?'':'s'} at this priority, soonest due first.`:'Nothing at this priority.'}</span></span></div>
+      <div class="colbody">${g.items.length?g.items.map(taskHTML).join(''):'<div class="empty"><b>Clear</b>Swipe to the next priority.</div>'}
+        <div style="height:24px"></div></div></section>`).join('');
+  return `<div class="screen">
+    <header class="nav"><div class="nav-row"><a class="back" href="#list">${ico.back} Board</a><span class="grow"></span>
+      <button class="iconbtn" aria-label="More">${ico.more}</button></div>
+      <div class="dhead"><div class="dtitle">${E(o.label)}</div>
+        <div class="dtags">${tagOrg(oid)}<span class="tag st">${tasks.length} tasks</span>
+          ${nu?`<span class="tag needs">${nu} NEED YOU</span>`:''}</div></div></header>
+    <div class="rail" role="tablist" aria-label="Priorities">${rail}</div>
+    <div class="pager" id="pager">${pages}</div></div>`;
+}
+function render(){
+  const h = location.hash || '#list';
+  if(h.startsWith('#session/')) app.innerHTML = screenSession(h.slice(9));
+  else if(h === '#new') app.innerHTML = screenNew();
+  else if(h.startsWith('#org/')) app.innerHTML = screenOrg(decodeURIComponent(h.slice(5)));
+  else app.innerHTML = screenList();
+  const v = document.querySelector('.vscroll');
+  if(v && h.startsWith('#session/')) v.scrollTop = v.scrollHeight;
+  wire(h);
+}
+function wire(h){
+  const isOrg = h.startsWith('#org/'), key = isOrg ? 'orgPage' : 'page';
+  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ST.machine=b.dataset.m;render();});
+  document.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ST.newHost=b.dataset.h;render();});
+  document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{ST.newOrg=b.dataset.o;render();});
+  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ST.newPri=b.dataset.p;render();});
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ST.openTask=(ST.openTask===b.dataset.t?null:b.dataset.t);render();});
+  const mb = document.getElementById('morebtn'); if(mb) mb.onclick=()=>{ST.sheet=true;render();};
+  const cx = document.getElementById('cancel'); if(cx) cx.onclick=()=>{ST.sheet=false;render();};
+  const vl = document.getElementById('veil'); if(vl) vl.onclick=()=>{ST.sheet=false;render();};
+  const pager = document.getElementById('pager');
+  if(!pager) return;
+  const segs = [...document.querySelectorAll('.rseg')];
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const goto = i => { ST[key]=i; pager.scrollTo({left: i*pager.clientWidth, behavior: reduce?'auto':'smooth'}); paint(i); };
+  const paint = i => segs.forEach((s,n)=>s.setAttribute('aria-selected', String(n===i)));
+  segs.forEach((s,i)=>{ s.onclick=()=>goto(i);
+    s.onkeydown=e=>{ if(e.key==='ArrowRight'&&segs[i+1]){e.preventDefault();segs[i+1].focus();goto(i+1);}
+                     if(e.key==='ArrowLeft'&&segs[i-1]){e.preventDefault();segs[i-1].focus();goto(i-1);} }; });
+  let t=null;
+  pager.addEventListener('scroll', ()=>{ clearTimeout(t); t=setTimeout(()=>{
+    const i = Math.round(pager.scrollLeft / Math.max(1,pager.clientWidth));
+    if(i!==ST[key]){ ST[key]=i; paint(i); }
+  }, 70); }, {passive:true});
+  if(ST[key]) { pager.scrollLeft = ST[key]*pager.clientWidth; }
+  paint(ST[key]||0);
+}
+window.addEventListener('hashchange',()=>{ST.sheet=false;render();});
+render();
+})();
+</script>
+</body>
+</html>
