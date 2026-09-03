@@ -66,7 +66,13 @@ const R1 = [
   ["11","clickup-mirror","Looks like ClickUp's list view, plus Sessions and Action columns."],
   ["12","threads","Each task is a thread; its sessions are turns on a vertical timeline."]
 ];
-const R2 = []; // filled after the pick: ["2a","<pick>-density","…"], …
+const R2 = [ // Jarred's pick: 01 master-detail
+  ["2a","master-detail-density","Compact rows, one-line session chips, Comfortable/Compact toggle; nav sheet closed on load."],
+  ["2b","master-detail-chips","Six agent-state chips readable without text; 2-row session card-let; legend; DONE-WHEN contract chip."],
+  ["2c","master-detail-dispatch","The Dispatch flow: confirm sheet with host/model, dispatching → spawned → started, and the did-not-start path."],
+  ["2d","master-detail-states","Scenario switcher: Quiet, Degraded (dead publisher, stale titles), Overloaded; honest empty and provenance states."],
+  ["2e","master-detail-drawer","Open a session from the Space view: drawer with Now/Next/Goal, real-looking terminal tail, reply composer, tasks rail."]
+];
 let round = 1, view = "phone";
 function render(){
   const list = round === 1 ? R1 : R2;
