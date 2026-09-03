@@ -1,0 +1,419 @@
+<!-- variant: l-mono · thesis: the fleet set like a printed agenda — near-monochrome chrome, a display weight for titles and tabular figures for times, so the only colour on screen is the tags and the state that wants you. · signature: colour reserved for meaning, stacked in a marginal tag gutter -->
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Agenda</title>
+<style>
+:root{
+  --paper:#fff; --ink:#0a0a0b; --ink2:#33333a; --mid:#6b6b73; --faint:#a2a2aa;
+  --rule:#e1e1e5; --rule2:#f1f1f4; --wash:#fafafb; --red:#dc2626; --redwash:#fff5f4;
+  --gut:36px; --edge:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;background:var(--paper);
+  color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;font-size:16px}
+a{color:inherit;text-decoration:none}
+button,input,textarea{font:inherit;color:inherit;background:none;border:0}
+button{cursor:pointer}
+:focus-visible{outline:2.5px solid var(--ink);outline-offset:2px}
+.screen{min-height:100dvh;display:flex;flex-direction:column}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+/* ── nav ───────────────────────────── */
+.nav{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.96);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--rule);padding-top:env(safe-area-inset-top)}
+.navbar{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;gap:6px}
+.navbtn{min-height:44px;min-width:44px;display:flex;align-items:center;gap:4px;padding:0 8px;
+  font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.navttl{flex:1;text-align:center;font-size:15px;font-weight:700;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ── editorial primitives ──────────── */
+.eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint)}
+.display{font-size:34px;font-weight:800;letter-spacing:-.035em;line-height:1.04}
+.display.sm{font-size:26px;letter-spacing:-.028em;line-height:1.12}
+.mast{padding:16px var(--edge) 0}
+.mast .kicker{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.mast .kicker .ln{flex:1;height:1px;background:var(--rule)}
+.standfirst{margin-top:9px;font-size:14px;color:var(--mid);letter-spacing:-.005em}
+.standfirst b{color:var(--red);font-weight:700}
+.tabs{display:flex;gap:18px;padding:16px var(--edge) 0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;min-height:44px;display:flex;align-items:center;gap:6px;font-size:15px;
+  font-weight:600;letter-spacing:-.01em;color:var(--faint);border-bottom:2px solid transparent;
+  white-space:nowrap}
+.tab[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tab .hd{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+.tab .n{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.tab[aria-pressed="true"] .n{color:var(--mid)}
+.tab.off{opacity:.5}
+.field{display:flex;align-items:center;gap:9px;margin:6px var(--edge) 0;padding:11px 0 9px;
+  border-bottom:1px solid var(--rule);color:var(--faint)}
+.field input{flex:1;min-width:0;font-size:16px;color:var(--ink);letter-spacing:-.01em}
+.field input::placeholder{color:var(--faint)}
+/* ── section rule head ─────────────── */
+.shead{display:flex;align-items:center;gap:10px;padding:18px var(--edge) 8px}
+.shead .ln{flex:1;height:1px;background:var(--rule)}
+.shead .ctl{min-height:36px;display:flex;align-items:center;font-size:12px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+/* ── agenda row (SIGNATURE gutter) ─── */
+.row{position:relative;display:flex;gap:10px;padding:13px var(--edge);border-top:1px solid var(--rule);
+  align-items:flex-start}
+.row:last-of-type{border-bottom:1px solid var(--rule)}
+.gutter{flex:none;width:var(--gut);display:flex;flex-direction:column;gap:4px;padding-top:2px}
+.t-org,.t-pri{font-size:11px;font-weight:800;letter-spacing:.01em;line-height:1;white-space:nowrap}
+.t-org{color:var(--oc)}
+.t-pri{color:var(--pc)}
+.main{flex:1;min-width:0}
+.ttl{display:block;font-size:17px;font-weight:600;letter-spacing:-.022em;line-height:1.22;
+  color:var(--ink)}
+.row.unread .ttl{font-weight:700}
+.meta{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;color:var(--mid);
+  letter-spacing:-.005em}
+.meta .rb{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta .hd{flex:none;width:6px;height:6px;border-radius:50%}
+.meta .hn{flex:none;color:var(--mid)}
+.nowline{display:block;margin-top:6px;font-size:14px;line-height:1.35;color:var(--ink2);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nowline em{font-style:normal;font-weight:800;color:var(--red);letter-spacing:.01em}
+.when{flex:none;width:40px;text-align:right;display:flex;flex-direction:column;align-items:flex-end;
+  gap:6px;padding-top:2px}
+.when .ag{font-size:13px;color:var(--mid);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.row.hot .when .ag{color:var(--red);font-weight:700}
+.when .mk{width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.when .wk{display:flex;gap:2.5px}
+.when .wk i{width:3px;height:3px;border-radius:50%;background:var(--faint);animation:b 1.4s infinite}
+.when .wk i:nth-child(2){animation-delay:.2s}.when .wk i:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.when .wk i{animation:none;opacity:.6}}
+/* needs-you: the only block of colour, bleeding off the left edge */
+.row.hot{background:var(--redwash)}
+.row.hot::before{content:"";position:absolute;left:0;top:-1px;bottom:-1px;width:5px;background:var(--red)}
+.tail{padding:16px var(--edge) 130px;font-size:12px;line-height:1.55;color:var(--faint);
+  border-top:1px solid var(--rule2)}
+.tail b{color:var(--mid);font-weight:700}
+/* ── floating new ──────────────────── */
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));
+  z-index:40;min-height:50px;padding:0 24px;border-radius:25px;background:var(--ink);color:#fff;
+  font-size:16px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;
+  box-shadow:0 8px 22px rgba(0,0,0,.24)}
+/* ── session detail ────────────────── */
+.head{padding:14px var(--edge) 16px;border-bottom:1px solid var(--rule)}
+.tagline{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.tagline .t{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  display:flex;align-items:center;gap:5px}
+.tagline .t .hd{width:6px;height:6px;border-radius:50%;background:currentColor}
+.subline{margin-top:9px;font-size:12.5px;color:var(--mid);display:flex;gap:8px;flex-wrap:wrap;
+  letter-spacing:-.005em}
+.subline .sep{color:var(--rule)}
+.turns{padding:4px var(--edge) 10px}
+.turn{padding:14px 0 2px}
+.speaker{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.speaker .ln{flex:1;height:1px;background:var(--rule)}
+.speaker .who{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink)}
+.speaker .who.dim{color:var(--faint)}
+.say{font-size:16.5px;line-height:1.44;letter-spacing:-.015em;color:var(--ink)}
+.say.dim{color:var(--ink2)}
+.toolrow{display:flex;width:100%;align-items:center;gap:9px;min-height:44px;padding:6px 0;
+  border-top:1px solid var(--rule2);text-align:left}
+.toolrow .car{color:var(--faint);font-size:13px;transition:transform .18s}
+.toolrow[aria-expanded="true"] .car{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.toolrow .car{transition:none}}
+.toolrow .nm{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mid);flex:none}
+.toolrow .pv{flex:1;min-width:0;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;
+  color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── gate ──────────────────────────── */
+.gate{margin:18px 0 8px;border-top:2.5px solid var(--red);border-bottom:2.5px solid var(--red);
+  background:var(--redwash);padding:12px 0 14px}
+.gate .gk{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 14px}
+.gate .gk .lbl{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--red)}
+.gate .gk .when2{font-size:12px;color:var(--red);font-variant-numeric:tabular-nums;font-weight:700}
+.gate .gq{padding:9px 14px 14px;font-size:20px;font-weight:700;letter-spacing:-.028em;line-height:1.25}
+.gacts{display:flex;gap:8px;padding:0 14px}
+.gacts button{flex:1;min-height:48px;font-size:15px;font-weight:700;letter-spacing:-.01em;
+  border:1px solid var(--ink);background:var(--paper);display:flex;align-items:center;
+  justify-content:center;border-radius:2px}
+.gacts button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
+.gacts button.no{border-color:#e9b7b3;color:var(--red)}
+.gdone{margin:14px 0 2px;padding:10px 14px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  font-size:13px;color:var(--mid);display:flex;justify-content:space-between;gap:10px}
+.gdone b{color:var(--ink);font-weight:700}
+/* ── composer ──────────────────────── */
+.comp{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;gap:10px;
+  padding:9px var(--edge) calc(9px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top:1px solid var(--rule)}
+.comp input{flex:1;min-width:0;min-height:38px;font-size:16px;letter-spacing:-.01em}
+.comp input::placeholder{color:var(--faint)}
+.comp .send{flex:none;width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center}
+/* ── menu ──────────────────────────── */
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.14)}
+.menu{position:fixed;right:12px;top:calc(54px + env(safe-area-inset-top));z-index:60;width:224px;
+  background:var(--paper);border:1px solid var(--ink);box-shadow:0 12px 30px rgba(0,0,0,.16)}
+.menu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;
+  min-height:48px;padding:0 14px;font-size:15px;font-weight:600;text-align:left}
+.menu button+button{border-top:1px solid var(--rule)}
+.menu button .k{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint)}
+.menu button.bad{color:var(--red)}
+/* ── form (#new) ───────────────────── */
+.frow{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px var(--edge);
+  border-top:1px solid var(--rule)}
+.frow .k{flex:none;width:96px;font-size:10.5px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--faint)}
+.frow .v{flex:1;min-width:0;font-size:16px;letter-spacing:-.015em;text-align:right;color:var(--ink)}
+.frow input{flex:1;min-width:0;font-size:16px;letter-spacing:-.015em;text-align:right}
+.frow input::placeholder{color:var(--faint)}
+.pick{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px var(--edge);
+  border-top:1px solid var(--rule);text-align:left}
+.pick .mk{flex:none;width:14px;height:14px;border:1.5px solid var(--faint);border-radius:50%}
+.pick[aria-pressed="true"] .mk{border-color:var(--ink);background:var(--ink);box-shadow:inset 0 0 0 2.5px #fff}
+.pick .nm{flex:1;min-width:0;font-size:17px;font-weight:600;letter-spacing:-.02em;display:flex;
+  align-items:center;gap:8px}
+.pick .nm .hd{width:8px;height:8px;border-radius:50%;flex:none}
+.pick .st{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint)}
+.pick.dead{opacity:.55}
+.pick.dead .st{color:var(--red)}
+.cells{display:flex;gap:0;border-top:1px solid var(--rule)}
+.cells button{flex:1;min-height:64px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:5px;border-left:1px solid var(--rule);font-size:14px;font-weight:700;
+  letter-spacing:-.01em;color:var(--faint)}
+.cells button:first-child{border-left:0}
+.cells button .lb{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint)}
+.cells button[aria-pressed="true"]{color:var(--pc);background:var(--wash)}
+.cells button[aria-pressed="true"] .lb{color:var(--pc)}
+.orgcells button[aria-pressed="true"]{color:var(--oc)}
+.orgcells button[aria-pressed="true"] .lb{color:var(--oc)}
+.hint{padding:8px var(--edge) 0;font-size:12.5px;line-height:1.45;color:var(--mid)}
+.hint b{color:var(--ink);font-weight:700}
+.promptbox{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-top:8px;
+  padding:12px var(--edge)}
+.promptbox textarea{width:100%;min-height:88px;resize:none;font-size:16.5px;line-height:1.42;
+  letter-spacing:-.015em}
+.promptbox textarea::placeholder{color:var(--faint)}
+.primary{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 40px);
+  margin:24px var(--edge) calc(30px + env(safe-area-inset-bottom));min-height:54px;background:var(--ink);
+  color:#fff;font-size:17px;font-weight:700;letter-spacing:-.02em;border-radius:27px}
+/* ── org agenda ────────────────────── */
+.item{position:relative;border-top:1px solid var(--rule);padding:0}
+.item.hot::before{content:"";position:absolute;z-index:2;left:0;top:-1px;bottom:0;width:5px;
+  background:var(--red)}
+.ihead{display:flex;gap:10px;width:100%;align-items:flex-start;padding:14px var(--edge);text-align:left}
+.ihead .gutter{padding-top:2px}
+.ihead .ib{flex:1;min-width:0}
+.ihead .nm{display:block;font-size:17px;font-weight:600;letter-spacing:-.022em;line-height:1.24}
+.ihead .mt{display:flex;gap:8px;margin-top:4px;font-size:12px;color:var(--mid);
+  letter-spacing:.02em;text-transform:uppercase;font-weight:700;flex-wrap:wrap}
+.ihead .mt .hotw{color:var(--red)}
+.ihead .dt{flex:none;text-align:right;font-size:13px;color:var(--mid);font-variant-numeric:tabular-nums;
+  padding-top:2px;width:44px}
+.ihead .car{flex:none;color:var(--faint);font-size:13px;padding-top:3px;transition:transform .18s}
+.item[data-open="1"] .car{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.item .car{transition:none}}
+.st-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px var(--edge) 8px 56px;
+  border-top:1px solid var(--rule2);position:relative}
+.st-row::before{content:"";position:absolute;left:38px;top:50%;width:10px;height:1px;background:var(--rule)}
+.st-row .nm{flex:1;min-width:0;font-size:15px;letter-spacing:-.015em;color:var(--ink2)}
+.st-row.done .nm{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--rule)}
+.st-row .st{flex:none;font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--faint)}
+.st-row.need{background:var(--redwash)}
+.st-row.need .nm{color:var(--ink);font-weight:600}
+.st-row.need .st{color:var(--red)}
+.at-row{display:flex;align-items:center;gap:10px;min-height:52px;padding:9px var(--edge) 9px 56px;
+  border-top:1px solid var(--rule2);background:var(--wash);position:relative}
+.at-row::before{content:"\203A";position:absolute;left:38px;top:50%;transform:translateY(-50%);
+  color:var(--faint);font-size:13px}
+.at-row .ab{flex:1;min-width:0}
+.at-row .ab .t{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.018em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-row .ab .m{display:block;font-size:12px;color:var(--mid);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;margin-top:1px}
+.at-row.hot .ab .m{color:var(--red);font-weight:700}
+.at-row .tg{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.at-row .tg .o{font-size:10px;font-weight:800;letter-spacing:.02em;color:var(--oc)}
+.at-row .tg .a{font-size:11.5px;color:var(--mid);font-variant-numeric:tabular-nums}
+</style></head>
+<body><div id="app"></div><script src="./data.js"></script><script>
+const F=window.FLEET, app=document.getElementById('app');
+const ORG=Object.fromEntries(F.orgs.map(o=>[o.id,o])), PR=Object.fromEntries(F.priorities.map(p=>[p.id,p]));
+const HOST=Object.fromEntries(F.hosts.map(h=>[h.id,h]));
+const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const S={host:'all',sort:'recent',q:'',tools:{},open:{},gate:null,menu:false,
+  nhost:'mactop',nprio:'P1',norg:'GM'};
+const SORTS=[['recent','Recent'],['needs','Needs you'],['prio','Priority']];
+const AGO=s=>s==='now'?0:/^(\d+)m/.test(s)?+RegExp.$1:/^(\d+)h/.test(s)?+RegExp.$1*60:
+  /^(\d+)d/.test(s)?+RegExp.$1*1440:9e9;
+function gutter(s){const o=ORG[s.org],p=PR[s.priority];
+  return `<span class="gutter"><b class="t-org" style="--oc:${o.color}">${E(o.id)}</b>
+    <b class="t-pri" style="--pc:${p.color}">${E(s.priority)}</b></span>`;}
+function filtered(){let r=F.sessions.filter(s=>S.host==='all'||s.host===S.host);
+  const q=S.q.trim().toLowerCase();
+  if(q)r=r.filter(s=>(s.title+' '+s.repo+' '+s.branch+' '+s.now+' '+s.org+' '+s.priority).toLowerCase().includes(q));
+  const need=s=>s.status==='needs_you'?0:1;
+  if(S.sort==='needs')r=r.slice().sort((a,b)=>need(a)-need(b)||AGO(a.ago)-AGO(b.ago));
+  else if(S.sort==='prio')r=r.slice().sort((a,b)=>a.priority.localeCompare(b.priority)||need(a)-need(b)||AGO(a.ago)-AGO(b.ago));
+  else r=r.slice().sort((a,b)=>AGO(a.ago)-AGO(b.ago));
+  return r;}
+function mark(s){if(s.status==='needs_you')return '';
+  if(s.status==='working')return '<span class="wk"><i></i><i></i><i></i></span>';
+  return s.unread?'<span class="mk"></span>':'';}
+function nowline(s){
+  if(s.status==='needs_you')return `<em>Needs you</em> — ${E(s.question||s.now)}`;
+  return E(s.now);}
+function row(s,pin){const h=HOST[s.host];
+  return `<a class="row ${s.status==='needs_you'?'hot ':''}${s.unread?'unread ':''}${pin?'pin':''}" href="#session/${s.id}">
+  ${gutter(s)}<span class="main"><span class="ttl">${E(s.title)}</span>
+  <span class="meta"><span class="rb">${E(s.repo)} / ${E(s.branch)}</span>
+    <span class="hd" style="background:${h.color}"></span><span class="hn">${E(h.label)}</span></span>
+  <span class="nowline">${nowline(s)}</span></span>
+  <span class="when"><span class="ag num">${E(s.ago)}</span>${mark(s)}</span></a>`;}
+function nav(title,left,right){return `<div class="nav"><div class="navbar">
+  ${left||'<span style="width:44px"></span>'}<span class="navttl">${title}</span>
+  ${right||'<span style="width:44px"></span>'}</div></div>`;}
+const BACK=`<a class="navbtn" href="#list"><svg width="9" height="16" viewBox="0 0 10 18" fill="none" aria-hidden="true"><path d="M8.5 1 1.5 9l7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sessions</a>`;
+function listScreen(){const rows=filtered(), pin=F.sessions.find(s=>s.id===F.pinned);
+  const hot=F.sessions.filter(s=>s.status==='needs_you').length;
+  const tabs=[{id:'all',label:'All',n:F.sessions.length,live:true}]
+    .concat(F.hosts.map(h=>({id:h.id,label:h.label,color:h.color,live:h.live,
+      n:F.sessions.filter(s=>s.host===h.id).length})));
+  return `<div class="screen">
+  ${nav('','<button class="navbtn">Edit</button>','<a class="navbtn" href="#org/GM">Orgs</a>')}
+  <div class="mast"><div class="kicker"><span class="eyebrow">FleetBoard</span><span class="ln"></span>
+    <span class="eyebrow num">Wed 3 Sep · 12:04</span></div>
+    <h1 class="display">Sessions</h1>
+    <p class="standfirst num">${F.sessions.length} open · ${rows.length} shown · <b>${hot} need you</b></p></div>
+  <div class="tabs" role="group" aria-label="Machine">${tabs.map(t=>`<button class="tab ${t.live?'':'off'}"
+    aria-pressed="${S.host===t.id}" onclick="setHost('${t.id}')">
+    ${t.color?`<span class="hd" style="background:${t.color}"></span>`:''}${E(t.label)}
+    <span class="n">${t.n}</span></button>`).join('')}</div>
+  <label class="field"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="m11 11 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <input id="q" placeholder="Search sessions" value="${E(S.q)}" oninput="S.q=this.value;render(true)" aria-label="Search sessions"></label>
+  ${pin?`<div class="shead"><span class="eyebrow">Pinned</span><span class="ln"></span></div>${row(pin,true)}`:''}
+  <div class="shead"><span class="eyebrow">All sessions</span><span class="ln"></span>
+    <button class="ctl" onclick="cycleSort()">${SORTS.find(x=>x[0]===S.sort)[1]} &#9662;</button></div>
+  ${rows.map(s=>row(s)).join('')||'<div class="tail">Nothing matches that search.</div>'}
+  <p class="tail">Colour appears only where it means something: <b>org</b> and <b>priority</b> in the
+    margin, <b>red</b> when a session is waiting on you. Everything else is set in ink.</p>
+  <a class="fab" href="#new"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M12.4 1.8 16.2 5.6 6 15.8l-4.4.6.6-4.4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>New Session</a></div>`;}
+function detail(id){const s=F.sessions.find(x=>x.id===id)||F.sessions[1];
+  const o=ORG[s.org],p=PR[s.priority],h=HOST[s.host];
+  const turns=F.transcript.map((t,i)=>{
+    if(t.role==='user')return `<div class="turn"><div class="speaker"><span class="who">You</span>
+      <span class="ln"></span></div><p class="say">${E(t.text)}</p></div>`;
+    if(t.role==='assistant')return `<div class="turn"><div class="speaker">
+      <span class="who dim">${E(s.model)}</span><span class="ln"></span></div>
+      <p class="say dim">${E(t.text)}</p></div>`;
+    if(t.role==='tool'){const op=!!S.tools[i];
+      return `<button class="toolrow" aria-expanded="${op}" onclick="S.tools[${i}]=!S.tools[${i}];render()">
+      <span class="car">&#8250;</span><span class="nm">${E(t.name)}</span>
+      <span class="pv">${op?E(t.text):E(t.text.split(' ')[0].split('/').pop())}</span></button>`;}
+    if(t.role==='gate'){if(S.gate)return `<div class="gdone"><span>You answered <b>${E(S.gate)}</b></span>
+      <span class="num">${E(s.ago)}</span></div><div class="turn"><div class="speaker">
+      <span class="who dim">Next</span><span class="ln"></span></div>
+      <p class="say dim">${E(s.next)}</p></div>`;
+      return `<div class="gate"><div class="gk"><span class="lbl">Needs you</span>
+      <span class="when2">${E(s.ago)}</span></div><p class="gq">${E(t.text)}</p>
+      <div class="gacts">${t.options.map(x=>`<button class="${x==='Approve'?'go':x==='Deny'?'no':''}"
+        onclick="S.gate='${x}';render()">${E(x)}</button>`).join('')}</div></div>`;}
+    return '';}).join('');
+  return `<div class="screen">
+  ${nav('',BACK,`<button class="navbtn" aria-label="Session options" onclick="S.menu=!S.menu;render()" style="justify-content:flex-end">
+    <svg width="20" height="5" viewBox="0 0 22 6" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="2.4"/><circle cx="11" cy="3" r="2.4"/><circle cx="19" cy="3" r="2.4"/></svg></button>`)}
+  <div class="head"><div class="tagline">
+    <span class="t" style="color:${o.color}"><span class="hd"></span>${E(o.id)} ${E(o.label)}</span>
+    <span class="t" style="color:${p.color}">${E(s.priority)} ${E(p.label)}</span></div>
+    <h1 class="display sm">${E(s.title)}</h1>
+    <div class="subline"><span>${E(s.repo)} / ${E(s.branch)}</span><span class="sep">|</span>
+      <span style="display:flex;align-items:center;gap:5px"><i style="width:6px;height:6px;border-radius:50%;background:${h.color};display:block"></i>${E(h.label)}</span>
+      <span class="sep">|</span><span class="num">${s.ctx}% context · $${s.cost.toFixed(2)}</span></div></div>
+  <div class="turns">${turns}</div>
+  <div class="comp"><input placeholder="Message this session" aria-label="Message this session">
+    <span class="send" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 13.5V3M3.4 7.4 8 2.8l4.6 4.6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+  ${S.menu?`<div class="scrim" onclick="S.menu=false;render()"></div><div class="menu">
+    <button onclick="S.menu=false;render()">Hibernate<span class="k">Keeps context</span></button>
+    <button onclick="S.menu=false;render()">Open on Mac<span class="k">${E(h.label)}</span></button>
+    <button class="bad" onclick="S.menu=false;render()">End session<span class="k">Final</span></button></div>`:''}
+  </div>`;}
+function newScreen(){const h=HOST[S.nhost];
+  return `<div class="screen">
+  ${nav('New Session','<a class="navbtn" href="#list">Cancel</a>')}
+  <div class="mast" style="padding-bottom:2px"><div class="kicker"><span class="eyebrow">Start</span>
+    <span class="ln"></span></div><h1 class="display sm">A new session</h1>
+    <p class="standfirst">Pick the machine, point it at a repo, tell it the first thing to do.</p></div>
+  <div class="shead"><span class="eyebrow">Machine</span><span class="ln"></span></div>
+  ${F.hosts.map(x=>`<button class="pick ${x.live?'':'dead'}" aria-pressed="${S.nhost===x.id}"
+    ${x.live?'':'disabled'} onclick="S.nhost='${x.id}';render()">
+    <span class="mk"></span><span class="nm"><span class="hd" style="background:${x.color}"></span>${E(x.label)}</span>
+    <span class="st">${x.live?x.sessions+' running':'Offline'}</span></button>`).join('')}
+  <p class="hint" style="border-top:1px solid var(--rule);padding-top:10px">
+    <b>MacBook is asleep</b> — last seen 8:14 this morning. Wake it from the Mac app to start there.</p>
+  <div class="shead"><span class="eyebrow">Where</span><span class="ln"></span></div>
+  <div class="frow"><span class="k">Directory</span><span class="v">~/Projects</span></div>
+  <div class="frow"><span class="k">Repo</span><span class="v">recruiting</span></div>
+  <div class="frow"><span class="k">Branch</span><input placeholder="new-branch-name" aria-label="Branch"></div>
+  <div class="frow"><span class="k">Task id</span><input placeholder="optional" aria-label="Task id"></div>
+  <div class="shead"><span class="eyebrow">Org</span><span class="ln"></span>
+    <span class="ctl" style="color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0;font-size:12.5px">from repo</span></div>
+  <div class="cells orgcells">${F.orgs.map(o=>`<button style="--oc:${o.color}" aria-pressed="${S.norg===o.id}"
+    onclick="S.norg='${o.id}';render()">${E(o.id)}<span class="lb">${E(o.label)}</span></button>`).join('')}</div>
+  <div class="shead"><span class="eyebrow">Priority</span><span class="ln"></span></div>
+  <div class="cells" style="border-bottom:1px solid var(--rule)">${F.priorities.map(p=>`<button
+    style="--pc:${p.color}" aria-pressed="${S.nprio===p.id}" onclick="S.nprio='${p.id}';render()">
+    ${E(p.id)}<span class="lb">${E(p.label)}</span></button>`).join('')}</div>
+  <div class="shead"><span class="eyebrow">First message</span><span class="ln"></span></div>
+  <div class="promptbox"><textarea placeholder="Tell this session what to do first…" aria-label="First prompt"></textarea></div>
+  <button class="primary">Start on ${E(h.label)}</button></div>`;}
+function orgScreen(id){const o=ORG[id]||ORG.GM, tasks=(F.orgTasks[o.id]||[]);
+  const mine=F.sessions.filter(s=>s.org===o.id);
+  const hot=mine.filter(s=>s.status==='needs_you').length;
+  return `<div class="screen">
+  ${nav('',BACK,'<span style="width:44px"></span>')}
+  <div class="mast"><div class="kicker"><span class="eyebrow" style="color:${o.color}">${E(o.id)} · ${E(o.label)}</span>
+    <span class="ln"></span></div><h1 class="display">Agenda</h1>
+    <p class="standfirst num">${tasks.length} tasks · ${mine.length} sessions · <b>${hot} need you</b></p></div>
+  <div class="shead"><span class="eyebrow">By priority, then due</span><span class="ln"></span></div>
+  ${tasks.map(t=>{const p=PR[t.priority], sess=mine.filter(s=>s.task===t.id);
+    const need=t.subtasks.some(x=>x.status==='needs you')||sess.some(s=>s.status==='needs_you');
+    const open=S.open[t.id]!==undefined?S.open[t.id]:(t.priority==='P0');
+    return `<div class="item ${need?'hot':''}" data-open="${open?1:0}">
+    <button class="ihead" aria-expanded="${open}" onclick="S.open['${t.id}']=${!open};render()">
+      <span class="gutter"><b class="t-pri" style="--pc:${p.color}">${E(t.priority)}</b>
+        <b class="t-org" style="--oc:var(--faint)">${E(p.label)}</b></span>
+      <span class="ib"><span class="nm">${E(t.name)}</span>
+        <span class="mt"><span>${E(t.status)}</span>${need?'<span class="hotw">Needs you</span>':''}</span></span>
+      <span class="dt num">${E(t.due)}</span><span class="car">&#8250;</span></button>
+    ${open?t.subtasks.map(x=>`<div class="st-row ${x.status==='done'?'done':x.status==='needs you'?'need':''}">
+      <span class="nm">${E(x.name)}</span><span class="st">${E(x.status)}</span></div>`).join(''):''}
+    ${open?sess.map(s=>`<a class="at-row ${s.status==='needs_you'?'hot':''}" href="#session/${s.id}">
+      <span class="ab"><span class="t">${E(s.title)}</span>
+      <span class="m">${s.status==='needs_you'?'Needs you — ':''}${E(s.now)}</span></span>
+      <span class="tg"><span class="o" style="--oc:${PR[s.priority].color}">${E(s.priority)}</span>
+      <span class="a num">${E(s.ago)}</span></span></a>`).join(''):''}
+    </div>`;}).join('')}
+  <p class="tail">Tasks sort P0 first, then by due date. A red margin means the task — or a session
+    under it — is waiting on <b>you</b>.</p></div>`;}
+function setHost(id){S.host=id;render();}
+function cycleSort(){const i=SORTS.findIndex(x=>x[0]===S.sort);S.sort=SORTS[(i+1)%SORTS.length][0];render();}
+function render(keepFocus){const h=location.hash||'#list';let html;
+  if(h.indexOf('#session/')===0)html=detail(h.slice(9));
+  else if(h==='#new')html=newScreen();
+  else if(h.indexOf('#org/')===0)html=orgScreen(h.slice(5));
+  else html=listScreen();
+  const q=document.getElementById('q'), sel=q?[q.selectionStart,q.selectionEnd]:null;
+  app.innerHTML=html;
+  if(keepFocus){const n=document.getElementById('q');if(n){n.focus();try{n.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+}
+function place(){const h=location.hash||'';
+  if(h.indexOf('#session/')===0){const g=document.querySelector('.gate')||document.querySelector('.gdone');
+    scrollTo(0,document.body.scrollHeight);if(g)g.scrollIntoView({block:'center'});}else scrollTo(0,0);}
+window.S=S;window.render=render;window.setHost=setHost;window.cycleSort=cycleSort;
+addEventListener('hashchange',()=>{S.menu=false;render();place()});
+render();place();
+</script></body></html>
