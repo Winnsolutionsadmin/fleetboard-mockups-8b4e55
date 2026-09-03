@@ -71,7 +71,7 @@ svg{display:block;flex:none}
 .sortbar .cap{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
   color:var(--ink3);margin-right:2px}
 .seg{display:flex;gap:4px;flex:1}
-.seg button{flex:1;min-height:32px;border-radius:9px;background:rgba(118,118,128,.10);
+.seg button{flex:1;min-height:44px;border-radius:11px;background:rgba(118,118,128,.10);
   font-size:12.5px;font-weight:600;color:var(--ink2);padding:0 4px}
 .seg button[aria-pressed="true"]{background:#111318;color:#fff}
 .grouphead{display:flex;align-items:baseline;gap:8px;margin:10px 2px 8px;
@@ -436,7 +436,7 @@ function viewSession(id){
         '<span class="txt">' + esc(s.now) + '</span><span class="age tnum">' + esc(s.ago) +
         '</span></div>') +
       '<div class="facts"><span class="fact">' + esc(STATE[s.status]) + '</span>' +
-        '<span class="fact tnum">' + esc(s.ago) + '</span>' +
+        '<span class="fact tnum">updated ' + esc(s.ago) + '</span>' +
         '<span class="fact">' + esc(s.model) + '</span>' +
         '<span class="fact tnum">' + s.ctx + '% context</span>' +
         '<span class="fact tnum">$' + s.cost.toFixed(2) + '</span>' +
@@ -476,7 +476,7 @@ function viewNew(){
       '<div class="field"><label for="dir">Directory</label>' +
         '<input id="dir" type="text" value="~/Projects/recruiting"></div>' +
       '<div class="field"><label>Org <span style="text-transform:none;letter-spacing:0;' +
-        'font-weight:600;color:#a0a4ac">— from the repo, tap to change</span></label>' +
+        'font-weight:600;color:#a0a4ac">— from the repo</span></label>' +
         '<div class="pickrow">' + F.orgs.map(function(o){
           return '<button class="pill" data-norg="' + o.id + '" aria-pressed="' +
             (S.newOrg === o.id) + '" style="--c:' + o.color + '"><span class="d"></span>' +

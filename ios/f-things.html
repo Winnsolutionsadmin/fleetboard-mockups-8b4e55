@@ -51,9 +51,9 @@ svg{display:block;flex:none}
   background:rgba(118,118,128,.10);border-radius:10px;color:var(--ink3)}
 .search input{flex:1;border:0;background:none;outline:none;font-size:16px;color:var(--ink)}
 .search input::placeholder{color:var(--ink3)}
-.seg{display:flex;gap:3px;background:rgba(118,118,128,.09);border-radius:9px;padding:3px;
+.seg{display:flex;gap:3px;background:rgba(118,118,128,.09);border-radius:12px;padding:2px;
   margin-bottom:4px}
-.seg button{flex:1;min-height:30px;border-radius:7px;font-size:12.5px;font-weight:620;
+.seg button{flex:1;min-height:44px;border-radius:10px;font-size:13px;font-weight:620;
   color:var(--ink2)}
 .seg button[aria-pressed="true"]{background:#fff;color:var(--ink);
   box-shadow:0 1px 2px rgba(17,19,24,.14)}
@@ -142,7 +142,7 @@ svg{display:block;flex:none}
 .dhead{padding:12px 14px 12px;border-bottom:.5px solid var(--hair)}
 .dhead h1{font-size:22px;font-weight:700;letter-spacing:-.025em;line-height:1.18}
 .dhead .sub{margin-top:4px;font-size:13px}
-.dhead .caps{margin-top:9px;gap:5px}
+.dhead .caps{margin-top:9px;gap:5px;flex-wrap:wrap;row-gap:5px}
 .dhead .cap{height:20px;padding:0 7px;font-size:11px;border-radius:6px}
 .facts{display:flex;flex-wrap:wrap;gap:0 14px;padding:9px 14px;border-bottom:.5px solid var(--hair);
   background:var(--panel);font-size:12px;color:var(--ink2);font-weight:600}
@@ -229,7 +229,7 @@ svg{display:block;flex:none}
 .trow .tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;
   font-size:10.5px;font-weight:850;background:var(--tint);color:var(--c);flex:none;margin-top:1px}
 .trow .nm{flex:1;font-size:15px;font-weight:620;letter-spacing:-.01em;line-height:1.25}
-.trow .meta{margin-top:2px;font-size:12px;color:var(--ink3)}
+.trow .meta{display:block;margin-top:2px;font-size:12px;color:var(--ink3);font-weight:500}
 .krow{display:flex;align-items:center;gap:9px;min-height:42px;padding:0 14px 0 40px;
   border-bottom:.5px solid var(--hair);font-size:14px;background:#fff}
 .krow .r{width:16px;height:16px;border-radius:50%;border:1.6px solid #c3c8d0;flex:none;
@@ -483,7 +483,7 @@ function viewNew(){
         '<div class="grow"><span class="k">Task id</span>' +
           '<input id="task" type="text" placeholder="optional" aria-label="Task id"></div>' +
       '</div>' +
-      '<div class="glab">Org — read from the repo, tap to change</div>' +
+      '<div class="glab">Org — from the repo</div>' +
       '<div class="group"><div class="chipsrow">' + F.orgs.map(function(o){
         return '<button class="pick" data-norg="' + o.id + '" aria-pressed="' +
           (S.newOrg === o.id) + '" style="--c:' + o.color + '"><span class="d"></span>' +
