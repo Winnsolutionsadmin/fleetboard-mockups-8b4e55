@@ -50,6 +50,7 @@ svg{display:block;flex:none}
 .hchip .led{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.05)}
 .hchip .hn{font-size:12.5px;font-weight:700;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hchip .hc{margin-left:auto;font-size:14px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.hchip[aria-pressed="true"]{border:1.5px solid currentColor;box-shadow:0 0 0 3px rgba(0,0,0,.05);background:#fff}
 .hchip.off{background:#f2f2f5;border-style:dashed}
 .hchip.off .led{background:none;box-shadow:inset 0 0 0 1.5px var(--ink3)}
 .hchip.off .hn,.hchip.off .hc{color:var(--ink3)}
@@ -285,7 +286,7 @@ function stripHTML(){
   var live = F.hosts.filter(function(h){return h.live;}).length;
   var h = '<div class="strip"><div class="hostrow">';
   F.hosts.forEach(function(x){
-    h += '<button class="hchip'+(x.live?'':' off')+'" data-f="host:'+x.id+'" style="color:'+(x.live?hostVar(x.id):'var(--ink3)')+'">'+
+    h += '<button class="hchip'+(x.live?'':' off')+'" data-f="host:'+x.id+'" aria-pressed="'+(S.filter==='host:'+x.id)+'" style="color:'+(x.live?hostVar(x.id):'var(--ink3)')+'">'+
       '<span class="led'+(x.live?' on':'')+'" style="background:'+(x.live?hostVar(x.id):'transparent')+'"></span>'+
       '<span class="hn" style="color:var(--ink)">'+esc(x.label)+'</span>'+
       '<span class="hc" style="color:var(--ink)">'+x.sessions+'</span></button>';
