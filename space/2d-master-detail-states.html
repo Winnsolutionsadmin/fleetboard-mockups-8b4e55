@@ -1180,6 +1180,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeAll(); });
 document.addEventListener('click', e => { if(!e.target.closest('.host-chip')) document.querySelectorAll('.host-chip.open').forEach(x=>{x.classList.remove('open');x.setAttribute('aria-expanded','false');}); if(!e.target.closest('.tt')) document.querySelectorAll('.tt.open').forEach(x=>x.classList.remove('open')); }, true);
 
 $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); // phone Folders sheet is closed on load
+{ const q=new URLSearchParams(location.search).get('scenario'); if(SCENARIOS[q]) state.scenario=q; }
 render();
 </script>
 </body>
