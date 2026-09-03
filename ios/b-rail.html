@@ -1,0 +1,562 @@
+<!-- variant: b-rail · thesis: a ledger read at the edges — a 4pt org rail leads every row, the priority is a bare numeral, the host ticks the trailing edge, so org/priority/host are absorbed by the row's structure instead of adding chrome. · signature: the rail; needs-you rows break out of the flat ledger and float above it as their own card. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>FleetBoard</title>
+<style>
+:root{
+  --bg:#f2f2f7; --card:#fff; --ink:#000;
+  --ink2:rgba(60,60,67,.6); --ink3:rgba(60,60,67,.32);
+  --sep:rgba(60,60,67,.2); --fill:rgba(118,118,128,.12);
+  --tint:#007aff; --hot:#dc2626;
+  --p0:#dc2626; --p1:#ea580c; --p2:#2563eb; --p3:#6b7280;
+  --p0-t:#b91c1c; --p1-t:#b3450b; --p2-t:#1d4ed8; --p3-t:#6b7280;
+  --mactop:#6a2bc4; --mini:#9e2790; --macbook:#b32d63;
+  --sb:env(safe-area-inset-bottom,0px); --st:env(safe-area-inset-top,0px);
+  --rail:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);font-size:17px;line-height:1.3;
+  -webkit-font-smoothing:antialiased;letter-spacing:-.01em;
+}
+button,input,textarea,select{font:inherit;color:inherit;letter-spacing:inherit}
+button{background:none;border:0;cursor:pointer}
+svg{display:block}
+:focus-visible{outline:2px solid var(--tint);outline-offset:-2px;border-radius:6px}
+.app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px calc(96px + var(--sb))}
+.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+
+/* ── nav ───────────────────────────────────────── */
+.nav{flex:none;z-index:30;padding-top:var(--st);background:rgba(249,249,249,.94);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:.5px solid var(--sep)}
+.nav .bar{height:48px;display:flex;align-items:center;gap:9px;padding:0 10px}
+.mark{width:24px;height:24px;border-radius:6px;flex:none;background:#101014;position:relative}
+.mark::before{content:"";position:absolute;left:4px;top:5px;width:3px;height:14px;border-radius:2px;background:#1f9e6b}
+.mark::after{content:"";position:absolute;left:10px;top:5px;width:3px;height:14px;border-radius:2px;background:#4b5ee8}
+.nav h1{font-size:19px;font-weight:800;letter-spacing:-.5px}
+.nav .cnt{font-size:13px;color:var(--ink2);font-weight:500}
+.grow{flex:1}
+.avatar{width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+.avatar i{width:29px;height:29px;border-radius:50%;background:var(--fill);color:var(--ink2);
+  font-style:normal;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.back{display:flex;align-items:center;gap:3px;height:44px;padding:0 6px;color:var(--tint);font-size:17px}
+.navtitle{font-size:17px;font-weight:700;text-align:center;flex:1}
+.more{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--tint);font-size:19px;font-weight:700}
+
+/* ── machine segmented ─────────────────────────── */
+.machines{flex:none;display:flex;gap:3px;padding:6px 10px 8px;background:rgba(249,249,249,.94);
+  border-bottom:.5px solid var(--sep)}
+.machines button{flex:1;min-width:0;min-height:44px;border-radius:9px;font-size:13.5px;font-weight:600;
+  color:var(--ink2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.machines button .n{font-size:11px;font-weight:600;color:var(--ink3)}
+.machines button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.13)}
+.machines button[aria-pressed=true] .n{color:var(--ink2)}
+.machines button.off{opacity:.5}
+
+/* ── search + legend ───────────────────────────── */
+.search{display:flex;align-items:center;gap:6px;height:36px;margin-top:12px;padding:0 8px;
+  border-radius:10px;background:var(--fill);color:var(--ink3)}
+.search input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:17px;color:var(--ink)}
+.search input::placeholder{color:rgba(60,60,67,.45)}
+.legend{display:flex;gap:6px;margin-top:8px}
+.legend button{flex:1;min-width:0;min-height:46px;border-radius:11px;background:var(--card);
+  display:flex;align-items:center;gap:7px;padding:0 8px;text-align:left;position:relative;overflow:hidden}
+.legend button .lr{position:absolute;left:0;top:0;bottom:0;width:4px}
+.legend button .lb{margin-left:6px;min-width:0}
+.legend .id{font-size:13px;font-weight:800;letter-spacing:-.2px}
+.legend .n{font-size:11px;color:var(--ink2);font-weight:500}
+
+/* ── section headers ───────────────────────────── */
+.sechead{display:flex;align-items:baseline;justify-content:space-between;padding:13px 2px 5px;gap:8px}
+.sechead h2{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.7px}
+.sort{display:flex;align-items:center;gap:3px;height:44px;margin:-11px -2px -11px 0;padding:0 2px;color:var(--tint);font-size:13px;font-weight:700}
+.key{font-size:10.5px;color:var(--ink3);padding:0 2px 7px;letter-spacing:.1px}
+.key b{color:var(--ink2);font-weight:700}
+
+/* ── ledger ────────────────────────────────────── */
+.ledger{background:var(--card);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:stretch;position:relative;min-height:62px;cursor:pointer;background:var(--card)}
+.row:active{background:rgba(60,60,67,.05)}
+.rail{width:4px;flex:none;align-self:stretch}
+.num{width:30px;flex:none;display:flex;align-items:flex-start;justify-content:center;padding-top:11px;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.num span{line-height:1}
+.row .body{flex:1;min-width:0;padding:11px 0 11px 6px;position:relative}
+.row + .row .body::before{content:"";position:absolute;left:0;right:0;top:0;height:.5px;background:var(--sep)}
+.l1{display:flex;align-items:baseline;gap:8px}
+.title{font-size:17px;font-weight:400;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.l2{display:flex;align-items:center;gap:6px;margin-top:3px}
+.meta{font-size:13px;color:var(--ink2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta .org{font-weight:700}
+.meta .pipe{color:var(--ink3);margin:0 3px}
+.age{font-size:13px;color:var(--ink2);flex:none;font-variant-numeric:tabular-nums}
+.hostcol{flex:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+  gap:2px;padding:11px 6px 11px 8px;width:46px}
+.hm{font-size:9.5px;font-weight:800;letter-spacing:.5px;line-height:1}
+.hm.mactop{color:var(--mactop)}.hm.mini{color:var(--mini)}.hm.macbook{color:var(--macbook)}
+.tick{width:3px;flex:none;align-self:stretch;margin:12px 0}
+.tick.mactop{background:var(--mactop)}.tick.mini{background:var(--mini)}.tick.macbook{background:var(--macbook)}
+.dots{display:inline-flex;gap:2.5px;align-items:center;height:14px}
+.dots i{width:4px;height:4px;border-radius:50%;background:var(--ink3);animation:bd 1.3s infinite}
+.dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}
+@keyframes bd{0%,60%,100%{opacity:.35}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.5}}
+
+/* ── priority numeral weights ──────────────────── */
+.n0{font-size:22px;font-weight:800;color:var(--p0);letter-spacing:-1px}
+.n1{font-size:21px;font-weight:700;color:var(--p1);letter-spacing:-1px}
+.n2{font-size:20px;font-weight:600;color:var(--p2);letter-spacing:-1px}
+.n3{font-size:19px;font-weight:500;color:var(--p3);opacity:.5;letter-spacing:-1px}
+
+/* ── needs-you: lifts out of the ledger ────────── */
+.lift{margin:10px 0;border-radius:14px;overflow:hidden;background:var(--card);
+  border:1px solid rgba(220,38,38,.3);box-shadow:0 6px 18px rgba(220,38,38,.16),0 1px 2px rgba(0,0,0,.06)}
+.lift .row{min-height:0}
+.lift .row .body::before{display:none}
+.lift .title{font-weight:700}
+.lift .ask{display:flex;align-items:center;gap:8px;padding:9px 12px 10px 40px;
+  background:rgba(220,38,38,.06);border-top:1px solid rgba(220,38,38,.14)}
+.lift .ask p{flex:1;min-width:0;font-size:12.5px;line-height:1.32;color:var(--p0-t);font-weight:500}
+.lift .ask .go{flex:none;min-height:32px;display:flex;align-items:center;gap:4px;padding:0 10px;
+  border-radius:8px;background:var(--hot);color:#fff;font-size:12.5px;font-weight:700}
+.badge{flex:none;display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:6px;
+  background:var(--hot);color:#fff;font-size:10px;font-weight:800;letter-spacing:.3px}
+.udot{width:7px;height:7px;border-radius:50%;background:var(--tint);flex:none;margin-left:1px}
+
+/* ── floating pill ─────────────────────────────── */
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + var(--sb));z-index:25;
+  display:flex;align-items:center;gap:8px;height:48px;padding:0 12px 0 8px;border-radius:24px;
+  background:#101014;color:#fff;font-size:16px;font-weight:600;
+  box-shadow:0 6px 20px rgba(0,0,0,.26),0 1px 3px rgba(0,0,0,.2)}
+.fab .fr{width:4px;height:26px;border-radius:2px;background:linear-gradient(180deg,#1f9e6b,#4b5ee8);flex:none;margin-right:4px}
+.fab:active{transform:translateX(-50%) scale(.97)}
+
+/* ── action sheet ──────────────────────────────── */
+.sheetwrap{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.28);
+  display:flex;align-items:flex-end;padding:8px 8px calc(8px + var(--sb))}
+.sheetwrap[hidden]{display:none}
+.sheet{width:100%;display:flex;flex-direction:column;gap:8px}
+.sheet .grp{background:rgba(255,255,255,.96);border-radius:14px;overflow:hidden}
+.sheet .ttl{padding:14px 16px;font-size:13px;color:var(--ink2);text-align:center;border-bottom:.5px solid var(--sep)}
+.sheet button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;
+  font-size:20px;color:var(--tint);position:relative}
+.sheet .grp button + button::before{content:"";position:absolute;left:0;right:0;top:0;height:.5px;background:var(--sep)}
+.sheet button.cancel{font-weight:700;border-radius:14px;background:rgba(255,255,255,.98)}
+.sheet button.danger{color:var(--hot)}
+
+/* ── session detail ────────────────────────────── */
+.dhead{flex:none;background:var(--card);border-bottom:.5px solid var(--sep);display:flex;align-items:stretch}
+.dhead .rail{width:6px}
+.dhead .in{flex:1;min-width:0;padding:13px 14px 13px 12px}
+.dhead .top{display:flex;align-items:flex-start;gap:9px}
+.dhead .num{width:auto;padding:1px 0 0}
+.dhead h1{font-size:21px;font-weight:700;letter-spacing:-.45px;line-height:1.18;flex:1;min-width:0}
+.dhead .sub{margin-top:4px;font-size:13px;color:var(--ink2)}
+.dhead .st{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--ink2)}
+
+/* ── transcript on a spine ─────────────────────── */
+.tape{padding:14px 14px 0}
+.turn{display:flex;gap:10px;padding-bottom:14px;position:relative}
+.turn::before{content:"";position:absolute;left:5px;top:14px;bottom:0;width:1.5px;background:var(--sep)}
+.turn:last-child::before{display:none}
+.mkr{width:12px;flex:none;display:flex;justify-content:center;padding-top:5px}
+.mkr i{width:9px;height:9px;border-radius:50%;background:var(--ink3);z-index:1;box-shadow:0 0 0 3px var(--bg)}
+.turn.user .mkr i{background:var(--tint)}
+.turn.gate .mkr i{background:var(--hot);width:11px;height:11px}
+.turn.gate{gap:0}
+.turn.gate .mkr{display:none}
+.turn.gate::before{display:none}
+.tbody{flex:1;min-width:0}
+.who{font-size:10.5px;font-weight:800;letter-spacing:.7px;color:var(--ink3);text-transform:uppercase;margin-bottom:4px}
+.turn.user .who{color:var(--tint)}
+.bub{background:var(--card);border-radius:12px;padding:10px 12px;font-size:15px;line-height:1.42}
+.turn.user .bub{background:#eaf3ff;color:#0b3c74}
+.toolrow{display:flex;align-items:center;gap:7px;background:rgba(118,118,128,.09);border-radius:8px;
+  padding:8px 10px;font-size:12.5px;color:var(--ink2);min-height:34px;cursor:pointer}
+.toolrow .nm{font-weight:800;color:rgba(60,60,67,.78);flex:none;font-size:11.5px;letter-spacing:.3px;text-transform:uppercase}
+.toolrow code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── gate ──────────────────────────────────────── */
+.gate{background:var(--card);border-radius:14px;overflow:hidden;display:flex;align-items:stretch;
+  border:1px solid rgba(220,38,38,.28);box-shadow:0 6px 18px rgba(220,38,38,.15)}
+.gate .gr{width:6px;flex:none;background:var(--hot)}
+.gate .gin{flex:1;min-width:0;padding:12px 13px 13px}
+.gate .hd{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.7px;
+  color:var(--p0-t);text-transform:uppercase}
+.gate .q{margin-top:8px;font-size:16px;font-weight:600;line-height:1.34}
+.gate .acts{display:flex;flex-direction:column;gap:8px;margin-top:13px}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;border-radius:11px;
+  font-size:16px;font-weight:700}
+.btn.primary{background:var(--hot);color:#fff}
+.btn.quiet{background:var(--fill);color:var(--ink)}
+.btn.deny{background:none;color:var(--ink2);border:1px solid var(--sep)}
+.btn:active{opacity:.75}
+.composer{flex:none;z-index:20;display:flex;align-items:flex-end;gap:8px;padding:8px 12px calc(8px + var(--sb));
+  background:rgba(249,249,249,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  border-top:.5px solid var(--sep)}
+.composer .field{flex:1;min-width:0;display:flex;align-items:center;min-height:40px;padding:0 14px;
+  border-radius:20px;background:var(--card);border:.5px solid var(--sep)}
+.composer input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:16px}
+.composer input::placeholder{color:var(--ink3)}
+.send{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none}
+.send i{width:34px;height:34px;border-radius:50%;background:var(--tint);color:#fff;display:flex;
+  align-items:center;justify-content:center;font-style:normal}
+
+/* ── forms (#new) ──────────────────────────────── */
+.formlbl{padding:20px 2px 7px;font-size:12px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.7px}
+.formlbl .lc{text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink3)}
+.stack{display:flex;flex-direction:column;gap:8px}
+.hostcard{display:flex;align-items:stretch;background:var(--card);border-radius:12px;overflow:hidden;
+  min-height:56px;border:1.5px solid transparent;cursor:pointer}
+.hostcard .hr{width:5px;flex:none}
+.hostcard .hin{flex:1;min-width:0;padding:9px 12px;display:flex;align-items:center;gap:10px}
+.hostcard .nm{font-size:17px;font-weight:600}
+.hostcard .rsn{font-size:12.5px;color:var(--ink2);margin-top:1px}
+.hostcard[aria-checked=true]{border-color:var(--tint)}
+.hostcard .mkc{margin-left:auto;flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ink3);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px}
+.hostcard[aria-checked=true] .mkc{background:var(--tint);border-color:var(--tint)}
+.hostcard.off{opacity:.55;cursor:default}
+
+.card{background:var(--card);border-radius:12px;overflow:hidden}
+.frow{display:flex;align-items:center;gap:10px;padding:0 14px;min-height:48px;position:relative}
+.frow + .frow::before{content:"";position:absolute;left:14px;right:0;top:0;height:.5px;background:var(--sep)}
+.frow .k{font-size:17px;flex:none}
+.frow .v{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:17px;color:var(--ink2);min-width:0}
+.frow input{border:0;background:none;outline:none;text-align:right;font-size:17px;flex:1;min-width:0}
+.orgpick{display:flex;gap:8px}
+.orgpick button{flex:1;min-width:0;min-height:52px;border-radius:11px;background:var(--card);
+  display:flex;align-items:center;gap:7px;padding:0 8px;position:relative;overflow:hidden;
+  border:1.5px solid transparent;font-size:14px;font-weight:700}
+.orgpick button .lr{position:absolute;left:0;top:0;bottom:0;width:4px}
+.orgpick button .lb{margin-left:7px;min-width:0;text-align:left}
+.orgpick button .sm{display:block;font-size:10.5px;font-weight:500;color:var(--ink2)}
+.orgpick button[aria-pressed=true]{border-color:var(--tint)}
+.pripick{display:flex;gap:8px}
+.pripick button{flex:1;min-height:64px;border-radius:11px;background:var(--card);border:1.5px solid transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.pripick button .lbl{font-size:10.5px;font-weight:700;color:var(--ink2);letter-spacing:.2px}
+.pripick button[aria-pressed=true]{border-color:var(--tint);background:var(--card)}
+.ta{width:100%;border:0;outline:none;resize:none;background:none;padding:12px 14px;font-size:16px;line-height:1.4;min-height:92px}
+.stickybtn{position:fixed;left:0;right:0;bottom:0;z-index:25;padding:10px 14px calc(12px + var(--sb));
+  background:rgba(249,249,249,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:.5px solid var(--sep)}
+.stickybtn .btn{min-height:50px;font-size:17px;background:#101014;color:#fff;gap:9px;padding:0 14px}
+.stickybtn .btn .fr{width:4px;height:24px;border-radius:2px;flex:none}
+
+/* ── org screen ────────────────────────────────── */
+.orghero{flex:none;display:flex;align-items:stretch;background:var(--card);border-bottom:.5px solid var(--sep)}
+.orghero .rail{width:8px;flex:none}
+.orghero .in{flex:1;min-width:0;padding:13px 14px}
+.orghero h1{font-size:23px;font-weight:800;letter-spacing:-.5px}
+.orghero .sub{font-size:12.5px;color:var(--ink2);margin-top:3px}
+.task{display:flex;align-items:stretch;background:var(--card);position:relative;cursor:pointer}
+.task .tin{flex:1;min-width:0;padding:11px 12px 11px 4px;position:relative}
+.task + .task .tin::before{content:"";position:absolute;left:0;right:0;top:0;height:.5px;background:var(--sep)}
+.task .thd{display:flex;align-items:flex-start;gap:8px}
+.task .nm{flex:1;min-width:0;font-size:16px;line-height:1.28;font-weight:500}
+.task .due{font-size:12.5px;color:var(--ink2);margin-top:3px}
+.task .tw{width:20px;flex:none;display:flex;justify-content:center;padding-top:3px;color:var(--ink3)}
+.task .tw svg{transition:transform .18s}
+.task[aria-expanded=true] .tw svg{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.task .tw svg{transition:none}}
+.subs{display:none;margin-top:9px;padding-left:2px;border-left:1.5px solid var(--sep);margin-left:2px}
+.task[aria-expanded=true] .subs{display:block}
+.subs .sub{display:flex;align-items:center;gap:8px;min-height:32px;font-size:14px;color:var(--ink2);padding-left:10px;position:relative}
+.subs .sub::before{content:"";position:absolute;left:-2px;top:15px;width:8px;height:1.5px;background:var(--sep)}
+.subs .sub .st{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ink3)}
+.subs .sub.done{color:var(--ink3)}
+.subs .sub.done .trunc{text-decoration:line-through;text-decoration-color:var(--ink3)}
+.subs .sub.hot{color:var(--p0-t);font-weight:700}
+.subs .sub.hot::before{background:var(--hot);height:2px}
+.subs .sub.hot .st{color:var(--hot)}
+.chips{display:flex;flex-direction:column;gap:6px;margin-top:9px;margin-left:10px}
+.chip{display:flex;align-items:center;gap:8px;min-height:40px;border-radius:9px;background:var(--fill);
+  padding:0 10px 0 0;overflow:hidden;cursor:pointer;position:relative}
+.chip .cr{width:4px;align-self:stretch;flex:none}
+.chip .nm{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:6px}
+.chip.hot{background:rgba(220,38,38,.09)}
+.chip.hot .nm{color:var(--p0-t);font-weight:700}
+.nosess{margin:9px 0 0 10px;font-size:12.5px;color:var(--ink3)}
+.foot{padding:16px 2px 0;font-size:12px;color:var(--ink3);text-align:center}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="sheetwrap" id="sheetwrap" hidden><div class="sheet" id="sheet"></div></div>
+<script src="./data.js"></script>
+<script>
+(function(){
+"use strict";
+var F=window.FLEET, ORG={},PRI={},HOST={};
+F.orgs.forEach(function(o){ORG[o.id]=o;});
+F.priorities.forEach(function(p){PRI[p.id]=p;});
+F.hosts.forEach(function(h){HOST[h.id]=h;});
+var HM={mactop:"MT",mini:"MN",macbook:"MB"};
+var STATE={machine:"all",sort:"recent",expanded:{"86ey1a3c":true}};
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+function agoMin(a){if(a==="now")return 0;var n=parseFloat(a);
+  if(/d$/.test(a))return n*1440;if(/h$/.test(a))return n*60;return n||0;}
+var DISC='<svg width="8" height="13" viewBox="0 0 8 13" fill="none" aria-hidden="true"><path d="M1.5 1.2 6.5 6.5 1.5 11.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var CHEV='<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 3.2 5 7l4-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var BACK='<svg width="11" height="18" viewBox="0 0 11 18" fill="none" aria-hidden="true"><path d="M9.3 1.5 1.8 9l7.5 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var GLASS='<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="6" cy="6" r="4.4" stroke="currentColor" stroke-width="1.6"/><path d="M9.4 9.4 13 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+var PINI='<svg width="11" height="11" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M9.2.9 13.1 4.8l-1.2 1.2-.9-.2-2.4 2.4.3 2.3-1.1 1.1-2.8-2.8-3.2 3.2-.7-.7 3.2-3.2L1.5 5.3l1.1-1.1 2.3.3L7.3 2l-.2-.9z"/></svg>';
+var ARROW='<svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 6h9M6.5 2l4.2 4-4.2 4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function numGlyph(p,extra){
+  return '<span class="num'+(extra||'')+'"><span class="n'+p.slice(1)+'" aria-hidden="true">'+p.slice(1)+'</span></span>';
+}
+function trailFor(s){
+  if(s.status==="needs_you") return '<span class="badge">NEEDS YOU</span>';
+  if(s.status==="working") return '<span class="dots" aria-label="working"><i></i><i></i><i></i></span>';
+  return '<span class="age">'+esc(s.ago)+'</span>';
+}
+function rowInner(s){
+  return '<span class="rail" style="background:'+ORG[s.org].color+'" aria-hidden="true"></span>'+
+    numGlyph(s.priority)+
+    '<div class="body">'+
+      '<div class="l1"><span class="title">'+esc(s.title)+'</span>'+
+        (s.unread&&s.status!=="needs_you"?'<span class="udot"></span>':'')+trailFor(s)+'</div>'+
+      '<div class="l2"><span class="meta"><span class="org" style="color:'+ORG[s.org].color+'">'+esc(s.org)+
+        '</span> '+esc(s.repo)+'<span class="pipe">|</span>'+esc(s.branch)+'</span></div>'+
+    '</div>'+
+    '<div class="hostcol">'+
+      '<span class="hm '+s.host+'">'+HM[s.host]+'</span></div>'+
+    '<span class="tick '+s.host+'" aria-hidden="true"></span>';
+}
+function rowHTML(s){
+  var lbl=esc(s.title)+', '+esc(ORG[s.org].label)+', priority '+s.priority+', on '+esc(HOST[s.host].label)+
+    ', '+(s.status==="needs_you"?"needs you":esc(s.status));
+  if(s.status!=="needs_you")
+    return '<div class="row" data-go="#session/'+s.id+'" role="link" tabindex="0" aria-label="'+lbl+'">'+rowInner(s)+'</div>';
+  return '<div class="lift" data-go="#session/'+s.id+'" role="link" tabindex="0" aria-label="'+lbl+'">'+
+    '<div class="row">'+rowInner(s)+'</div>'+
+    '<div class="ask"><p>'+esc(s.question||s.now)+'</p><span class="go">Answer '+ARROW+'</span></div></div>';
+}
+
+function visible(){
+  var out=F.sessions.filter(function(s){return STATE.machine==="all"||s.host===STATE.machine;});
+  if(STATE.sort==="needs") out.sort(function(a,b){
+    var r=(b.status==="needs_you")-(a.status==="needs_you");return r||agoMin(a.ago)-agoMin(b.ago);});
+  else if(STATE.sort==="priority") out.sort(function(a,b){
+    var r=a.priority.localeCompare(b.priority);return r||agoMin(a.ago)-agoMin(b.ago);});
+  else out.sort(function(a,b){return agoMin(a.ago)-agoMin(b.ago);});
+  return out;
+}
+var SORTLBL={recent:"Recent",needs:"Needs you",priority:"Priority"};
+
+function viewList(){
+  var rows=visible(), pin=F.sessions.filter(function(s){return s.id===F.pinned;})[0];
+  var hot=F.sessions.filter(function(s){return s.status==="needs_you";}).length;
+  var seq=rows.filter(function(s){return s.id!==F.pinned;});
+  // flat rows collect into ledger slabs; needs-you rows break out between them
+  var out="",buf=[];
+  function flush(){if(buf.length){out+='<div class="ledger">'+buf.join("")+'</div>';buf=[];}}
+  seq.forEach(function(s){ if(s.status==="needs_you"){flush();out+=rowHTML(s);} else buf.push(rowHTML(s)); });
+  flush();
+  var machines='<button aria-pressed="'+(STATE.machine==="all")+'" data-mach="all">All<span class="n">'+
+    F.sessions.length+'</span></button>'+F.hosts.map(function(h){
+    return '<button class="'+(h.live?'':'off')+'" aria-pressed="'+(STATE.machine===h.id)+'" data-mach="'+h.id+'">'+
+      esc(h.label)+'<span class="n">'+(h.live?h.sessions:"off")+'</span></button>';}).join("");
+  var legend=F.orgs.map(function(o){
+    var n=F.sessions.filter(function(s){return s.org===o.id;}).length;
+    return '<button data-go="#org/'+o.id+'" aria-label="'+esc(o.label)+', '+n+' sessions">'+
+      '<span class="lr" style="background:'+o.color+'"></span><span class="lb">'+
+      '<span class="id" style="color:'+o.color+'">'+esc(o.id)+'</span>'+
+      '<span class="n trunc" style="display:block">'+n+' sessions</span></span></button>';}).join("");
+  return ''+
+  '<header class="nav"><div class="bar"><span class="mark" aria-hidden="true"></span>'+
+    '<h1>Fleet</h1><span class="cnt">'+rows.length+' sessions'+(hot?' · <b style="color:var(--hot)">'+hot+' need you</b>':'')+'</span>'+
+    '<span class="grow"></span><button class="avatar" aria-label="Account"><i>JW</i></button></div></header>'+
+  '<div class="machines" role="group" aria-label="Machine">'+machines+'</div>'+
+  '<main class="scroll">'+
+    '<label class="search">'+GLASS+'<input type="search" placeholder="Search sessions" aria-label="Search sessions"></label>'+
+    '<div class="legend">'+legend+'</div>'+
+    '<div class="sechead"><h2>'+PINI+' Pinned</h2></div>'+
+    '<div class="ledger">'+rowHTML(pin)+'</div>'+
+    '<div class="sechead"><h2>All sessions</h2>'+
+      '<button class="sort" id="sortbtn" aria-haspopup="true">'+SORTLBL[STATE.sort]+' '+CHEV+'</button></div>'+
+    '<p class="key">Rail = <b>org</b> · numeral = <b>priority</b> · trailing tick = <b>machine</b></p>'+
+    (out||'<div class="ledger"><div class="row"><span class="rail" style="background:var(--ink3)"></span>'+
+      '<div class="body"><div class="l1"><span class="title" style="color:var(--ink3)">No sessions on this machine</span></div></div></div></div>')+
+    '<p class="foot">'+F.sessions.length+' sessions across 3 machines · built '+esc(F.builtAt.slice(11,16))+'</p>'+
+  '</main>'+
+  '<button class="fab" data-go="#new"><span class="fr"></span>New Session</button>';
+}
+
+function viewSession(id){
+  var s=F.sessions.filter(function(x){return x.id===id;})[0]||F.sessions[0];
+  var tape=F.transcript.map(function(t){
+    if(t.role==="user") return '<div class="turn user"><span class="mkr"><i></i></span>'+
+      '<div class="tbody"><div class="who">You</div><div class="bub">'+esc(t.text)+'</div></div></div>';
+    if(t.role==="assistant") return '<div class="turn"><span class="mkr"><i></i></span>'+
+      '<div class="tbody"><div class="who">Agent</div><div class="bub">'+esc(t.text)+'</div></div></div>';
+    if(t.role==="tool") return '<div class="turn"><span class="mkr"><i></i></span>'+
+      '<div class="tbody"><div class="toolrow" tabindex="0" role="button">'+DISC+
+      '<span class="nm">'+esc(t.name)+'</span><code class="trunc">'+esc(t.text)+'</code></div></div></div>';
+    return '<div class="turn gate"><span class="mkr"><i></i></span><div class="tbody">'+
+      '<div class="gate"><span class="gr"></span><div class="gin">'+
+      '<div class="hd">Needs you</div><p class="q">'+esc(t.text)+'</p><div class="acts">'+
+      t.options.map(function(o,i){var c=i===0?"primary":(i===1?"quiet":"deny");
+        return '<button class="btn '+c+'">'+esc(o)+'</button>';}).join("")+
+      '</div></div></div></div></div>';
+  }).join("");
+  return ''+
+  '<header class="nav"><div class="bar"><button class="back" data-go="#list">'+BACK+' Fleet</button>'+
+    '<span class="navtitle trunc">'+esc(s.repo)+'</span>'+
+    '<button class="more" id="morebtn" aria-label="More actions" aria-haspopup="true">&#8943;</button></div></header>'+
+  '<div class="dhead"><span class="rail" style="background:'+ORG[s.org].color+'"></span><div class="in">'+
+    '<div class="top">'+numGlyph(s.priority)+'<h1>'+esc(s.title)+'</h1></div>'+
+    '<div class="sub trunc"><b style="color:'+ORG[s.org].color+'">'+esc(s.org)+'</b> '+esc(s.repo)+
+      ' <span style="color:var(--ink3)">|</span> '+esc(s.branch)+'</div>'+
+    '<div class="st"><span class="hm '+s.host+'">'+HM[s.host]+'</span> '+esc(HOST[s.host].label)+
+      ' · '+esc(s.priority)+' '+esc(PRI[s.priority].label)+' · '+esc(s.model)+' · '+s.ctx+'% ctx · $'+s.cost.toFixed(2)+
+      (s.status==="needs_you"?' <span class="badge">NEEDS YOU</span>':'')+'</div>'+
+  '</div></div>'+
+  '<main class="scroll tape">'+tape+'</main>'+
+  '<div class="composer"><div class="field"><input placeholder="Reply to this session" aria-label="Reply"></div>'+
+    '<button class="send" aria-label="Send"><i>&#8593;</i></button></div>';
+}
+
+var NEW={host:"mactop",repo:"recruiting",org:"GM",pri:"P1"};
+var REPOS=["recruiting","client-ops","growingmindfully","miscellaneous","continuous-assurance"];
+var REPO_ORG={recruiting:"GM",growingmindfully:"GM","client-ops":"W.s",miscellaneous:"P","continuous-assurance":"P"};
+function viewNew(){
+  var picks=F.hosts.map(function(h){var off=!h.live,on=NEW.host===h.id&&!off;
+    return '<div class="hostcard'+(off?' off':'')+'" role="radio" aria-checked="'+on+'" '+
+      (off?'aria-disabled="true"':'tabindex="0" data-host="'+h.id+'"')+'>'+
+      '<span class="hr" style="background:'+h.color+'"></span><div class="hin">'+
+      '<div style="min-width:0"><div class="nm">'+esc(h.label)+'</div><div class="rsn">'+
+      (off?'Offline since 08:41 — wake it to use this host':h.sessions+' running · live')+'</div></div>'+
+      '<span class="mkc">'+(on?'&#10003;':'')+'</span></div></div>';}).join("");
+  var orgs=F.orgs.map(function(o){
+    return '<button data-org="'+o.id+'" aria-pressed="'+(NEW.org===o.id)+'">'+
+      '<span class="lr" style="background:'+o.color+'"></span><span class="lb">'+esc(o.id)+
+      '<span class="sm trunc">'+esc(o.label)+'</span></span></button>';}).join("");
+  var pris=F.priorities.map(function(p){
+    return '<button data-pri="'+p.id+'" aria-pressed="'+(NEW.pri===p.id)+'" aria-label="Priority '+p.id+', '+esc(p.label)+'">'+
+      '<span class="n'+p.id.slice(1)+'" style="font-size:24px;line-height:1">'+p.id.slice(1)+'</span>'+
+      '<span class="lbl">'+esc(p.label)+'</span></button>';}).join("");
+  var repoOpts=REPOS.map(function(r){return '<option'+(r===NEW.repo?' selected':'')+'>'+esc(r)+'</option>';}).join("");
+  return ''+
+  '<header class="nav"><div class="bar"><button class="back" data-go="#list">Cancel</button>'+
+    '<span class="navtitle">New Session</span><span style="width:66px"></span></div></header>'+
+  '<main class="scroll">'+
+    '<div class="formlbl">Run on</div><div class="stack" role="radiogroup" aria-label="Host">'+picks+'</div>'+
+    '<div class="formlbl">Where</div><div class="card">'+
+      '<div class="frow"><span class="k">Repo</span><span class="v"><select id="reposel" style="border:0;background:none;text-align:right;color:var(--ink2);font-size:17px">'+repoOpts+'</select></span></div>'+
+      '<div class="frow"><span class="k">Directory</span><span class="v trunc">~/Projects/'+esc(NEW.repo)+'</span></div>'+
+      '<div class="frow"><span class="k">Task id</span><span class="v"><input placeholder="optional" aria-label="Task id"></span></div>'+
+    '</div>'+
+    '<div class="formlbl">Org <span class="lc">— inferred from '+esc(NEW.repo)+', tap to override</span></div>'+
+    '<div class="orgpick" role="group" aria-label="Org">'+orgs+'</div>'+
+    '<div class="formlbl">Priority <span class="lc">— '+esc(PRI[NEW.pri].label)+'</span></div>'+
+    '<div class="pripick" role="group" aria-label="Priority">'+pris+'</div>'+
+    '<div class="formlbl">First prompt</div>'+
+    '<div class="card"><textarea class="ta" placeholder="What should this session do first?" aria-label="First prompt"></textarea></div>'+
+    '<div style="height:74px"></div>'+
+  '</main>'+
+  '<div class="stickybtn"><button class="btn"><span class="fr" style="background:'+ORG[NEW.org].color+'"></span>'+
+    'Start on '+esc(HOST[NEW.host].label)+'</button></div>';
+}
+
+var SUBCLS={"done":"done","in progress":"prog","needs you":"hot","to do":""};
+function viewOrg(oid){
+  var o=ORG[oid]||F.orgs[0], tasks=F.orgTasks[o.id]||[];
+  var mine=F.sessions.filter(function(s){return s.org===o.id;});
+  var hot=mine.filter(function(s){return s.status==="needs_you";}).length;
+  var body=tasks.map(function(t){
+    var exp=!!STATE.expanded[t.id], sess=F.sessions.filter(function(s){return s.task===t.id;});
+    var subs=t.subtasks.map(function(x){
+      return '<div class="sub '+(SUBCLS[x.status]||"")+'"><span class="trunc">'+esc(x.name)+
+        '</span><span class="st">'+esc(x.status)+'</span></div>';}).join("");
+    var chips=sess.map(function(s){
+      return '<div class="chip'+(s.status==="needs_you"?' hot':'')+'" data-go="#session/'+s.id+'" role="link" tabindex="0">'+
+        '<span class="cr" style="background:'+ORG[s.org].color+'"></span>'+
+        '<span class="nm">'+esc(s.title)+'</span>'+
+        '<span class="hm '+s.host+'">'+HM[s.host]+'</span>'+
+        '<span class="age">'+(s.status==="needs_you"?'needs you':esc(s.ago))+'</span></div>';}).join("");
+    return '<div class="task" data-task="'+t.id+'" aria-expanded="'+exp+'" tabindex="0" role="button">'+
+      numGlyph(t.priority)+'<div class="tin"><div class="thd">'+
+      '<div style="flex:1;min-width:0"><div class="nm">'+esc(t.name)+'</div>'+
+      '<div class="due">'+esc(t.status)+' · due '+esc(t.due)+(t.subtasks.length?' · '+t.subtasks.length+' subtasks':'')+'</div></div>'+
+      '<span class="tw">'+DISC+'</span></div>'+
+      '<div class="subs">'+subs+(chips?'<div class="chips">'+chips+'</div>':'<div class="nosess">No session attached yet</div>')+
+      '</div></div></div>';
+  }).join("");
+  return ''+
+  '<header class="nav"><div class="bar"><button class="back" data-go="#list">'+BACK+' Fleet</button>'+
+    '<span class="navtitle">'+esc(o.id)+'</span><span style="width:80px"></span></div></header>'+
+  '<div class="orghero"><span class="rail" style="background:'+o.color+'"></span><div class="in">'+
+    '<h1>'+esc(o.label)+'</h1><div class="sub">'+tasks.length+' tasks · '+mine.length+' sessions'+
+    (hot?' · <b style="color:var(--hot)">'+hot+' need you</b>':'')+'</div></div></div>'+
+  '<main class="scroll"><div class="sechead"><h2>Tasks by priority</h2></div>'+
+    '<p class="key">Numeral = <b>priority</b> · tap a task for subtasks and its sessions</p>'+
+    '<div class="ledger">'+(body||'<div class="task"><div class="tin">No tasks yet</div></div>')+'</div>'+
+    '<div style="height:20px"></div></main>';
+}
+
+function render(){
+  var h=location.hash||"#list", app=document.getElementById("app"), out;
+  if(h.indexOf("#session/")===0) out=viewSession(h.slice(9));
+  else if(h==="#new") out=viewNew();
+  else if(h.indexOf("#org/")===0) out=viewOrg(h.slice(5));
+  else out=viewList();
+  app.innerHTML=out; window.scrollTo(0,0);
+  var sc=app.querySelector(".scroll");
+  if(sc) sc.scrollTop = h.indexOf("#session/")===0 ? sc.scrollHeight : 0;
+}
+function closeSheet(){var w=document.getElementById("sheetwrap");w.hidden=true;
+  w.innerHTML='<div class="sheet" id="sheet"></div>';}
+function openSheet(title,items){
+  var w=document.getElementById("sheetwrap");
+  w.innerHTML='<div class="sheet"><div class="grp">'+(title?'<div class="ttl">'+esc(title)+'</div>':'')+
+    items.map(function(it,i){return '<button data-idx="'+i+'"'+(it.danger?' class="danger"':'')+'>'+
+      esc(it.label)+(it.checked?' &#10003;':'')+'</button>';}).join("")+
+    '</div><button class="cancel">Cancel</button></div>';
+  w.hidden=false;
+  w.onclick=function(e){var b=e.target.closest("button");
+    if(!b){closeSheet();return;}
+    if(b.classList.contains("cancel")){closeSheet();return;}
+    var it=items[+b.dataset.idx];closeSheet();if(it&&it.act)it.act();};
+}
+document.addEventListener("click",function(e){
+  var t=e.target;
+  var m=t.closest("[data-mach]"); if(m){STATE.machine=m.dataset.mach;render();return;}
+  if(t.closest("#sortbtn")){openSheet("Sort sessions by",[
+    {label:"Recent",checked:STATE.sort==="recent",act:function(){STATE.sort="recent";render();}},
+    {label:"Needs you",checked:STATE.sort==="needs",act:function(){STATE.sort="needs";render();}},
+    {label:"Priority",checked:STATE.sort==="priority",act:function(){STATE.sort="priority";render();}}]);return;}
+  if(t.closest("#morebtn")){openSheet(null,[{label:"Hibernate session"},{label:"Open on Mac"},
+    {label:"End session",danger:true}]);return;}
+  var hp=t.closest("[data-host]"); if(hp){NEW.host=hp.dataset.host;render();return;}
+  var op=t.closest("[data-org]"); if(op){NEW.org=op.dataset.org;render();return;}
+  var pp=t.closest("[data-pri]"); if(pp){NEW.pri=pp.dataset.pri;render();return;}
+  var tk=t.closest("[data-task]");
+  if(tk&&!t.closest("[data-go]")){STATE.expanded[tk.dataset.task]=!STATE.expanded[tk.dataset.task];render();return;}
+  var go=t.closest("[data-go]"); if(go){location.hash=go.dataset.go;}
+});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){closeSheet();return;}
+  if(e.key!=="Enter"&&e.key!==" ")return;
+  var t=e.target;
+  if(t.matches("[data-go],[data-task],[data-host],[data-mach],.toolrow")){e.preventDefault();t.click();}
+});
+document.addEventListener("change",function(e){
+  if(e.target.id==="reposel"){NEW.repo=e.target.value;NEW.org=REPO_ORG[NEW.repo]||NEW.org;render();}
+});
+window.addEventListener("hashchange",function(){closeSheet();render();});
+render();
+})();
+</script>
+</body>
+</html>
