@@ -202,7 +202,7 @@ main{max-width:1248px;margin:0 auto;padding:14px 16px 96px}
 .unlinked .uh p{margin:0;font-size:12px;color:var(--ink-faint)}
 .ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:10px}
 .ugrid .srow{background:#fff}
-.ugrid .srow .btn{margin-left:auto}
+.ugrid .age{flex-basis:100%}.ugrid .s3 .btn{margin-left:0}.ugrid .s3 .btn:first-of-type{margin-left:auto}
 .src{font-size:10.5px;font-family:var(--mono);color:var(--ink-faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
 
 /* dialogs */
@@ -244,10 +244,13 @@ textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:1
   :root{--tap:44px}
   .top-in{flex-wrap:wrap;gap:8px}
   .space-name{order:3;flex-basis:100%;font-size:12px}
-  .seg button{min-height:38px;padding:0 10px}
+  .seg button{min-height:44px;min-width:44px;padding:0 10px}
+  .host-chip{min-height:44px}
+  .crumb{min-height:44px;margin:-10px 0}
   .stat{min-height:92px;padding:10px 12px 9px}
   .stat .n{font-size:34px}
-  .chip{min-height:40px}
+  .chip{min-height:44px}
+  .pw{display:none}
   .grid{grid-template-columns:minmax(0,1fr)}
   .kv{grid-template-columns:repeat(2,1fr)}
   dialog{width:100%;max-width:100%;margin:auto 0 0 0;max-height:88vh;border-radius:16px 16px 0 0}
@@ -482,7 +485,7 @@ const sessionsFor = id => state.data.sessions.filter(s => s.clickupTasks.include
 const unlinked = () => state.data.sessions.filter(s => s.clickupTasks.length === 0).sort((a,b)=>SRANK[a.status]-SRANK[b.status]);
 function rows(sp){ const out=[]; for(const f of sp.folders) for(const l of f.lists) for(const t of l.tasks) out.push({task:t,folder:f,list:l}); return out; }
 function lists(sp){ const out=[]; for(const f of sp.folders) for(const l of f.lists) out.push({list:l,folder:f}); return out; }
-function tier(t){ const ss=sessionsFor(t.id); if(t.agent_state==='needs-info'||ss.some(s=>s.status==='needs_input')) return 0; if(t.agent_state==='in-progress'||ss.some(s=>LIVE.has(s.status))) return 1; return 2; }
+function tier(t){ const ss=sessionsFor(t.id); if((t.agent_state==='needs-info'&&!state.answered[t.id])||ss.some(s=>s.status==='needs_input')) return 0; if(t.agent_state==='in-progress'||ss.some(s=>LIVE.has(s.status))) return 1; return 2; }
 function fmtDue(d){
   if(!d) return {cls:'none',txt:'no due date'};
   const dt=new Date(d+'T12:00:00'); const days=Math.round((dt-TODAY)/864e5);
@@ -512,7 +515,7 @@ function counts(){
   const needs=rs.filter(r=>tier(r.task)===0).length;
   const ids=new Set(rs.map(r=>r.task.id));
   const live=state.data.sessions.filter(s=>LIVE.has(s.status)&&s.clickupTasks.some(id=>ids.has(id))).length;
-  const parked=rs.filter(r=>r.task.agent_state==='needs-info').length;
+  const parked=rs.filter(r=>r.task.agent_state==='needs-info'&&!state.answered[r.task.id]).length;
   const proposed=rs.filter(r=>r.task.status==='proposed-done').length;
   return {open,needs,live,parked,proposed};
 }
@@ -537,8 +540,8 @@ function renderHosts(){
   const h=state.data.hosts;
   let html=`<span class="k">Hosts</span>`+Object.keys(h).map(k=>{
     const v=h[k]; const stale=v.liveness!=='fresh';
-    const lab=v.liveness==='fresh'?`published ${fmtAge(v.publishAgeSec)} ago`:`${v.liveness} · ${fmtAge(v.publishAgeSec)} ago`;
-    return `<button class="host-chip ${v.liveness} h-${k}" data-action="host" data-host="${k}" aria-pressed="${state.hostNote===k}" title="${esc(v.note||lab)}"><span class="d"></span><span class="nm">${k}</span><span class="ag">${lab}</span></button>`;
+    const lab=v.liveness==='fresh'?`<span class="pw">published </span>${fmtAge(v.publishAgeSec)} ago`:`${v.liveness} · ${fmtAge(v.publishAgeSec)} ago`;
+    return `<button class="host-chip ${v.liveness} h-${k}" data-action="host" data-host="${k}" aria-pressed="${state.hostNote===k}" title="${esc(v.note||lab.replace(/<[^>]+>/g,''))}"><span class="d"></span><span class="nm">${k}</span><span class="ag">${lab}</span></button>`;
   }).join('');
   if(state.hostNote && h[state.hostNote]){
     const v=h[state.hostNote];
@@ -559,7 +562,7 @@ function matchKind(t){
   switch(state.kind){
     case 'needs': return tier(t)===0;
     case 'live': return sessionsFor(t.id).some(s=>LIVE.has(s.status));
-    case 'parked': return t.agent_state==='needs-info';
+    case 'parked': return t.agent_state==='needs-info'&&!state.answered[t.id];
     case 'proposed': return t.status==='proposed-done';
     default: return true;
   }

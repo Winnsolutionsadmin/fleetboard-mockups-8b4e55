@@ -43,15 +43,17 @@ a{color:var(--brand-dark)}
 .stat{flex:none;display:inline-flex;align-items:baseline;gap:5px;padding:6px 11px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13px;color:var(--ink-soft);white-space:nowrap;min-height:36px}
 .stat b{color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums}
 .stat.hot b{color:var(--c-needs)}
-.stat.zero{color:var(--ink-faint)} .stat.zero b{color:var(--ink-faint)}
+.stat.none{color:var(--ink-faint)} .stat.none b{color:var(--ink-faint)}
 .railsep{flex:none;width:1px;height:22px;background:var(--line);margin:0 4px}
 .host{flex:none;position:relative;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px 0 8px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
 .host .hd{width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .host.stale{border-style:dashed;color:var(--ink-faint)} .host.stale .hd{background:var(--warn)}
 .host.dead .hd{background:var(--bad)}
 .host small{font-weight:500;color:var(--ink-faint);font-variant-numeric:tabular-nums}
-.host .note{display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:220px;max-width:280px;padding:8px 10px;background:var(--ink);color:#fff;font-size:12px;font-weight:500;line-height:1.35;border-radius:8px;text-align:left;box-shadow:0 8px 24px rgba(42,46,67,.25);z-index:5}
-.host.show .note{display:block}
+.host.show{border-color:var(--ink);color:var(--ink)}
+.hostnote{display:none;margin:0 0 8px;padding:8px 12px;background:var(--ink);color:#fff;font-size:12.5px;line-height:1.4;border-radius:10px}
+.hostnote.show{display:block}
+.hostnote b{font-weight:700}
 
 /* ---------- main column ---------- */
 main{max-width:920px;margin:0 auto;padding:18px 16px 96px}
@@ -107,8 +109,8 @@ main{max-width:920px;margin:0 auto;padding:18px 16px 96px}
 .hosttag{flex:none;font-size:10.5px;font-weight:800;color:#fff;padding:4px 7px;border-radius:7px;text-transform:uppercase;letter-spacing:.06em;line-height:1.2}
 .sess.ended .hosttag{opacity:.55}
 .sbody{flex:1;min-width:0;display:grid;gap:2px}
-.l1{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:13px}
-.sname{font-family:var(--mono);font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.l1{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:13px;min-width:0}
+.sname{font-family:var(--mono);font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;min-width:0;flex:0 1 auto}
 .sdot{width:8px;height:8px;border-radius:50%;flex:none}
 .sdot.hot{animation:pulse 2.2s ease-out infinite;box-shadow:0 0 0 0 rgba(240,85,95,.45)}
 .slab{font-weight:600;color:var(--ink-soft);font-size:12px}
@@ -236,6 +238,7 @@ dialog::backdrop{background:rgba(42,46,67,.38)}
       <div class="seg" role="tablist" aria-label="Space" id="spacepicker"></div>
     </div>
     <div class="rail" id="strip" aria-label="Space summary"></div>
+    <div class="hostnote" id="hostnote" role="status"></div>
   </div>
 </header>
 
@@ -618,7 +621,7 @@ function render(){
   $('#spacepicker').innerHTML = SPACE.spaces.map(s => `<button role="tab" aria-pressed="${s.id === state.space}" data-space="${s.id}" title="${esc(s.name)}">${esc(s.key)}</button>`).join('');
 
   // strip
-  const stat = (n, label, cls='') => `<span class="stat ${cls} ${n ? '' : 'zero'}"><b>${n}</b>${label}</span>`;
+  const stat = (n, label, cls='') => `<span class="stat ${cls} ${n ? '' : 'none'}"><b>${n}</b>${label}</span>`;
   $('#strip').innerHTML =
     stat(flat.length, 'open') +
     stat(groups.needs.length, 'need you', 'hot') +
@@ -629,8 +632,10 @@ function render(){
     Object.entries(SPACE.hosts).map(([h, v]) =>
       `<button class="host ${v.liveness} ${state.hostNote === h ? 'show' : ''}" data-host="${h}" aria-expanded="${state.hostNote === h}" title="${esc(v.note || `${h} · published ${ageSec(v.publishAgeSec)} ago`)}">
         <span class="hd"></span>${h}<small>${ageSec(v.publishAgeSec)}</small>
-        <span class="note">${esc(v.note || `Fresh — last publish ${ageSec(v.publishAgeSec)} ago.`)}${v.liveness === 'stale' ? ' Session rows from this host may be out of date.' : ''}</span>
       </button>`).join('');
+  const hn = $('#hostnote'); const hv = state.hostNote && SPACE.hosts[state.hostNote];
+  hn.className = 'hostnote' + (hv ? ' show' : '');
+  hn.innerHTML = hv ? `<b>${state.hostNote} · ${hv.liveness}</b> — ${esc(hv.note || `last publish ${ageSec(hv.publishAgeSec)} ago`)}.${hv.liveness === 'stale' ? ' Session rows from this host may be out of date.' : ''}` : '';
 
   // above the fold
   let top;

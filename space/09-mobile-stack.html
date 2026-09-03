@@ -1,0 +1,923 @@
+<!-- fleetboard space view · concept 09 mobile-stack · single-column phone-native stack: sticky Space header with segmented picker + count strip, Folder/List section headers, tall task rows with a chip line and a horizontal session rail, swipe-reveal actions with a visible "…" fallback, bottom tab bar (Spaces · Needs you · Unlinked); desktop = the same 480px column centered · phone-first, light theme, self-contained -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fafbfc">
+<title>FleetBoard — Space · mobile-stack</title>
+<style>
+:root{
+  --brand:#7b68ee;--brand-dark:#5f4dd0;--brand-soft:#efecfd;
+  --ink:#2a2e43;--ink-soft:#6b7186;--ink-faint:#9aa1b5;
+  --line:#e6e9f2;--ws:#fafbfc;--column:#f3f4f7;--card:#fff;
+  --c-needs:#f0555f;--c-needs-bg:#fdeef0;
+  --c-work:#4c9aff;--c-work-bg:#eef5ff;
+  --c-wait:#f0a92e;--c-wait-bg:#fdf6ea;
+  --c-stale:#98a1b3;--c-stale-bg:#f3f4f7;
+  --ok:#27ae60;--warn:#f0a92e;--bad:#e5484d;
+  --shadow:0 1px 3px rgba(42,46,67,.08), 0 1px 2px rgba(42,46,67,.05);
+  --h-mactop:#5f4dd0;--h-mini:#0e9994;--h-macbook:#0073ea;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --hdr-h:172px;--tab-h:60px;--ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--column);color:var(--ink);font:15px/1.4 var(--font);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+body.locked{overflow:hidden}
+button{font-family:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+svg{display:block}
+
+/* ---------- the column ---------- */
+.app{max-width:480px;margin:0 auto;min-height:100dvh;background:var(--ws);position:relative}
+@media (min-width:481px){
+  .app{box-shadow:0 0 0 1px var(--line),0 12px 48px rgba(42,46,67,.09)}
+}
+
+/* ---------- sticky Space header ---------- */
+.hdr{position:sticky;top:0;z-index:20;background:rgba(250,251,252,.92);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) 16px 10px}
+.hdr-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;min-height:18px}
+.eyebrow{font:600 13px/1.3 var(--font);color:var(--ink);letter-spacing:-.005em}
+.eyebrow b{color:var(--brand-dark);font-weight:800;letter-spacing:.01em}
+.built{font:11px/1.3 var(--font);color:var(--ink-faint);white-space:nowrap;font-variant-numeric:tabular-nums}
+.hdr h1{margin:4px 0 2px;font:700 22px/1.2 var(--font);letter-spacing:-.015em}
+.hdr .sub{font:13px/1.45 var(--font);color:var(--ink-soft);margin:0}
+
+.seg{display:flex;position:relative;background:var(--column);border-radius:12px;padding:3px;margin-top:8px;isolation:isolate}
+.seg button{flex:1;min-height:40px;border:0;background:transparent;font:600 14px var(--font);color:var(--ink-soft);border-radius:9px;position:relative;z-index:1;transition:color .2s}
+.seg button::after{content:"";position:absolute;inset:-3px}
+.seg button[aria-selected="true"]{color:var(--ink)}
+.seg .ind{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);background:#fff;border-radius:9px;box-shadow:var(--shadow);transition:transform .28s var(--ease);z-index:0}
+
+.counts{display:flex;gap:6px;overflow-x:auto;margin:8px -16px 0;padding:0 16px;scrollbar-width:none}
+.counts::-webkit-scrollbar{display:none}
+.counts.scroll{-webkit-mask-image:linear-gradient(90deg,#000 90%,transparent);mask-image:linear-gradient(90deg,#000 90%,transparent)}
+.ct{flex:0 0 auto;min-width:74px;padding:6px 10px 5px;border-radius:10px;background:#fff;border:1px solid var(--line)}
+.ct b{display:block;font:700 19px/1.1 var(--font);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.ct span{display:block;margin-top:1px;font:600 10px/1.2 var(--font);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint);white-space:nowrap}
+.ct.hot{background:var(--c-needs-bg);border-color:#f7c5c9}.ct.hot b{color:var(--c-needs)}.ct.hot span{color:#c23e47}
+.ct.live b{color:#1f62c2}
+.ct.park b{color:#b8741a}
+.ct.prop b{color:#1d7d44}
+.ct.zero b{color:var(--ink-faint)}
+
+.hosts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.host{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 10px 0 8px;border-radius:999px;background:#fff;border:1px solid var(--line);font:600 12px var(--font);color:var(--ink-soft);position:relative}
+.host::after{content:"";position:absolute;inset:-8px 0}
+.host i{width:8px;height:8px;border-radius:50%;background:var(--hc);box-shadow:0 0 0 2px color-mix(in srgb,var(--hc) 18%,transparent)}
+.host em{font-style:normal;color:var(--ink-faint);font-weight:500;font-variant-numeric:tabular-nums}
+.host.stale{border-style:dashed;color:var(--ink-faint);background:var(--c-stale-bg)}
+.host.stale i{background:transparent;border:2px solid var(--c-stale);box-shadow:none}
+.host.stale em{color:#b8741a;font-weight:600}
+.host.dead i{background:var(--bad)}
+
+/* ---------- stack ---------- */
+.stack{padding:0 0 calc(var(--tab-h) + 28px + env(safe-area-inset-bottom))}
+.fsec{position:relative}
+.folder{position:sticky;top:var(--hdr-h);z-index:10;background:var(--ws);padding:16px 16px 6px;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line)}
+.folder h2{margin:0;font:700 12px/1.2 var(--font);letter-spacing:.11em;text-transform:uppercase;color:var(--ink-soft)}
+.folder small{font:600 12px var(--font);color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.list-h{padding:14px 16px 8px;display:flex;align-items:center;gap:8px}
+.list-h svg{color:var(--ink-faint)}
+.list-h h3{margin:0;font:600 15px/1.2 var(--font);color:var(--ink)}
+.list-h small{color:var(--ink-faint);font-size:12px;font-variant-numeric:tabular-nums}
+.empty{margin:0 12px 10px;padding:14px;border:1px dashed #d6dae6;border-radius:12px;color:var(--ink-faint);font-size:13px;text-align:center}
+.empty.big{margin:24px 16px;padding:28px 16px;font-size:14px;color:var(--ink-soft)}
+.empty.big b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+.ctx{font:700 10.5px/1.2 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:6px}
+.ctx b{color:var(--brand-dark)}
+
+/* ---------- task row ---------- */
+.task{position:relative;margin:0 12px 10px;border-radius:14px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+.task-actions{position:absolute;top:0;right:0;bottom:0;display:flex}
+.act{width:84px;border:0;color:#fff;font:600 12px/1.15 var(--font);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 4px}
+.act small{font:500 10px/1.1 var(--font);opacity:.85;text-transform:none}
+.act svg{width:18px;height:18px}
+.act-open{background:var(--brand)}
+.act-resume{background:#4e556d}
+.act-dispatch{background:var(--ok)}
+.act-answer{background:var(--c-needs)}
+.act-off{background:var(--c-stale)}
+.task-body{position:relative;background:var(--card);padding:12px 8px 12px 14px;touch-action:pan-y;transition:transform .24s var(--ease);border-left:3px solid transparent;user-select:none;-webkit-user-select:none}
+.task-body.dragging{transition:none}
+.task.g-needs .task-body{border-left-color:var(--c-needs)}
+.task.g-active .task-body{border-left-color:var(--c-work)}
+.t1{display:flex;align-items:flex-start;gap:8px}
+.pri{flex:0 0 auto;margin-top:4px;font:700 10.5px/1 var(--font);letter-spacing:.04em;padding:4px 5px;border-radius:5px;font-variant-numeric:tabular-nums}
+.pri.p1{background:var(--brand-dark);color:#fff}
+.pri.p2{background:var(--brand-soft);color:var(--brand-dark)}
+.pri.p3{background:var(--column);color:var(--ink-faint)}
+.t-name{flex:1;min-width:0;margin:0;font:600 15px/1.3 var(--font);color:var(--ink);padding-top:2px;overflow-wrap:anywhere}
+.ib{flex:0 0 44px;width:44px;height:44px;margin:-9px 0 -9px -6px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink-faint);border-radius:10px;text-decoration:none;padding:0}
+.ib:hover{background:var(--column);color:var(--ink)}
+.ib.more{margin-left:-10px}
+.t2{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;padding-right:6px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font:600 11.5px var(--font);white-space:nowrap;border:1px solid transparent}
+.st{padding-left:6px;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;color:var(--ink-soft);background:transparent;border-color:var(--line)}
+.st::before{content:"";width:9px;height:9px;border-radius:2.5px;background:var(--sc,#87909e)}
+.st-in-progress{--sc:#4c9aff}
+.st-proposed-done{--sc:#27ae60;color:#1d7d44;border-color:#bfe6cd}
+.as::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.as-needs-triage{background:var(--c-wait-bg);color:#9a6300}
+.as-ready-for-human{background:var(--brand-soft);color:var(--brand-dark)}
+.as-ready-for-agent{background:#fff;color:#1f62c2;border-color:#bcd6fb}
+.as-in-progress{background:var(--c-work);color:#fff}
+.as-needs-info{background:var(--c-needs-bg);color:var(--c-needs)}
+.as-needs-info::before{content:"?";background:none;width:auto;height:auto;font-weight:800;line-height:1}
+.as-out-of-scope{background:var(--c-stale-bg);color:var(--c-stale);text-decoration:line-through}
+.due{color:var(--ink-soft);border-color:var(--line)}
+.due.today{color:#b8741a;background:var(--c-wait-bg);border-color:#f5dfb3}
+.due.over{color:var(--bad);background:var(--c-needs-bg);border-color:#f5b5b8}
+.dw.ok{color:#1d7d44;background:#e9f7ee}
+.dw.miss{color:#9a6300;background:var(--c-wait-bg)}
+.who{color:var(--ink-faint);padding:0 2px;font-weight:500}
+
+/* parked */
+.parked{margin-top:10px;padding:10px 12px;border-radius:11px;background:var(--c-needs-bg);border:1px solid #f8d3d6}
+.parked.done{background:#e9f7ee;border-color:#bfe6cd}
+.parked .lbl{font:700 10.5px/1.2 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--c-needs)}
+.parked.done .lbl{color:#1d7d44}
+.parked .q{margin:5px 0 0;font:500 13.5px/1.45 var(--font);color:var(--ink)}
+.parked .row{display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap}
+
+/* no session / dispatch */
+.nosess{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.dispatch{min-height:44px;padding:0 14px;border-radius:11px;border:1px solid var(--line);background:#fff;font:600 13.5px var(--font);color:var(--brand-dark);display:inline-flex;align-items:center;gap:8px}
+.dispatch.on{background:var(--brand);color:#fff;border-color:var(--brand);box-shadow:0 1px 2px rgba(95,77,208,.25)}
+.dispatch.on:hover{background:var(--brand-dark)}
+.dispatch:disabled{color:var(--ink-faint);background:var(--column);border-color:transparent;cursor:not-allowed;box-shadow:none}
+.hint{font:12px/1.35 var(--font);color:var(--ink-faint)}
+.hint.warn{color:#9a6300}
+.dispatching{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:11px;background:var(--brand-soft);color:var(--brand-dark);font:600 13.5px var(--font)}
+.spin{width:14px;height:14px;border:2px solid rgba(95,77,208,.25);border-top-color:var(--brand-dark);border-radius:50%;animation:spin .8s linear infinite}
+
+/* session rail */
+.rail{display:flex;gap:8px;margin:10px -8px 0 -14px;padding:2px 8px 2px 14px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.rail::-webkit-scrollbar{display:none}
+.rail.one{margin:0;padding:0}
+.rail.one .sess{width:100%}
+.sess{flex:0 0 auto;width:216px;scroll-snap-align:start;border:1px solid var(--line);border-radius:12px;background:#fff;display:flex;overflow:hidden;position:relative}
+.sess::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--hc)}
+.sess.needs_input{border-color:#f5b5b8;background:var(--c-needs-bg)}
+.sess.ended{background:var(--column);border-style:dashed}
+.sess.stale{background:var(--c-stale-bg)}
+.sess-main{flex:1;min-width:0;min-height:56px;padding:8px 8px 8px 14px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;display:flex;align-items:center;gap:6px}
+.sess-main:hover{background:rgba(42,46,67,.03)}
+.sess-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.sess-l1{display:flex;align-items:center;gap:6px;font:600 12px var(--font);white-space:nowrap;overflow:hidden}
+.sess-l1 .host-tag{color:var(--hc);font-weight:800;letter-spacing:.01em}
+.sess-l1 .sst{color:var(--ink)}
+.sess.needs_input .sst{color:var(--c-needs)}
+.sess-l1 .model{color:var(--ink-faint);font-weight:500}
+.sess-l1 .model::before{content:"·";margin-right:6px}
+.sess-l2{font:12px var(--font);color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.sess.ended .sess-l2,.sess.ended .sst{color:var(--ink-soft)}
+.sess-go{color:var(--ink-faint);flex:0 0 auto}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;display:inline-block}
+.dot.needs_input{background:var(--c-needs);animation:pulse 1.3s ease-in-out infinite}
+.dot.working{background:var(--c-work)}
+.dot.waiting{background:var(--c-wait)}
+.dot.stale{background:var(--c-stale)}
+.dot.ended{background:transparent;border:2px solid var(--c-stale)}
+.sess-resume{flex:0 0 auto;border:0;border-left:1px dashed var(--line);background:#fff;padding:0 10px;min-width:64px;font:600 12px var(--font);color:var(--brand-dark);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.sess-resume:hover{background:var(--brand-soft)}
+.sess-resume:disabled{color:var(--ink-faint);cursor:default}
+.tier{font:700 9.5px/1 var(--font);text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint);padding:3px 5px;border:1px solid var(--line);border-radius:5px;background:#fff}
+.tier.inv{border-color:rgba(255,255,255,.55);color:#fff;background:transparent}
+
+/* unlinked cards */
+.ubucket{padding:12px 12px 0}
+.ucard{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px}
+.u-meta{margin-top:10px;font:12px var(--font);color:var(--ink-faint);overflow-wrap:anywhere}
+.u-meta b{color:var(--ink);font-weight:600}
+.u-now{margin-top:4px;font:14px/1.45 var(--font);color:var(--ink)}
+.u-now::before{content:"now";font:700 10px var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-right:8px;vertical-align:1px}
+.ucard .row{display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap}
+
+/* footer of the stack */
+.foot{padding:8px 12px 0}
+.foot-btn{width:100%;min-height:56px;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 14px;border-radius:14px;border:1px dashed #cfd4e2;background:transparent;text-align:left;color:var(--ink)}
+.foot-btn:hover{background:#fff}
+.foot-btn b{font:600 14px var(--font)}
+.foot-btn span{display:block;font:12px var(--font);color:var(--ink-faint);margin-top:2px}
+.foot-btn>div{flex:1}
+.foot-btn svg{color:var(--ink-faint)}
+.stamp{padding:14px 16px 0;font:11px var(--font);color:var(--ink-faint);text-align:center;font-variant-numeric:tabular-nums}
+
+/* buttons */
+.btn{min-height:44px;padding:0 16px;border-radius:11px;border:1px solid var(--line);background:#fff;font:600 14px var(--font);color:var(--ink);display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:var(--column)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn.danger{background:var(--c-needs);border-color:var(--c-needs);color:#fff}
+
+/* ---------- bottom tab bar ---------- */
+.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;z-index:30;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+@media (min-width:481px){.tabs{box-shadow:0 0 0 1px var(--line)}}
+.tab{flex:1;min-height:var(--tab-h);border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:600 11px var(--font);color:var(--ink-faint);position:relative;padding:6px 0}
+.tab svg{width:24px;height:24px}
+.tab[aria-selected="true"]{color:var(--brand-dark)}
+.tab .badge{position:absolute;top:6px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--c-needs);color:#fff;font:700 11px/18px var(--font);text-align:center;box-shadow:0 0 0 2px #fff}
+.tab .badge.soft{background:var(--ink-faint)}
+
+/* ---------- sheet ---------- */
+.scrim{position:fixed;inset:0;background:rgba(42,46,67,.38);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,105%);width:100%;max-width:480px;max-height:88dvh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;z-index:41;transition:transform .3s var(--ease);padding:8px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(42,46,67,.18);overscroll-behavior:contain}
+.sheet.show{transform:translate(-50%,0)}
+.handle{width:36px;height:4px;border-radius:2px;background:#d6dae6;margin:0 auto 10px}
+.sh-head{display:flex;align-items:flex-start;gap:8px;padding:2px 0 10px}
+.sh-head>div{flex:1;min-width:0}
+.sh-eyebrow{display:flex;align-items:center;gap:6px;font:600 12px var(--font);color:var(--ink-soft);flex-wrap:wrap}
+.sh-title{margin:4px 0 0;font:700 17px/1.25 var(--font);color:var(--ink);overflow-wrap:anywhere}
+.sh-title.mono{font:600 15px/1.3 var(--mono)}
+.sh-sub{margin:0 0 4px;font:13.5px/1.45 var(--font);color:var(--ink-soft)}
+.ib.close{margin:-4px -8px 0 0;flex-basis:44px}
+.hostnote{margin:0 0 10px;padding:8px 10px;border-radius:9px;background:var(--c-wait-bg);border:1px solid #f5dfb3;font:12.5px/1.4 var(--font);color:#7a5200}
+.sum{margin:4px 0 0;display:grid;grid-template-columns:44px 1fr;gap:6px 10px}
+.sum dt{font:700 10.5px/1.75 var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint)}
+.sum dd{margin:0;font:14px/1.45 var(--font);color:var(--ink)}
+.sum-age{margin-top:8px;font:12px var(--font);color:var(--ink-faint)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0}
+.stats div{background:var(--column);border-radius:10px;padding:8px 10px}
+.stats b{display:block;font:700 15px/1.2 var(--font);font-variant-numeric:tabular-nums}
+.stats span{font:600 10.5px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint)}
+.ctxbar{height:4px;border-radius:2px;background:#e1e4ee;margin-top:6px;overflow:hidden}
+.ctxbar i{display:block;height:100%;background:var(--c-work);border-radius:2px}
+.ctxbar.hot i{background:var(--bad)}
+.kv{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;align-items:baseline}
+.kv span{flex:0 0 60px;color:var(--ink-faint);font-weight:600;font-size:12px}
+.kv b{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.kv b.mono{font:500 13px var(--mono)}
+.kv b.faint{color:var(--ink-faint);font-weight:500}
+.kv a{color:var(--brand-dark);font-weight:600;text-decoration:none;display:inline-flex;gap:4px;align-items:center;min-height:28px}
+.term{margin:12px 0 0;background:#1e2130;color:#d7dbe8;border-radius:10px;padding:10px 12px;font:12.5px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.term .dim{color:#7d849c}
+.term .p{color:#a99cf5}
+.sh-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tier-copy{margin:10px 0 0;font:13px/1.45 var(--font);color:var(--ink-soft)}
+.tier-copy b{color:var(--ink);text-transform:capitalize}
+.menu{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.mi{display:flex;align-items:center;gap:12px;min-height:54px;padding:8px 4px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;font:inherit;color:var(--ink);text-decoration:none;width:100%}
+.mi:hover{background:var(--ws)}
+.mi:disabled{color:var(--ink-faint);cursor:not-allowed}
+.mi svg{flex:0 0 auto;color:var(--brand-dark);width:18px;height:18px}
+.mi:disabled svg{color:var(--ink-faint)}
+.mi>div{flex:1;min-width:0}
+.mi b{display:block;font:600 14.5px/1.3 var(--font);overflow-wrap:anywhere}
+.mi small{display:block;font:12px/1.35 var(--font);color:var(--ink-faint);margin-top:1px}
+.search{width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:15px var(--font);background:var(--column);margin:6px 0 4px;color:var(--ink)}
+.pick-h{font:700 11px var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);padding:12px 0 4px}
+.pick-h b{color:var(--brand-dark)}
+.pick-i{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 4px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;font:inherit;color:var(--ink)}
+.pick-i:hover{background:var(--ws)}
+.pick-i .pri{margin:0}
+.pick-n{flex:1;min-width:0;font:500 14px/1.3 var(--font)}
+.qq{margin:4px 0 10px;padding:10px 12px;border-left:3px solid var(--c-needs);background:var(--c-needs-bg);border-radius:0 10px 10px 0;font:14px/1.45 var(--font)}
+.ta{width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:15px/1.4 var(--font);resize:vertical;color:var(--ink);background:#fff}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:calc(var(--tab-h) + 14px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);opacity:0;background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font:600 13px/1.35 var(--font);z-index:50;transition:.22s var(--ease);max-width:min(440px,calc(100% - 32px));text-align:center;pointer-events:none;box-shadow:0 8px 24px rgba(42,46,67,.25)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(240,85,95,.45)}60%{box-shadow:0 0 0 6px rgba(240,85,95,0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hdr" id="hdr"></header>
+  <main class="stack" id="main"></main>
+</div>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+<div class="scrim" id="scrim" data-scrim></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Details"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const SPACE = {
+  "schema": "fleet-space/1",
+  "builtAt": "2026-09-03T09:10:00-07:00",
+  "self": "mactop",
+  "hosts": {
+    "mactop":  { "liveness": "fresh", "publishAgeSec": 6 },
+    "mini":    { "liveness": "fresh", "publishAgeSec": 9 },
+    "macbook": { "liveness": "stale", "publishAgeSec": 5400, "note": "laptop asleep — last publish 1h 30m ago" }
+  },
+  "spaces": [
+    {
+      "id": "sp-ws", "key": "W.s", "name": "Winn.solutions",
+      "folders": [
+        {
+          "id": "fo-fleetboard", "name": "fleetboard",
+          "lists": [
+            {
+              "id": "li-fleetboard", "name": "fleetboard",
+              "tasks": [
+                { "id": "86eyq1a2b3", "name": "Space view: design shotgun (12 breadth + depth iterations)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1a2b3" },
+                { "id": "86eyq1c4d5", "name": "Launch rail: spawn a session on a chosen host (mactop default)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1c4d5" },
+                { "id": "86eyq1e6f7", "name": "Collector: publish clickupTasks + tmux fields on session rows", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-06", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1e6f7" },
+                { "id": "86eyq1g8h9", "name": "Spawn-host tag at the top of the session bar", "status": "to do", "agent_state": "ready-for-agent", "due": null, "doneWhen": false, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1g8h9" },
+                { "id": "86eyq1j0k1", "name": "Hibernation lane: waiting / ready / past-due cards + one-tap resume", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-12", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq1j0k1" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-ops-tracker", "name": "ops-tracker",
+          "lists": [
+            {
+              "id": "li-ops-tracker", "name": "ops-tracker",
+              "tasks": [
+                { "id": "86eyq2a2b3", "name": "dispatch.mjs: pick up ready-for-agent items via the launch rail", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-08", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2a2b3" },
+                { "id": "86eyq2c4d5", "name": "Stagger the four pollers so they stop 429-ing each other", "status": "proposed-done", "agent_state": "in-progress", "due": "2026-09-03", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2c4d5" },
+                { "id": "86eyq2e6f7", "name": "Retire the mini-only biz-agent-dispatch (archive + unload)", "status": "to do", "agent_state": "needs-info", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2e6f7", "question": "The mini copy has 3 edits not in the repo (rate-limit backoff, Slack reply, DISPATCH_MAX). Archive as-is, or port the backoff into dispatch.mjs first?" },
+                { "id": "86eyq2g8h9", "name": "followup-dispatch: crashes on missing openclaw binary (launchd PATH)", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-08", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq2g8h9" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-internal", "name": "Internal",
+          "lists": [
+            {
+              "id": "li-action-items", "name": "Team Action Items",
+              "tasks": [
+                { "id": "86eyq3a2b3", "name": "Rotate the proxy OAuth token before it expires on the 9th", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-09", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3a2b3" },
+                { "id": "86eyq3c4d5", "name": "Verify the Browser Live panel renders crisp at 2x", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-01", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq3c4d5" },
+                { "id": "86eyq3e6f7", "name": "Quarterly backup restore drill on the mini", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-10", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3e6f7" }
+              ]
+            },
+            {
+              "id": "li-recruiting", "name": "Recruiting",
+              "tasks": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-gm", "key": "GM", "name": "Growing Mindfully",
+      "folders": [
+        {
+          "id": "fo-gm-ops", "name": "Operations",
+          "lists": [
+            {
+              "id": "li-gm-sage", "name": "gm-sage",
+              "tasks": [
+                { "id": "86eyq4a2b3", "name": "Triage the inbound admin@ mailbox backlog (classify + file)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4a2b3" },
+                { "id": "86eyq4c4d5", "name": "Reconcile the September roster export against the portal", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-07", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4c4d5" }
+              ]
+            },
+            {
+              "id": "li-gm-insurance", "name": "insurance",
+              "tasks": [
+                { "id": "86eyq4e6f7", "name": "Confirm the new carrier's first invoice has arrived before cancelling the incumbent", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq4e6f7" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-gm-web", "name": "Website",
+          "lists": [
+            {
+              "id": "li-gm-website", "name": "growingmindfully.org",
+              "tasks": [
+                { "id": "86eyq5a2b3", "name": "Waitlist widget: fix the Safari date picker", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-11", "doneWhen": true, "priority": 3, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq5a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-personal", "key": "Personal", "name": "Personal",
+      "folders": [
+        {
+          "id": "fo-house", "name": "House Ops",
+          "lists": [
+            {
+              "id": "li-house", "name": "House Ops",
+              "tasks": [
+                { "id": "86eyq6a2b3", "name": "Pool heater: schedule the warranty visit", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-15", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq6a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "5c1e0f2a-1b3d-4e5f-8a6b-7c8d9e0f1a2b", "name": "fb-3fa9c1e2b7d4", "project": "fleetboard", "branch": "space-view-shotgun", "host": "mactop", "model": "fable", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq1a2b3"],
+      "summary": { "now": "Rendering concept 07 (cockpit) at 390px and fixing a header overflow", "next": "QA all 12 at both widths, build index.html, publish scrubbed copy", "goal": "12 phone-reviewable Space-view mockups on the unlisted mirror" },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 12m", "idle": "0m", "msgs": 63, "cost": 9.8, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 1
+    },
+    {
+      "session_id": "9d2f1a3b-2c4e-4f60-9b7c-8d9e0f1a2b3c", "name": "fb-8b1d44e0a2c9", "project": "fleetboard", "branch": "launch-rail-host-picker", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq1c4d5"],
+      "summary": { "now": "Waiting: should the default host tag read 'mactop' or the hostname 'MacTop-Pro'?", "next": "Wire the picker to the spawn call once the label is settled", "goal": "Spawn a session on a chosen host with the host shown as a tag on the session bar" },
+      "contextPct": 58, "tokens": 2100000, "elapsedActive": "2h 05m", "idle": "14m", "msgs": 88, "cost": 16.2, "resumeTier": "attach", "lastActivity": "14m ago", "summaryAgeMin": 14
+    },
+    {
+      "session_id": "a1b2c3d4-3d5f-4a71-8c8d-9e0f1a2b3c4d", "name": "fb-0c7e91b3d5f2", "project": "ops-tracker", "branch": "cu-86eyq2c4d5-poller-stagger", "host": "mini", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq2c4d5"],
+      "summary": { "now": "Ended: proposed done — five plists staggered, 429 count 41 → 2 over 30 min", "next": "Jarred confirms; nothing else pending", "goal": "Pollers stop rate-limiting each other" },
+      "contextPct": 22, "tokens": 640000, "elapsedActive": "38m", "idle": "3h 10m", "msgs": 29, "cost": 4.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 190
+    },
+    {
+      "session_id": "b2c3d4e5-4e60-4b82-9d9e-0f1a2b3c4d5e", "name": "fb-6e2a80c4f1b7", "project": "ops-tracker", "branch": "cu-86eyq2e6f7-retire-biz-dispatch", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq2e6f7"],
+      "summary": { "now": "Parked with a question: archive the mini copy as-is, or port its backoff first?", "next": "Resume on Jarred's answer", "goal": "biz-agent-dispatch archived into the repo and unloaded on the mini" },
+      "contextPct": 33, "tokens": 900000, "elapsedActive": "52m", "idle": "47m", "msgs": 40, "cost": 6.9, "resumeTier": "attach", "lastActivity": "47m ago", "summaryAgeMin": 47
+    },
+    {
+      "session_id": "c3d4e5f6-5f71-4c93-8eaf-1a2b3c4d5e6f", "name": "fb-b93f2d1e7a08", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill", "host": "mini", "model": "sonnet", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Restoring the 2026-08-30 snapshot into a scratch volume and checksumming", "next": "Compare 200 sampled files, write the drill record", "goal": "Restore drill passes with a written record" },
+      "contextPct": 27, "tokens": 780000, "elapsedActive": "24m", "idle": "0m", "msgs": 18, "cost": 3.2, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 2
+    },
+    {
+      "session_id": "d4e5f6a7-6082-4da4-9fb0-2b3c4d5e6f70", "name": "fb-2d8c5e0a9b41", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill-r1", "host": "mactop", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Ended: context maxed while indexing the snapshot listing", "next": "Revive into a fresh session (done — see the mini session)", "goal": "Restore drill passes with a written record" },
+      "contextPct": 97, "tokens": 4800000, "elapsedActive": "1h 50m", "idle": "26m", "msgs": 120, "cost": 31.0, "resumeTier": "revive", "lastActivity": "26m ago", "summaryAgeMin": 26
+    },
+    {
+      "session_id": "e5f6a7b8-7193-4eb5-80c1-3c4d5e6f7081", "name": "fb-f41a7c3e2d96", "project": "gm-sage", "branch": "cu-86eyq4a2b3-mailbox-triage", "host": "mini", "model": "fable", "status": "waiting", "source": "rail",
+      "clickupTasks": ["86eyq4a2b3"],
+      "summary": { "now": "Idle after filing 212 messages; 14 routed for review", "next": "Second pass on the 14 once the routing rules are confirmed", "goal": "Mailbox backlog classified and filed, review items surfaced" },
+      "contextPct": 49, "tokens": 1600000, "elapsedActive": "1h 30m", "idle": "22m", "msgs": 71, "cost": 12.4, "resumeTier": "attach", "lastActivity": "22m ago", "summaryAgeMin": 22
+    },
+    {
+      "session_id": "f6a7b8c9-82a4-4fc6-91d2-4d5e6f708192", "name": "omnara:collector-brand/velvet-anchor", "project": "collector-brand", "branch": "velvet-anchor", "host": "mactop", "model": "fable", "status": "working", "source": "omnara",
+      "clickupTasks": [],
+      "summary": { "now": "Refactoring the brand token export into a single script", "next": "Run the export against the three sample decks", "goal": "One-command brand token export" },
+      "contextPct": 36, "tokens": 1100000, "elapsedActive": "48m", "idle": "0m", "msgs": 35, "cost": 7.7, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 3
+    },
+    {
+      "session_id": "07b8c9d0-93b5-4ad7-a2e3-5e6f70819203", "name": "fb-c6d13a8e4f57", "project": "miscellaneous", "branch": "scratch-notes", "host": "macbook", "model": "sonnet", "status": "stale", "source": "rail",
+      "clickupTasks": [],
+      "summary": { "now": "Stale: last activity 3h ago (laptop asleep)", "next": "—", "goal": "Scratch exploration; no task linked" },
+      "contextPct": 12, "tokens": 210000, "elapsedActive": "15m", "idle": "3h 04m", "msgs": 9, "cost": 1.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 184
+    }
+  ]
+};
+
+/* ---------- constants ---------- */
+const TODAY = SPACE.builtAt.slice(0,10);
+const HOST_COLOR = {mactop:'#5f4dd0', mini:'#0e9994', macbook:'#0073ea'};
+const STATUS_RANK = {needs_input:0, working:1, waiting:2, stale:3, ended:4};
+const STATUS_LABEL = {needs_input:'needs input', working:'working', waiting:'waiting', stale:'stale', ended:'ended'};
+const STATE_LABEL = {'needs-triage':'needs triage','ready-for-human':'ready for human','ready-for-agent':'ready for agent','in-progress':'in progress','needs-info':'needs info','out-of-scope':'out of scope'};
+const PRI = {1:'P1 — drop everything', 2:'P2 — normal', 3:'P3 — whenever'};
+const TIER = {
+  attach: {copy:'attaches to the live tmux session as it is right now. Nothing to restore.'},
+  resume: {copy:'reopens the saved transcript with claude --resume. You get what was saved to disk, not what was in memory.'},
+  revive: {copy:'starts a fresh session seeded from the summary and branch. Not a restore — expect to re-explain specifics.'}
+};
+const SVG = (d, vb=16) => `<svg viewBox="0 0 ${vb} ${vb}" width="${vb}" height="${vb}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const I = {
+  ext: SVG('<path d="M6.5 3H3.5A.5.5 0 0 0 3 3.5v9a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9.5M9.5 3H13v3.5M13 3 7.5 8.5"/>'),
+  more: SVG('<circle cx="3.5" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="12.5" cy="8" r="1.3" fill="currentColor" stroke="none"/>'),
+  term: SVG('<rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 6.5 7 8l-2 1.5M8.5 9.5h3"/>'),
+  play: SVG('<path d="M5 3.5v9l7-4.5z" fill="currentColor" stroke="none"/>'),
+  send: SVG('<path d="M13.5 2.5 2.5 7l4.5 2 2 4.5zM7 9l6.5-6.5"/>'),
+  reply: SVG('<path d="M6 4 2.5 7.5 6 11M3 7.5h6a4 4 0 0 1 4 4v1"/>'),
+  link: SVG('<path d="M6.5 9.5a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-1 1M9.5 6.5a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l1-1"/>'),
+  x: SVG('<path d="M4 4l8 8M12 4l-8 8"/>'),
+  copy: SVG('<rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/>'),
+  chev: SVG('<path d="M6 3.5 10.5 8 6 12.5"/>'),
+  list: SVG('<path d="M5.5 4.5h8M5.5 8h8M5.5 11.5h8"/><circle cx="2.8" cy="4.5" r=".9" fill="currentColor" stroke="none"/><circle cx="2.8" cy="8" r=".9" fill="currentColor" stroke="none"/><circle cx="2.8" cy="11.5" r=".9" fill="currentColor" stroke="none"/>'),
+  spaces: SVG('<rect x="3" y="3.5" width="18" height="5" rx="1.6"/><rect x="3" y="11" width="18" height="5" rx="1.6"/><path d="M6 19.5h12"/>', 24),
+  bell: SVG('<path d="M6.5 16v-5.5a5.5 5.5 0 0 1 11 0V16l1.5 2h-14zM10 20.5h4"/>', 24),
+  unlink: SVG('<path d="M10 14l4-4M13.5 7.5l1.2-1.2a3.2 3.2 0 0 1 4.5 4.5L18 12M6 12l-1.2 1.2a3.2 3.2 0 0 0 4.5 4.5l1.2-1.2M5 5l14 14"/>', 24)
+};
+
+/* ---------- state ---------- */
+const state = {spaceId:'sp-ws', tab:'spaces', dispatching:new Set(), answered:new Set(), resuming:new Set(), openRow:null};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- data helpers ---------- */
+function allTasks(space){ const out=[]; space.folders.forEach(f=>f.lists.forEach(l=>l.tasks.forEach(t=>out.push({task:t,folder:f,list:l,space})))); return out; }
+function sessionsFor(id){ return SPACE.sessions.filter(s=>s.clickupTasks.includes(id)).sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]); }
+function unlinked(){ return SPACE.sessions.filter(s=>!s.clickupTasks.length); }
+function needsYou(t){ return t.agent_state==='needs-info' || sessionsFor(t.id).some(s=>s.status==='needs_input'); }
+function isActive(t){ return t.agent_state==='in-progress' || t.status==='in progress' || sessionsFor(t.id).some(s=>s.status==='working'||s.status==='waiting'); }
+function group(t){ return needsYou(t) ? 0 : isActive(t) ? 1 : 2; }
+function sortTasks(ts){ return ts.slice().sort((a,b)=> group(a)-group(b) || a.priority-b.priority || (a.due||'9999').localeCompare(b.due||'9999')); }
+function canDispatch(t){ return !!t.doneWhen && ['ready-for-agent','needs-triage','ready-for-human'].includes(t.agent_state); }
+function whyNot(t){ return !t.doneWhen ? 'needs DONE-WHEN' : 'state is '+STATE_LABEL[t.agent_state]; }
+function counts(space){
+  const ts = allTasks(space).map(x=>x.task); const ids = new Set(ts.map(t=>t.id));
+  const live = SPACE.sessions.filter(s=>s.clickupTasks.some(id=>ids.has(id)) && ['needs_input','working','waiting'].includes(s.status)).length;
+  return {open:ts.length, needs:ts.filter(needsYou).length, live, parked:ts.filter(t=>t.agent_state==='needs-info').length, proposed:ts.filter(t=>t.status==='proposed-done').length};
+}
+function fmtDue(d){
+  if(!d) return null;
+  const [y,m,dd] = d.split('-').map(Number);
+  const label = new Date(y, m-1, dd).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if(d < TODAY) return {label:'Overdue · '+label, cls:'over'};
+  if(d === TODAY) return {label:'Due today', cls:'today'};
+  return {label:'Due '+label, cls:''};
+}
+function fmtAge(sec){ if(sec<60) return sec+'s'; const m=Math.round(sec/60); if(m<60) return m+'m'; const h=Math.floor(m/60), r=m%60; return h+'h'+(r?' '+r+'m':''); }
+function fmtTok(n){ return n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'')+'M' : n>=1e3 ? Math.round(n/1e3)+'k' : String(n); }
+function fmtSum(min){ return min<60 ? min+'m old' : Math.floor(min/60)+'h '+(min%60)+'m old'; }
+function spaceOf(id){ return SPACE.spaces.find(s=>s.id===id); }
+function findTask(id){ for(const sp of SPACE.spaces) for(const x of allTasks(sp)) if(x.task.id===id) return x; return null; }
+function findSession(id){ return SPACE.sessions.find(s=>s.session_id===id); }
+function hostCopy(name){
+  const h = SPACE.hosts[name]; const age = fmtAge(h.publishAgeSec);
+  if(h.liveness==='fresh') return `Publishing normally — last snapshot ${age} ago.`;
+  if(h.liveness==='stale') return `${h.note ? h.note.charAt(0).toUpperCase()+h.note.slice(1)+'. ' : ''}Sessions on this host may have moved on; the board shows the last publish (${age} ago), not live state.`;
+  return `No publish for ${age}. Treat sessions on this host as unknown.`;
+}
+
+/* ---------- chips ---------- */
+const statusChip = st => `<span class="chip st st-${st.replace(/\s+/g,'-')}" title="ClickUp status">${esc(st)}</span>`;
+const stateChip = st => `<span class="chip as as-${st}" title="agent state">${STATE_LABEL[st]||esc(st)}</span>`;
+
+/* ---------- renderers ---------- */
+function render(){ renderHeader(); renderMain(); renderTabs(); measure(); }
+
+function renderHeader(){
+  const h = $('#hdr');
+  if(state.tab==='spaces'){
+    const sp = spaceOf(state.spaceId), c = counts(sp), idx = SPACE.spaces.findIndex(s=>s.id===sp.id);
+    h.innerHTML = `
+      <div class="hdr-top"><span class="eyebrow"><b>FleetBoard</b> · ${esc(sp.name)}</span><span class="built">snapshot ${SPACE.builtAt.slice(11,16)} · from ${esc(SPACE.self)}</span></div>
+      <div class="seg" role="tablist" aria-label="Space">
+        ${SPACE.spaces.map(s=>`<button role="tab" aria-selected="${s.id===sp.id}" data-space="${s.id}" title="${esc(s.name)}">${esc(s.key)}</button>`).join('')}
+        <span class="ind" style="transform:translateX(${idx*100}%)"></span>
+      </div>
+      <div class="counts" id="counts" aria-label="Counts">
+        <div class="ct ${c.open?'':'zero'}"><b>${c.open}</b><span>open</span></div>
+        <div class="ct ${c.needs?'hot':'zero'}"><b>${c.needs}</b><span>needs you</span></div>
+        <div class="ct ${c.live?'live':'zero'}"><b>${c.live}</b><span>live</span></div>
+        <div class="ct ${c.parked?'park':'zero'}"><b>${c.parked}</b><span>parked</span></div>
+        <div class="ct ${c.proposed?'prop':'zero'}" title="proposed-done, awaiting your confirm"><b>${c.proposed}</b><span>to confirm</span></div>
+      </div>
+      <div class="hosts" aria-label="Hosts">
+        ${Object.entries(SPACE.hosts).map(([n,hh])=>`<button class="host ${hh.liveness}" style="--hc:${HOST_COLOR[n]}" data-host="${n}" title="${esc(hostCopy(n))}"><i></i>${n}<em>${hh.liveness==='fresh' ? fmtAge(hh.publishAgeSec) : hh.liveness+' · '+fmtAge(hh.publishAgeSec)}</em></button>`).join('')}
+      </div>`;
+  } else if(state.tab==='needs'){
+    const n = SPACE.spaces.reduce((a,sp)=>a+allTasks(sp).filter(x=>needsYou(x.task)).length, 0);
+    h.innerHTML = `<div class="hdr-top"><span class="eyebrow"><b>FleetBoard</b> · all Spaces</span><span class="built">snapshot ${SPACE.builtAt.slice(11,16)}</span></div>
+      <h1>Needs you</h1><p class="sub">${n ? `${n} item${n===1?'':'s'} waiting on you — parked questions and sessions asking for input.` : 'Nothing is waiting on you.'}</p>`;
+  } else {
+    const n = unlinked().length;
+    h.innerHTML = `<div class="hdr-top"><span class="eyebrow"><b>FleetBoard</b> · all hosts</span><span class="built">snapshot ${SPACE.builtAt.slice(11,16)}</span></div>
+      <h1>Unlinked sessions</h1><p class="sub">${n ? `${n} session${n===1?'':'s'} with no ClickUp task. They can't show under a Space until linked.` : 'Every session is linked to a task.'}</p>`;
+  }
+}
+
+function renderMain(){
+  const m = $('#main');
+  if(state.tab==='spaces') m.innerHTML = renderSpaces();
+  else if(state.tab==='needs') m.innerHTML = renderNeeds();
+  else m.innerHTML = renderUnlinked();
+  state.openRow = null;
+}
+
+function renderSpaces(){
+  const sp = spaceOf(state.spaceId); let html = '';
+  for(const f of sp.folders){
+    const n = f.lists.reduce((a,l)=>a+l.tasks.length, 0);
+    html += `<section class="fsec"><div class="folder"><h2>${esc(f.name)}</h2><small>${n} open</small></div>`;
+    for(const l of f.lists){
+      html += `<div class="list-h">${I.list}<h3>${esc(l.name)}</h3><small>${l.tasks.length ? l.tasks.length+' open' : ''}</small></div>`;
+      html += l.tasks.length ? sortTasks(l.tasks).map(t=>taskRow(t)).join('') : `<div class="empty">No open tasks in ${esc(l.name)}.</div>`;
+    }
+    html += '</section>';
+  }
+  const un = unlinked().length;
+  html += `<div class="foot">${un
+    ? `<button class="foot-btn" data-goto="unlinked">${I.unlink}<div><b>${un} unlinked session${un===1?'':'s'}</b><span>running with no task — not shown in any Space</span></div>${I.chev}</button>`
+    : `<div class="empty">All sessions are linked to a task.</div>`}</div>
+    <div class="stamp">${esc(SPACE.schema)} · built ${esc(SPACE.builtAt)}</div>`;
+  return html;
+}
+
+function renderNeeds(){
+  const items = [];
+  for(const sp of SPACE.spaces) for(const x of allTasks(sp)) if(needsYou(x.task)) items.push(x);
+  items.sort((a,b)=> a.task.priority-b.task.priority || (a.task.due||'9999').localeCompare(b.task.due||'9999'));
+  if(!items.length) return `<div class="empty big"><b>Nothing needs you</b>Sessions surface here when they ask a question or a task is parked.</div>`;
+  return `<div style="height:12px"></div>` + items.map(x=>taskRow(x.task, `<b>${esc(x.space.key)}</b> · ${esc(x.folder.name)} / ${esc(x.list.name)}`)).join('');
+}
+
+function renderUnlinked(){
+  const us = unlinked();
+  if(!us.length) return `<div class="empty big"><b>Every session is linked</b>New sessions spawned without a task will land here.</div>`;
+  return `<div class="ubucket">${us.map(s=>`<article class="ucard">
+    <div class="rail one">${sessChip(s)}</div>
+    <div class="u-meta"><b>${esc(s.project)}</b> · ${esc(s.branch)} · ${esc(s.source)}</div>
+    <div class="u-now">${esc(s.summary.now)}</div>
+    <div class="row"><button class="btn primary" data-link="${s.session_id}">${I.link}Link task</button><span class="hint">summary ${fmtSum(s.summaryAgeMin)}${s.host==='macbook' && SPACE.hosts.macbook.liveness!=='fresh' ? ' · host '+SPACE.hosts.macbook.liveness : ''}</span></div>
+  </article>`).join('')}</div>`;
+}
+
+function actionsFor(t){
+  const ss = sessionsFor(t.id), a = [];
+  if(t.agent_state==='needs-info' && !state.answered.has(t.id)) a.push({kind:'answer', label:'Answer', icon:I.reply});
+  const live = ss.find(s=>s.status!=='ended'); if(live) a.push({kind:'open', label:'Open', sub:live.host, icon:I.term, sid:live.session_id});
+  const ended = ss.find(s=>s.status==='ended'); if(ended) a.push({kind:'resume', label:'Resume', sub:ended.resumeTier, icon:I.play, sid:ended.session_id});
+  if(!ss.length){
+    if(state.dispatching.has(t.id)) a.push({kind:'off', label:'Dispatching…', why:'Already dispatching'});
+    else if(canDispatch(t)) a.push({kind:'dispatch', label:'Dispatch', sub:'mactop', icon:I.send});
+    else a.push({kind:'off', label:'Dispatch', sub:whyNot(t), icon:I.send, why:'Can\'t dispatch: '+whyNot(t)});
+  }
+  return a;
+}
+
+function taskRow(t, ctx){
+  const ss = sessionsFor(t.id), g = ['needs','active','rest'][group(t)], due = fmtDue(t.due), acts = actionsFor(t);
+  return `<article class="task g-${g}" data-id="${t.id}">
+    <div class="task-actions" aria-hidden="true">${acts.map(a=>`<button class="act act-${a.kind}" data-act="${a.kind}" data-sid="${a.sid||''}" data-why="${esc(a.why||'')}" tabindex="-1">${a.icon||''}<span>${a.label}</span>${a.sub?`<small>${esc(a.sub)}</small>`:''}</button>`).join('')}</div>
+    <div class="task-body">
+      ${ctx ? `<div class="ctx">${ctx}</div>` : ''}
+      <div class="t1">
+        <span class="pri p${t.priority}" title="${PRI[t.priority]}">P${t.priority}</span>
+        <h4 class="t-name">${esc(t.name)}</h4>
+        <a class="ib" href="${esc(t.url)}" target="_blank" rel="noopener" aria-label="Open in ClickUp" title="Open in ClickUp">${I.ext}</a>
+        <button class="ib more" data-more="${t.id}" aria-label="More actions" aria-haspopup="dialog">${I.more}</button>
+      </div>
+      <div class="t2">
+        ${statusChip(t.status)}${stateChip(t.agent_state)}
+        ${due ? `<span class="chip due ${due.cls}">${due.label}</span>` : ''}
+        ${t.doneWhen ? `<span class="chip dw ok" title="Has a DONE-WHEN contract">✓ DONE-WHEN</span>` : `<span class="chip dw miss" title="No DONE-WHEN contract — can't dispatch">⚠︎ no DONE-WHEN</span>`}
+        <span class="chip who">${esc(t.assignee)}</span>
+      </div>
+      ${parkedBlock(t)}
+      ${railBlock(t, ss)}
+    </div>
+  </article>`;
+}
+
+function parkedBlock(t){
+  if(t.agent_state!=='needs-info') return '';
+  const done = state.answered.has(t.id), s = sessionsFor(t.id)[0];
+  return `<div class="parked ${done?'done':''}">
+    <div class="lbl">${done ? 'Answered · session resuming' : 'Parked — waiting on your answer'}</div>
+    <p class="q">${esc(t.question)}</p>
+    ${done ? '' : `<div class="row"><button class="btn danger" data-answer="${t.id}">${I.reply}Answer</button><span class="hint">unblocks ${s ? esc(s.name)+' on '+esc(s.host) : 'the next session'}</span></div>`}
+  </div>`;
+}
+
+function railBlock(t, ss){
+  if(state.dispatching.has(t.id)) return `<div class="nosess"><span class="dispatching"><i class="spin"></i>dispatching…</span><span class="hint">spawning on mactop via the launch rail</span></div>`;
+  if(!ss.length){
+    const ok = canDispatch(t);
+    return `<div class="nosess"><button class="dispatch ${ok?'on':''}" data-dispatch="${t.id}" ${ok?'':'disabled'} title="${ok?'Spawn a session for this task':esc(whyNot(t))}">${I.send}Dispatch</button><span class="hint ${ok?'':'warn'}">${ok ? 'no session yet' : whyNot(t)}</span></div>`;
+  }
+  return `<div class="rail" role="list" aria-label="Sessions">${ss.map(sessChip).join('')}</div>`;
+}
+
+function sessChip(s){
+  const ended = s.status==='ended', resuming = state.resuming.has(s.session_id);
+  const l2 = ended ? `ended ${esc(s.lastActivity)} · ${esc(s.elapsedActive)} active`
+    : s.status==='stale' ? `stale · idle ${esc(s.idle)} · host ${SPACE.hosts[s.host].liveness}`
+    : s.status==='needs_input' ? `waiting ${esc(s.idle)} for you`
+    : `${esc(s.elapsedActive)} active · idle ${esc(s.idle)}`;
+  return `<div class="sess ${s.status}" role="listitem" style="--hc:${HOST_COLOR[s.host]}">
+    <button class="sess-main" data-open="${s.session_id}" aria-label="Open session ${esc(s.name)} on ${s.host}, ${STATUS_LABEL[s.status]}">
+      <span class="sess-txt">
+        <span class="sess-l1"><i class="dot ${s.status}"></i><b class="host-tag">${esc(s.host)}</b><span class="sst">${STATUS_LABEL[s.status]}</span><span class="model">${esc(s.model)}</span></span>
+        <span class="sess-l2">${l2}</span>
+      </span>
+      ${ended ? '' : `<span class="sess-go">${I.chev}</span>`}
+    </button>
+    ${ended ? `<button class="sess-resume" data-resume="${s.session_id}" ${resuming?'disabled':''} aria-label="Resume ${esc(s.name)} (${s.resumeTier} tier)">${resuming?'resuming…':'Resume'}<span class="tier">${s.resumeTier}</span></button>` : ''}
+  </div>`;
+}
+
+function renderTabs(){
+  const needs = SPACE.spaces.reduce((a,sp)=>a+allTasks(sp).filter(x=>needsYou(x.task)).length, 0), un = unlinked().length;
+  $('#tabs').innerHTML = [['spaces','Spaces',I.spaces,0,''],['needs','Needs you',I.bell,needs,''],['unlinked','Unlinked',I.unlink,un,'soft']]
+    .map(([k,l,ic,n,cls])=>`<button class="tab" role="tab" aria-selected="${state.tab===k}" data-tab="${k}">${ic}<span>${l}</span>${n?`<b class="badge ${cls}" aria-label="${n}">${n}</b>`:''}</button>`).join('');
+}
+
+function measure(){
+  const h = $('#hdr'); document.documentElement.style.setProperty('--hdr-h', h.offsetHeight+'px');
+  const c = $('#counts'); if(c) c.classList.toggle('scroll', c.scrollWidth > c.clientWidth + 2);
+}
+
+/* ---------- sheets ---------- */
+function sessionSheet(s){
+  const tasks = s.clickupTasks.map(findTask).filter(Boolean), ended = s.status==='ended', host = SPACE.hosts[s.host];
+  return `<div class="sh-head"><div>
+      <div class="sh-eyebrow"><i class="dot ${s.status}"></i>${STATUS_LABEL[s.status]} · <b style="color:${HOST_COLOR[s.host]}">${esc(s.host)}</b> · ${esc(s.model)} · ${esc(s.source)}</div>
+      <h2 class="sh-title mono">${esc(s.name)}</h2>
+    </div><button class="ib close" data-close aria-label="Close">${I.x}</button></div>
+    ${host.liveness!=='fresh' ? `<p class="hostnote">${esc(s.host)} is ${host.liveness}: ${esc(hostCopy(s.host))}</p>` : ''}
+    <dl class="sum"><dt>Now</dt><dd>${esc(s.summary.now)}</dd><dt>Next</dt><dd>${esc(s.summary.next)}</dd><dt>Goal</dt><dd>${esc(s.summary.goal)}</dd></dl>
+    <div class="sum-age">summary ${fmtSum(s.summaryAgeMin)} · last activity ${esc(s.lastActivity)}</div>
+    <div class="stats">
+      <div><b>${s.contextPct}%</b><span>context</span><div class="ctxbar ${s.contextPct>=85?'hot':''}"><i style="width:${s.contextPct}%"></i></div></div>
+      <div><b>${fmtTok(s.tokens)}</b><span>tokens</span></div>
+      <div><b>$${s.cost.toFixed(2)}</b><span>cost</span></div>
+      <div><b>${s.msgs}</b><span>msgs</span></div>
+      <div><b>${esc(s.elapsedActive)}</b><span>active</span></div>
+      <div><b>${esc(s.idle)}</b><span>idle</span></div>
+    </div>
+    <div class="kv"><span>project</span><b>${esc(s.project)}</b></div>
+    <div class="kv"><span>branch</span><b class="mono">${esc(s.branch)}</b></div>
+    <div class="kv"><span>task</span>${tasks.length ? tasks.map(x=>`<a href="${esc(x.task.url)}" target="_blank" rel="noopener">${esc(x.task.name)} ${I.ext}</a>`).join('') : '<b class="faint">unlinked — no ClickUp task</b>'}</div>
+    <pre class="term" aria-label="Transcript preview"><span class="p">$</span> tmux attach -t ${esc(s.name)}
+<span class="dim"># transcript preview renders here — placeholder in this mockup</span></pre>
+    <div class="sh-actions">
+      ${ended ? `<button class="btn primary" data-resume="${s.session_id}">${I.play}Resume <span class="tier inv">${s.resumeTier}</span></button>` : `<button class="btn primary" data-attach="${s.session_id}">${I.term}Attach on ${esc(s.host)} <span class="tier inv">${s.resumeTier}</span></button>`}
+      ${tasks.length ? '' : `<button class="btn" data-link="${s.session_id}">${I.link}Link task</button>`}
+      <button class="btn" data-copy="${esc(s.name)}">${I.copy}Copy name</button>
+    </div>
+    <p class="tier-copy"><b>${s.resumeTier}</b> — ${TIER[s.resumeTier].copy}</p>`;
+}
+
+function menuSheet(t){
+  const ss = sessionsFor(t.id), items = [];
+  if(t.agent_state==='needs-info' && !state.answered.has(t.id)) items.push({icon:I.reply, label:'Answer the question', sub:'unblocks the parked session', attr:`data-answer="${t.id}"`});
+  ss.forEach(s=>{
+    items.push({icon:I.term, label:(s.status==='ended'?'View ended session ':'Open session ')+s.name, sub:`${s.host} · ${STATUS_LABEL[s.status]} · ${s.model} · summary ${fmtSum(s.summaryAgeMin)}`, attr:`data-open="${s.session_id}"`});
+    if(s.status==='ended') items.push({icon:I.play, label:'Resume '+s.name, sub:`${s.resumeTier} tier — ${TIER[s.resumeTier].copy}`, attr: state.resuming.has(s.session_id) ? 'disabled' : `data-resume="${s.session_id}"`});
+  });
+  if(!ss.length){
+    const ok = canDispatch(t) && !state.dispatching.has(t.id);
+    items.push({icon:I.send, label: state.dispatching.has(t.id) ? 'Dispatching…' : 'Dispatch a session', sub: ok ? 'spawn on mactop via the launch rail' : (state.dispatching.has(t.id) ? 'already in flight' : whyNot(t)), attr: ok ? `data-dispatch="${t.id}"` : 'disabled'});
+  }
+  items.push({icon:I.ext, label:'Open in ClickUp', sub:t.id, a:true, attr:`href="${esc(t.url)}" target="_blank" rel="noopener"`});
+  items.push({icon:I.copy, label:'Copy task id', sub:t.id, attr:`data-copy="${t.id}"`});
+  return `<div class="sh-head"><div>
+      <div class="sh-eyebrow"><span class="pri p${t.priority}">P${t.priority}</span>${stateChip(t.agent_state)}${statusChip(t.status)}</div>
+      <h2 class="sh-title">${esc(t.name)}</h2>
+    </div><button class="ib close" data-close aria-label="Close">${I.x}</button></div>
+    <div class="menu">${items.map(i=> i.a
+      ? `<a class="mi" ${i.attr}>${i.icon}<div><b>${esc(i.label)}</b><small>${esc(i.sub)}</small></div>${I.chev}</a>`
+      : `<button class="mi" ${i.attr}>${i.icon}<div><b>${esc(i.label)}</b><small>${esc(i.sub)}</small></div>${I.chev}</button>`).join('')}</div>`;
+}
+
+function linkSheet(s){
+  const groups = [];
+  for(const sp of SPACE.spaces) for(const f of sp.folders) for(const l of f.lists) if(l.tasks.length) groups.push({label:`<b>${esc(sp.key)}</b> · ${esc(f.name)} / ${esc(l.name)}`, tasks:l.tasks});
+  return `<div class="sh-head"><div>
+      <div class="sh-eyebrow">Link task</div>
+      <h2 class="sh-title mono">${esc(s.name)}</h2>
+    </div><button class="ib close" data-close aria-label="Close">${I.x}</button></div>
+    <p class="sh-sub">Pick the ClickUp task this session is working. It moves under that task in its Space.</p>
+    <input class="search" type="search" placeholder="Search tasks" data-search aria-label="Search tasks" autocomplete="off">
+    <div class="pick">${groups.map(g=>`<div class="pick-g"><div class="pick-h">${g.label}</div>${g.tasks.map(t=>`<button class="pick-i" data-pick="${t.id}" data-sid="${s.session_id}" data-text="${esc((t.name+' '+t.id).toLowerCase())}"><span class="pri p${t.priority}">P${t.priority}</span><span class="pick-n">${esc(t.name)}</span>${stateChip(t.agent_state)}</button>`).join('')}</div>`).join('')}</div>`;
+}
+
+function answerSheet(t){
+  const s = sessionsFor(t.id)[0];
+  return `<div class="sh-head"><div>
+      <div class="sh-eyebrow">Answer · parked ${s ? 'on '+esc(s.host) : ''}</div>
+      <h2 class="sh-title">${esc(t.name)}</h2>
+    </div><button class="ib close" data-close aria-label="Close">${I.x}</button></div>
+    <blockquote class="qq">${esc(t.question)}</blockquote>
+    <textarea class="ta" data-ta placeholder="Your answer goes to the session as its next message" aria-label="Your answer"></textarea>
+    <div class="sh-actions"><button class="btn primary" data-send-answer="${t.id}">${I.reply}Send answer${s ? ' to '+esc(s.name) : ''}</button></div>
+    <p class="hint" style="margin-top:8px">Mock: nothing leaves this page.</p>`;
+}
+
+function hostSheet(name){
+  const h = SPACE.hosts[name], onHost = SPACE.sessions.filter(s=>s.host===name);
+  return `<div class="sh-head"><div>
+      <div class="sh-eyebrow"><i class="dot" style="background:${HOST_COLOR[name]}"></i>host · ${h.liveness}</div>
+      <h2 class="sh-title">${esc(name)}</h2>
+    </div><button class="ib close" data-close aria-label="Close">${I.x}</button></div>
+    <p class="sh-sub">${esc(hostCopy(name))}</p>
+    <div class="kv"><span>publish</span><b>${fmtAge(h.publishAgeSec)} ago</b></div>
+    <div class="kv"><span>sessions</span><b>${onHost.length} on this host · ${onHost.filter(s=>['needs_input','working','waiting'].includes(s.status)).length} live</b></div>
+    <div class="kv"><span>self</span><b>${SPACE.self===name ? 'this board is served from '+esc(name) : 'served from '+esc(SPACE.self)}</b></div>`;
+}
+
+let lastFocus = null;
+function openSheet(html, trigger){
+  lastFocus = trigger || document.activeElement;
+  const sh = $('#sheet'); sh.innerHTML = '<div class="handle"></div>' + html; sh.scrollTop = 0;
+  $('#scrim').classList.add('show'); sh.classList.add('show'); document.body.classList.add('locked');
+  requestAnimationFrame(()=>{ const f = sh.querySelector('[data-close]'); if(f) f.focus({preventScroll:true}); });
+}
+function closeSheet(){
+  const sh = $('#sheet'); if(!sh.classList.contains('show')) return;
+  sh.classList.remove('show'); $('#scrim').classList.remove('show'); document.body.classList.remove('locked');
+  if(lastFocus && document.contains(lastFocus)) lastFocus.focus({preventScroll:true});
+}
+
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 2800); }
+
+/* ---------- actions ---------- */
+function doDispatch(id){
+  const t = findTask(id).task;
+  if(!canDispatch(t)){ toast(t.doneWhen ? 'Can\'t dispatch: state is '+STATE_LABEL[t.agent_state] : 'Can\'t dispatch: needs a DONE-WHEN contract first'); return; }
+  state.dispatching.add(id); closeSheet(); toast('Dispatching on mactop — '+t.name); render();
+}
+function doResume(sid){
+  const s = findSession(sid); if(state.resuming.has(sid)) return;
+  state.resuming.add(sid); closeSheet();
+  toast(`Resuming ${s.name} · ${s.resumeTier} tier` + (s.resumeTier==='revive' ? ' — fresh session, not a restore' : s.resumeTier==='resume' ? ' — saved transcript, not a restore' : ''));
+  render();
+}
+
+/* ---------- swipe-reveal ---------- */
+let drag = null, suppressClick = false;
+const main = $('#main');
+main.addEventListener('pointerdown', e=>{
+  if(e.button!==0) return;
+  const body = e.target.closest('.task-body'); if(!body) return;
+  if(e.target.closest('button,a,input,textarea')) return;
+  const rail = e.target.closest('.rail'); if(rail && rail.scrollWidth > rail.clientWidth + 2) return;
+  const task = body.parentElement, w = task.querySelector('.task-actions').offsetWidth; if(!w) return;
+  drag = {body, task, w, x:e.clientX, y:e.clientY, base: task.classList.contains('open') ? -w : 0, active:false, id:e.pointerId, cur:0};
+});
+main.addEventListener('pointermove', e=>{
+  if(!drag || e.pointerId!==drag.id) return;
+  const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+  if(!drag.active){
+    if(Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+    drag.active = true; drag.body.classList.add('dragging');
+    try{ drag.body.setPointerCapture(drag.id); }catch(_){}
+    if(state.openRow && state.openRow!==drag.task) closeRow();
+  }
+  drag.cur = Math.max(-drag.w, Math.min(0, drag.base+dx));
+  drag.body.style.transform = `translateX(${drag.cur}px)`;
+  e.preventDefault();
+});
+function endDrag(e){
+  if(!drag || e.pointerId!==drag.id) return;
+  const d = drag; drag = null; d.body.classList.remove('dragging');
+  if(!d.active) return;
+  suppressClick = true; setTimeout(()=>suppressClick=false, 300);
+  if(-d.cur > d.w*0.4) openRow(d.task, d.w); else closeRow(d.task);
+}
+main.addEventListener('pointerup', endDrag);
+main.addEventListener('pointercancel', endDrag);
+function openRow(task, w){
+  task.classList.add('open'); task.querySelector('.task-body').style.transform = `translateX(-${w}px)`;
+  task.querySelector('.task-actions').setAttribute('aria-hidden','false'); state.openRow = task;
+}
+function closeRow(task){
+  const t = task || state.openRow; if(!t) return;
+  t.classList.remove('open'); const b = t.querySelector('.task-body'); if(b) b.style.transform = '';
+  const a = t.querySelector('.task-actions'); if(a) a.setAttribute('aria-hidden','true');
+  if(state.openRow===t) state.openRow = null;
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e=>{
+  if(suppressClick){ suppressClick = false; e.preventDefault(); return; }
+  if(state.openRow && !state.openRow.contains(e.target)) closeRow();
+  const el = e.target.closest('[data-space],[data-tab],[data-goto],[data-more],[data-open],[data-resume],[data-dispatch],[data-answer],[data-send-answer],[data-link],[data-pick],[data-host],[data-close],[data-copy],[data-attach],[data-act],[data-scrim]');
+  if(!el) return;
+  const d = el.dataset;
+  if(d.space!==undefined){ if(state.spaceId!==d.space){ state.spaceId = d.space; render(); window.scrollTo({top:0}); } return; }
+  if(d.tab!==undefined || d.goto!==undefined){ const k = d.tab ?? d.goto; if(state.tab!==k){ state.tab = k; render(); window.scrollTo({top:0}); } return; }
+  if(d.more!==undefined){ openSheet(menuSheet(findTask(d.more).task), el); return; }
+  if(d.open!==undefined){ openSheet(sessionSheet(findSession(d.open)), el); return; }
+  if(d.resume!==undefined){ doResume(d.resume); return; }
+  if(d.attach!==undefined){ const s = findSession(d.attach); closeSheet(); toast(`Attaching to ${s.name} on ${s.host} (mock)`); return; }
+  if(d.dispatch!==undefined){ doDispatch(d.dispatch); return; }
+  if(d.answer!==undefined){ openSheet(answerSheet(findTask(d.answer).task), el); return; }
+  if(d.sendAnswer!==undefined){
+    const ta = $('#sheet [data-ta]');
+    if(ta && !ta.value.trim()){ ta.focus(); toast('Type an answer first'); return; }
+    state.answered.add(d.sendAnswer); const s = sessionsFor(d.sendAnswer)[0]; closeSheet();
+    toast('Answer sent' + (s ? ' — '+s.name+' resumes on '+s.host : '')); render(); return;
+  }
+  if(d.link!==undefined){ openSheet(linkSheet(findSession(d.link)), el); return; }
+  if(d.pick!==undefined){ const s = findSession(d.sid), t = findTask(d.pick).task; s.clickupTasks.push(t.id); closeSheet(); toast('Linked to “'+t.name+'”'); render(); return; }
+  if(d.host!==undefined){ openSheet(hostSheet(d.host), el); return; }
+  if(d.close!==undefined || d.scrim!==undefined){ closeSheet(); return; }
+  if(d.copy!==undefined){ const v = d.copy; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.resolve()).catch(()=>{}).finally(()=>toast('Copied '+v)); closeSheet(); return; }
+  if(d.act!==undefined){
+    const task = el.closest('.task'), id = task.dataset.id, moreBtn = task.querySelector('.more'); closeRow(task);
+    if(d.act==='open') openSheet(sessionSheet(findSession(d.sid)), moreBtn);
+    else if(d.act==='resume') doResume(d.sid);
+    else if(d.act==='dispatch') doDispatch(id);
+    else if(d.act==='answer') openSheet(answerSheet(findTask(id).task), moreBtn);
+    else toast(d.why || 'Not available');
+  }
+});
+document.addEventListener('input', e=>{
+  if(!e.target.matches('[data-search]')) return;
+  const q = e.target.value.trim().toLowerCase(), sh = $('#sheet');
+  sh.querySelectorAll('.pick-i').forEach(b=>{ b.hidden = !!q && !b.dataset.text.includes(q); });
+  sh.querySelectorAll('.pick-g').forEach(g=>{ g.hidden = ![...g.querySelectorAll('.pick-i')].some(b=>!b.hidden); });
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeSheet(); closeRow(); } });
+window.addEventListener('resize', measure);
+if('ResizeObserver' in window) new ResizeObserver(measure).observe($('#hdr'));
+
+render();
+setTimeout(()=>toast('Swipe a task left for actions, or tap …'), 700);
+</script>
+</body>
+</html>

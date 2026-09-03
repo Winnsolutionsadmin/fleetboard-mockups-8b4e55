@@ -20,7 +20,7 @@
   --host-mactop:#5f4dd0; --host-mini:#0e9994; --host-macbook:#0073ea;
   --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --pad0:12px; --indent:22px; --disc:22px; --row:36px; --btn:28px;
+  --pad0:12px; --indent:22px; --disc:22px; --railx:11px; --row:36px; --btn:28px;
   --top-h:0px;
 }
 *{box-sizing:border-box}
@@ -73,10 +73,10 @@ kbd{font:11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px
 /* ---------- tree table ---------- */
 .wrap{max-width:1400px;margin:0 auto;padding:12px 16px 80px}
 .tree{background:var(--card);border:1px solid var(--line);border-radius:10px}
-.thead{position:sticky;top:var(--top-h);z-index:20;display:grid;grid-template-columns:minmax(260px,1fr) 148px 168px 122px 104px 196px;background:var(--column);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+.thead{position:sticky;top:var(--top-h);z-index:20;display:grid;grid-template-columns:minmax(240px,1fr) 148px 168px 134px 112px 196px;background:var(--column);border-bottom:1px solid var(--line);border-radius:10px 10px 0 0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
 .thead>div{padding:8px 10px;white-space:nowrap}
 .thead>div:first-child{padding-left:var(--pad0)}
-.row{position:relative;display:grid;grid-template-columns:minmax(260px,1fr) 148px 168px 122px 104px 196px;align-items:center;min-height:var(--row);border-bottom:1px solid var(--line);background:var(--card)}
+.row{position:relative;display:grid;grid-template-columns:minmax(240px,1fr) 148px 168px 134px 112px 196px;align-items:center;min-height:var(--row);border-bottom:1px solid var(--line);background:var(--card)}
 .row:last-child{border-bottom:0;border-radius:0 0 10px 10px}
 .row:hover{background:#fcfcfe}
 .row.is-cur{background:#fbfbfe}
@@ -88,15 +88,17 @@ kbd{font:11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px
 .c{padding:4px 10px;min-width:0;font-size:12.5px;color:var(--ink-soft)}
 .c-name{display:flex;align-items:center;gap:6px;color:var(--ink);padding-left:calc(var(--pad0) + (var(--lvl) - 1) * var(--indent));min-height:var(--row)}
 .c-act{display:flex;align-items:center;gap:6px;justify-content:flex-start;flex-wrap:wrap}
-.rail{position:absolute;top:0;bottom:0;width:1px;background:var(--line);left:calc(var(--pad0) + (var(--i) - 1) * var(--indent) + var(--disc) / 2);pointer-events:none}
-.elbow{position:absolute;height:2px;width:calc(var(--indent) - 4px);left:calc(var(--pad0) + (var(--lvl) - 2) * var(--indent) + var(--disc) / 2);top:calc(var(--row) / 2 - 1px);background:var(--hc);border-radius:1px;pointer-events:none}
+.rail{position:absolute;top:0;bottom:0;width:1px;background:var(--line);left:calc(var(--pad0) + (var(--i) - 1) * var(--indent) + var(--railx));pointer-events:none}
+.elbow{position:absolute;height:2px;width:calc(var(--indent) - 4px);left:calc(var(--pad0) + (var(--lvl) - 2) * var(--indent) + var(--railx));top:calc(var(--row) / 2 - 1px);background:var(--hc);border-radius:1px;pointer-events:none}
 .disc{width:var(--disc);height:var(--disc);flex:0 0 var(--disc);display:inline-flex;align-items:center;justify-content:center;border-radius:5px;color:var(--ink-faint)}
 .disc:hover{background:var(--column);color:var(--ink)}
 .disc svg{width:10px;height:10px;transition:transform .12s ease}
 .row[aria-expanded="true"] .disc svg{transform:rotate(90deg)}
 .disc.leaf{visibility:hidden}
-.nm{min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.nm .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.nm{min-width:0;flex:1;display:flex;flex-direction:column;align-items:stretch;gap:2px}
+.nm .t{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.nm .t>*{vertical-align:middle}
+.nm .t .lnk{margin-left:4px}
 .row.k-space .t{font-weight:700;font-size:13.5px}
 .row.k-folder .t{font-weight:600}
 .row.k-list .t{font-weight:600;color:var(--ink)}
@@ -104,19 +106,19 @@ kbd{font:11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px
 .row.k-folder .c-name .t::before{content:"";display:inline-block;width:10px;height:8px;border-radius:2px 2px 2px 2px;border:1.5px solid var(--ink-faint);margin-right:7px;vertical-align:0}
 .row.k-empty{min-height:32px}
 .row.k-empty .t{color:var(--ink-faint);font-style:italic}
-.sub{font-size:11.5px;color:var(--ink-faint);font-weight:400;white-space:nowrap}
+.sub{font-size:11.5px;color:var(--ink-faint);font-weight:400;margin-left:6px}
 .row.k-space,.row.k-folder,.row.k-list,.row.k-group{background:#fdfdfe}
 .row.k-group .t{font-weight:600}
 .row.k-task .t{font-weight:500}
-.q{display:block;width:100%;margin:2px 0 4px;padding:6px 8px;border-left:2px solid var(--c-needs);background:var(--c-needs-bg);color:#7a2f36;font-size:12px;line-height:1.4;border-radius:0 6px 6px 0}
+.q{display:block;margin:2px 0 4px;white-space:normal;padding:6px 8px;border-left:2px solid var(--c-needs);background:var(--c-needs-bg);color:#7a2f36;font-size:12px;line-height:1.4;border-radius:0 6px 6px 0}
 .q b{font-weight:600;color:#b43a44;margin-right:4px}
 
 /* status dot before task name (clickup status) */
-.sdot{width:9px;height:9px;border-radius:3px;flex:0 0 9px;border:1.5px solid var(--ink-faint);background:transparent}
+.sdot{display:inline-block;width:9px;height:9px;border-radius:3px;border:1.5px solid var(--ink-faint);background:transparent;margin-right:6px}
 .sdot.s-inprog{background:var(--c-work);border-color:var(--c-work)}
 .sdot.s-prop{background:var(--ok);border-color:var(--ok)}
 /* priority */
-.pri{display:inline-flex;align-items:flex-end;gap:1.5px;height:11px;flex:0 0 auto}
+.pri{display:inline-flex;align-items:flex-end;gap:1.5px;height:11px;margin-right:7px}
 .pri i{display:block;width:3px;background:var(--line);border-radius:1px}
 .pri i:nth-child(1){height:4px}.pri i:nth-child(2){height:7px}.pri i:nth-child(3){height:11px}
 .pri.p1 i{background:var(--c-needs)}
@@ -149,6 +151,7 @@ kbd{font:11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px
 .sdots i.ended{background:#fff;border:2px solid var(--hc);opacity:.55}
 .sdots i.needs{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c-needs)}
 .sdots i.working{box-shadow:0 0 0 2px #fff,0 0 0 3.5px #c9dcfb}
+.c-due>span{white-space:nowrap}
 .dim{color:var(--ink-faint)}
 .mono{font-family:var(--mono);font-size:11.5px}
 .bad{color:var(--bad);font-weight:600}
@@ -158,11 +161,11 @@ kbd{font:11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px
 /* session rows */
 .row.k-session{background:#fcfcfd}
 .row.k-session.hot{background:#fff6f6}
-.htag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;background:var(--hc);color:#fff;font:600 10.5px/1 var(--mono);letter-spacing:.02em;flex:0 0 auto}
-.sname{font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
-.branch{font-family:var(--mono);font-size:11px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.htag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;background:var(--hc);color:#fff;font:600 10.5px/1 var(--mono);letter-spacing:.02em;margin-right:6px}
+.sname{font-family:var(--mono);font-size:12px;color:var(--ink);margin-right:6px}
+.branch{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-right:6px}
 .src{font-size:10.5px;color:var(--ink-faint);border:1px solid var(--line);border-radius:4px;padding:1px 4px;line-height:1.2}
-.ctx{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.ctx{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ctx .bar{width:40px;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
 .ctx .bar b{display:block;height:100%;background:var(--brand);border-radius:3px}
 .ctx.high .bar b{background:var(--bad)}
@@ -220,7 +223,7 @@ textarea.ans:focus{outline:2px solid var(--brand);outline-offset:0;border-color:
 
 /* ---------- stacked (tablet + phone) ---------- */
 @media (max-width:1000px){
-  :root{--indent:16px;--btn:44px;--disc:44px;--row:44px}
+  :root{--indent:16px;--btn:44px;--disc:44px;--railx:5px;--row:44px}
   .thead{display:none}
   .tree{border-radius:10px}
   .row{display:block;padding:6px 10px 8px 0}
@@ -236,8 +239,7 @@ textarea.ans:focus{outline:2px solid var(--brand);outline-offset:0;border-color:
   .row.k-space .c-name,.row.k-folder .c-name,.row.k-list .c-name,.row.k-group .c-name{min-height:44px}
   .row.k-empty .c-name{min-height:40px}
   .elbow{top:calc(6px + var(--row) / 2 - 1px)}
-  .nm .t{white-space:normal;overflow:visible;line-height:1.3}
-  .branch{max-width:100%}
+  .nm .t{white-space:normal;overflow:visible;line-height:1.35}
   .disc svg{width:12px;height:12px}
   .btn{padding:0 14px}
   .drawer{top:auto;left:0;right:0;bottom:0;width:100%;max-height:88vh;border-radius:14px 14px 0 0;box-shadow:0 -8px 32px rgba(42,46,67,.2)}
@@ -251,7 +253,7 @@ textarea.ans:focus{outline:2px solid var(--brand);outline-offset:0;border-color:
   .bar3 .tools{margin-left:auto}
 }
 @media (max-width:430px){
-  :root{--indent:12px;--pad0:6px}
+  :root{--indent:12px;--pad0:6px;--railx:4px}
   .top-inner{padding:8px 10px 8px}
   .wrap{padding:8px 6px 90px}
   .bar1 .wordmark{display:none}
@@ -571,24 +573,24 @@ function renderRow(r){
   switch (r.kind){
     case 'space': {
       const ts = allTasksIn(r.sp); const lists = r.sp.folders.reduce((n,f) => n + f.lists.length, 0);
-      return shell(r, '', `<span class="t">${esc(r.sp.name)}</span><span class="sub">${r.sp.folders.length} folders · ${lists} lists · ${ts.length} open</span>`,
+      return shell(r, '', `<span class="t">${esc(r.sp.name)}<span class="sub">${r.sp.folders.length} folders · ${lists} lists · ${ts.length} open</span></span>`,
         cell('') + cell('') + cell('') + cell(''), '');
     }
     case 'folder': {
       const ts = r.f.lists.flatMap(l => l.tasks); const live = ts.reduce((n,t) => n + sessionsFor(t.id).filter(isLive).length, 0);
-      return shell(r, '', `<span class="t">${esc(r.f.name)}</span><span class="sub">${r.f.lists.length} ${r.f.lists.length === 1 ? 'list' : 'lists'} · ${ts.length} open${live ? ` · ${live} live` : ''}</span>`,
+      return shell(r, '', `<span class="t">${esc(r.f.name)}<span class="sub">${r.f.lists.length} ${r.f.lists.length === 1 ? 'list' : 'lists'} · ${ts.length} open${live ? ` · ${live} live` : ''}</span></span>`,
         cell('') + cell('') + cell('') + cell(''), '');
     }
     case 'list': {
       const n = r.l.tasks.length; const ny = r.l.tasks.map(effTask).filter(t => needsYou(t, sessionsFor(t.id))).length;
-      return shell(r, '', `<span class="t">${esc(r.l.name)}</span><span class="sub">${n ? `${n} open` : 'empty'}${ny ? ` · <span class="bad">${ny} need you</span>` : ''}</span>`,
+      return shell(r, '', `<span class="t">${esc(r.l.name)}<span class="sub">${n ? `${n} open` : 'empty'}${ny ? ` · <span class="bad">${ny} need you</span>` : ''}</span></span>`,
         cell('') + cell('') + cell('') + cell(''), '');
     }
     case 'empty':
       return shell(r, '', `<span class="t">${esc(r.text || 'No open tasks in this list.')}</span>`, cell('') + cell('') + cell('') + cell(''), '');
     case 'group': {
       const live = r.un.filter(isLive).length;
-      return shell(r, '', `<span class="t">Unlinked sessions</span><span class="sub">${r.un.length} not joined to any task${live ? ` · ${live} live` : ''}</span>`,
+      return shell(r, '', `<span class="t">Unlinked sessions<span class="sub">${r.un.length} not joined to any task${live ? ` · ${live} live` : ''}</span></span>`,
         cell('') + cell('') + cell('') + cell(''), '');
     }
     case 'task': return renderTask(r);
@@ -601,7 +603,7 @@ function renderTask(r){
   const dispatching = model.dispatching.has(t.id), confirmed = model.confirmed.has(t.id);
   const sdot = t.status === 'in progress' ? 's-inprog' : t.status === 'proposed-done' ? 's-prop' : 's-todo';
   const statusTitle = { 'to do':'ClickUp status: to do', 'in progress':'ClickUp status: in progress', 'proposed-done':'ClickUp status: proposed-done — awaiting your confirm' }[t.status];
-  let name = `<span class="sdot ${sdot}" title="${statusTitle}" aria-label="${statusTitle}"></span>${priHtml(t.priority)}<span class="t" title="${esc(t.name)}">${esc(t.name)}</span><a class="lnk" href="${esc(t.url)}" target="_blank" rel="noopener" title="Open in ClickUp" aria-label="Open ${esc(t.id)} in ClickUp">${esc(t.id)} ↗</a>`;
+  let name = `<span class="t" title="${esc(t.name)}"><span class="sdot ${sdot}" title="${statusTitle}" aria-label="${statusTitle}"></span>${priHtml(t.priority)}${esc(t.name)}<a class="lnk" href="${esc(t.url)}" target="_blank" rel="noopener" title="Open in ClickUp" aria-label="Open ${esc(t.id)} in ClickUp">${esc(t.id)} ↗</a></span>`;
   if (t.question) name += `<span class="q"><b>Question</b>${esc(t.question)}</span>`;
 
   let stateChip;
@@ -634,7 +636,7 @@ function renderTask(r){
 
 function renderSession(r){
   const { s, t } = r; const hot = s.status === 'needs_input';
-  const name = `<span class="htag">${esc(s.host)}</span><span class="sname">${esc(s.name)}</span><span class="branch" title="${esc(s.project)} · ${esc(s.branch)}">${esc(s.project)}/${esc(s.branch)}</span>${s.source === 'omnara' ? '<span class="src">omnara</span>' : ''}`;
+  const name = `<span class="t" title="${esc(s.project)} · ${esc(s.branch)}"><span class="htag">${esc(s.host)}</span><span class="sname">${esc(s.name)}</span><span class="branch">${esc(s.project)}/${esc(s.branch)}</span>${s.source === 'omnara' ? '<span class="src">omnara</span>' : ''}</span>`;
   const pulse = (s.status === 'needs_input' || s.status === 'working') ? ' pulse' : '';
   const stateChip = `<span class="chip ss-${s.status}"><i class="${pulse.trim()}"></i>${SESS_LABEL[s.status]}</span>`;
   const time = s.status === 'ended' ? `${esc(s.elapsedActive)} active · ended ${esc(s.lastActivity)}` : s.idle === '0m' ? `${esc(s.elapsedActive)} active` : `${esc(s.elapsedActive)} active · idle ${esc(s.idle)}`;
