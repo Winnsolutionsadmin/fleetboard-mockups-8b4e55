@@ -551,7 +551,7 @@ function viewSession(id){
         '" aria-label="Open '+esc(ORG[s.org].label)+'">'+esc(s.org)+'</span>'+
       '<span class="tag '+s.priority+'">'+s.priority+'</span>'+
       '<span class="hostmark '+s.host+'">'+HM[s.host]+'</span>'+
-      '<span class="metaline">'+esc(HOST[s.host].label)+' &middot; '+esc(s.branch)+' &middot; '+s.ctx+'% ctx</span>'+
+      '<span class="metaline">'+esc(s.branch)+' &middot; '+s.ctx+'% ctx</span>'+
       (s.status==="needs_you"?'<span class="state"><i></i>NEEDS YOU</span>':"")+
     '</div></div>'+
   '<main class="scroll tape" id="scroll">'+tape+'</main>'+
@@ -577,7 +577,9 @@ var DIRS=[],REPO_ORG={recruiting:"GM",growingmindfully:"GM","client-ops":"W.s",
   miscellaneous:"P","continuous-assurance":"P"};
 F.sessions.forEach(function(s){if(DIRS.indexOf(s.repo)<0)DIRS.push(s.repo);});
 var N={host:"mactop",repo:"recruiting",org:"GM",pri:"P2",model:"opus",mode:"default",first:"",custom:""};
-function slug(t){var w=(t||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(Boolean).slice(0,3);
+var STOP_W={the:1,a:1,an:1,and:1,on:1,to:1,for:1,of:1,it:1,in:1,my:1,me:1,is:1,then:1};
+function slug(t){var w=(t||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/)
+    .filter(function(x){return x&&!STOP_W[x];}).slice(0,3);
   return w.length?w.join("-"):"new-session";}
 function branchName(){return slug(N.first)+"-"+(900+(N.first.length%99));}
 function viewNew(){
@@ -682,15 +684,24 @@ function route(){var h=location.hash||"#list";
   if(h==="#new")return{v:"new"};
   if(h.indexOf("#org/")===0)return{v:"org",id:decodeURIComponent(h.slice(5))};
   return{v:"list"};}
+var LAST={key:null,len:-1};
 function render(){
   var r=route(), app=document.getElementById("app"), out;
+  var old=document.getElementById("scroll"), oldTop=old?old.scrollTop:0;
   if(r.v==="s")out=viewSession(r.id);
   else if(r.v==="new")out=viewList()+viewNew();
   else if(r.v==="org")out=viewOrg(r.id);
   else out=viewList();
   app.innerHTML=out;
-  var sc=document.getElementById("scroll");
-  if(sc&&r.v==="s")sc.scrollTop=sc.scrollHeight;
+  var sc=document.getElementById("scroll"), key=location.hash||"#list";
+  if(sc){
+    if(r.v==="s"){
+      var sx=byId(r.id), len=((S.threads[r.id]||[]).length)+(sx&&sx.busy?1:0);
+      if(LAST.key===key&&LAST.len===len)sc.scrollTop=oldTop; else sc.scrollTop=sc.scrollHeight;
+      LAST.len=len;
+    }else if(LAST.key===key)sc.scrollTop=oldTop;
+  }
+  LAST.key=key;
   if(r.v==="s")syncSend();
   var m=document.getElementById("modal");
   if(m)requestAnimationFrame(function(){m.classList.add("in");});
@@ -903,7 +914,7 @@ function attachSheet(){
 function startSession(){
   var repo=N.custom?N.custom.replace(/^~\/Projects\//,""):N.repo;
   var c={id:"n"+Date.now().toString(36).slice(-4),
-    title:(N.first.trim().split(/\n/)[0]||"New session on "+repo).slice(0,58),
+    title:(N.first.trim().split(/\n/)[0].replace(/[.!,;:\s]+$/,"")||"New session on "+repo).slice(0,58),
     repo:repo,branch:branchName(),org:N.org,priority:N.pri,host:N.host,status:"working",
     ago:"now",unread:false,task:null,now:"Starting up",next:"first pass",
     model:N.model,mode:N.mode,ctx:2,cost:0,busy:true,queue:[],archived:false};
