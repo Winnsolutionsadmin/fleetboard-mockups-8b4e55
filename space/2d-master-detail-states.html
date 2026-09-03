@@ -1,10 +1,10 @@
-<!-- fleetboard space view · concept 2a master-detail-density · Master-detail (01) evolved dense: single-line task rows with a chip row, one-line session chips (host · status · model · elapsed/idle · summary age) that expand on hover/tap to show the Now line, a Comfortable/Compact density toggle persisted in localStorage, and the phone Folders sheet fixed to load closed · phone-first, light theme, self-contained -->
+<!-- fleetboard space view · concept 2d master-detail-states · master-detail (01) evolved around empty, degraded and truthfulness states: Scenario switcher (Normal · Quiet · Degraded · Overloaded), zero-state hero, unknown-host sessions, stale-titles banner, summary provenance hints, Resume "what does not restore" · phone-first, light theme, self-contained -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FleetBoard — Space · master-detail-density</title>
+<title>FleetBoard — Space · master-detail-states</title>
 <style>
 :root{
   --brand:#7b68ee; --brand-dark:#5f4dd0; --brand-soft:#efecfd;
@@ -30,7 +30,6 @@ button:disabled{cursor:not-allowed}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-[hidden]{display:none!important}
 .mono{font-family:var(--mono);font-size:12px;letter-spacing:-.01em}
 
 /* ── shell ─────────────────────────────────────────── */
@@ -72,11 +71,6 @@ a{color:inherit}
 .hdr-title h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-title .built{font-size:12px;color:var(--ink-faint);white-space:nowrap}
 .seg{display:none}
-.dens{display:inline-flex;flex:none;gap:2px;padding:2px;border-radius:8px;background:var(--column);margin-left:auto}
-.dens button{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 9px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
-.dens button svg{width:14px;height:14px;flex:none}
-.dens button:hover{color:var(--ink)}
-.dens button[aria-pressed="true"]{background:var(--card);color:var(--brand-dark);box-shadow:var(--shadow)}
 .hdr-counts{display:flex;gap:6px;align-items:stretch;padding:10px 24px 0;overflow-x:auto;scrollbar-width:none}
 .hdr-counts::-webkit-scrollbar{display:none}
 .count{flex:none;display:flex;flex-direction:column;justify-content:center;min-width:92px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:var(--shadow);text-align:left}
@@ -203,21 +197,7 @@ a{color:inherit}
 .sess.ended{background:var(--ws);border-color:var(--line);color:var(--ink-soft)}
 .sess.ended .sname{color:var(--ink-soft)}
 .sess-main{min-width:0}
-.sess-line1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0;width:100%;text-align:left;border-radius:6px}
-.sess-line1:focus-visible{outline-offset:3px}
-.xt{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;color:var(--ink-faint);margin-left:auto;flex:none;transition:transform .16s}
-.xt svg{width:12px;height:12px}
-.sess-line1:hover .xt{background:var(--column);color:var(--ink)}
-.sess.x .xt{transform:rotate(180deg)}
-.sess-c{display:none;align-items:center;gap:8px;min-width:0;font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sess-c > span{flex:none}
-.sess-c .sep{color:var(--line)}
-.sess-c .age{color:var(--ink-faint);font-style:italic}
-.sess-x{display:none;margin-top:5px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-.sess-x .row{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:3px}
-.sess-x .k{color:var(--ink-faint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:10px;margin-right:4px}
-.sess-x .nx{color:var(--ink)}
-.sess.x .sess-x{display:block}
+.sess-line1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
 .host{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px 0 6px;border-radius:5px;color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em;background:var(--hc,#6b7186)}
 .host::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.85)}
 .sess.ended .host{opacity:.6}
@@ -307,69 +287,15 @@ a{color:inherit}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* phone sheet (folders nav) */
-.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;z-index:50;visibility:hidden;transform:translateY(105%);transition:transform .2s cubic-bezier(.2,.8,.2,1);max-height:78vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
-.sheet.on{transform:none;visibility:visible}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;z-index:50;transform:translateY(105%);transition:transform .2s cubic-bezier(.2,.8,.2,1);max-height:78vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
+.sheet.on{transform:none}
 .sheet-h{padding:10px 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
 .sheet-h::before{content:"";position:absolute;left:50%;top:6px;width:36px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}
 .sheet-h h2{margin:6px 0 0;font-size:15px;flex:1}
 .sheet-b{overflow:auto;padding:6px 8px 12px}
 .sheet-b .tree-list{min-height:44px}
 
-/* ── density: compact ──────────────────────────────── */
-[data-density="compact"]{--tap:30px}
-[data-density="compact"] .hdr-top{padding-top:10px}
-[data-density="compact"] .hdr-title h1{font-size:17px}
-[data-density="compact"] .hdr-counts{padding-top:8px;gap:5px}
-[data-density="compact"] .count{min-width:0;flex-direction:row;align-items:baseline;gap:6px;padding:4px 10px;border-radius:8px}
-[data-density="compact"] .count b{font-size:15px}
-[data-density="compact"] .count span{font-size:11px}
-[data-density="compact"] .hdr-hosts{padding:8px 24px 9px}
-[data-density="compact"] .host-chip{min-height:24px;padding:2px 8px 2px 7px;font-size:11px}
-[data-density="compact"] .host-chip .dot{width:7px;height:7px}
-[data-density="compact"] .content{padding-top:10px}
-[data-density="compact"] .folder{margin-top:14px}
-[data-density="compact"] .folder-h{margin-bottom:6px}
-[data-density="compact"] .list{border-radius:10px;margin-bottom:8px}
-[data-density="compact"] .list-h{padding:7px 12px}
-[data-density="compact"] .list-h h3{font-size:13px}
-[data-density="compact"] .list-empty{padding:12px 12px;font-size:12.5px}
-[data-density="compact"] .task-row{gap:8px 10px;padding:7px 12px 6px;align-items:center}
-[data-density="compact"] .prio{width:16px;height:16px;margin-top:0}
-[data-density="compact"] .prio svg{width:12px;height:12px}
-[data-density="compact"] .task-name{font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-[data-density="compact"] .task-name a{display:block;overflow:hidden;text-overflow:ellipsis}
-[data-density="compact"] .task-meta{margin-top:3px;gap:3px 7px;font-size:11.5px}
-[data-density="compact"] .chip{height:18px;padding:0 6px;font-size:10.5px;border-radius:5px}
-[data-density="compact"] .st{font-size:11.5px}
-[data-density="compact"] .assg .av{width:14px;height:14px;font-size:8px}
-[data-density="compact"] .task-act{padding-top:0}
-[data-density="compact"] .btn{min-height:30px;padding:0 10px;font-size:12px;border-radius:7px}
-[data-density="compact"] .btn svg{width:13px;height:13px}
-[data-density="compact"] .btn .tier{padding:1px 5px;font-size:9.5px}
-[data-density="compact"] .dispatch-wrap{flex-direction:row-reverse;align-items:center;gap:8px}
-[data-density="compact"] .dispatching{min-height:30px;padding:0 10px;font-size:12px}
-[data-density="compact"] .parked{margin:0 12px 8px 38px;padding:8px 10px;gap:8px}
-[data-density="compact"] .parked .q{font-size:12.5px}
-[data-density="compact"] .parked .q-ic{width:20px;height:20px;font-size:12px}
-[data-density="compact"] .sessions{margin:0 12px 8px 20px;padding-left:20px}
-[data-density="compact"] .sessions::before{top:-2px;bottom:10px}
-[data-density="compact"] .sess{padding:4px 8px 4px 10px;margin-top:4px;border-radius:8px;gap:8px}
-[data-density="compact"] .sess.x{padding-bottom:8px}
-[data-density="compact"] .sess-line1{flex-wrap:nowrap;min-height:26px;gap:7px}
-[data-density="compact"] .sess-line1 > *{flex:none}
-[data-density="compact"] .sess-line1 .sess-c{display:flex;flex:1 1 auto}
-[data-density="compact"] .sess .sstat .t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-[data-density="compact"] .sess .sstat .d{width:9px;height:9px}
-[data-density="compact"] .host{height:18px;font-size:10.5px;padding:0 6px 0 5px}
-[data-density="compact"] .sess-meta{display:none}
-[data-density="compact"] .sess-now{display:none;margin-top:6px;font-size:12.5px}
-[data-density="compact"] .sess.x .sess-now{display:-webkit-box}
-@media (hover:hover){[data-density="compact"] .sess:hover .sess-now{display:-webkit-box}}
-[data-density="compact"] .sess-act{flex-direction:row;align-items:center;gap:6px}
-[data-density="compact"] .sess-act .ctx{display:none}
-[data-density="compact"] .unlinked .sess{margin:6px 12px}
-[data-density="compact"] .unlinked .why{padding-top:6px}
-
+/* ── phone ─────────────────────────────────────────── */
 @media (max-width:720px){
   :root{--tap:44px}
   .app{grid-template-columns:1fr;height:auto;min-height:100vh}
@@ -415,46 +341,26 @@ a{color:inherit}
   .sess-act .btn{flex:1}
   .sess-act .ctx{order:-1;flex:none}
   .sess-act .ctx{display:none}
+  .hdr-scen{padding:8px 14px 0;overflow-x:auto;scrollbar-width:none;gap:8px}
+  .hdr-scen::-webkit-scrollbar{display:none}
+  .hdr-scen .lbl{display:none}
+  .scen-btn{min-height:38px}
+  .scen-blurb{display:none}
+  .tt-box{position:fixed;left:14px;right:14px;top:auto;bottom:auto;max-width:none;width:auto;margin-top:6px}
+  .tt-i::after{content:"";position:absolute;inset:-11px}
+  .tt-t{padding:12px 0;margin:-12px 0}
+  .hero{padding:16px 14px 14px}
+  .hero h2{font-size:17px}
+  .hero-next{grid-template-columns:1fr;gap:8px}
+  .hero-next .btn{width:100%}
+  .banner .b-act .btn{flex:1}
+  .list.sticky-h .list-h{top:var(--hdr-h,0px)}
+  .list.dense .task-row{padding:9px 12px 7px}
+  .more .btn{flex:1;min-width:0}
   .drawer{top:auto;left:0;right:0;width:auto;max-height:88vh;border-radius:16px 16px 0 0;transform:translateY(105%);box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
   .drawer.on{transform:none}
   .picker{top:auto;bottom:0;left:0;transform:none;width:100%;max-height:82vh;border-radius:16px 16px 0 0}
   .tree-list{min-height:44px}
-  .dens{order:2;margin-left:auto}
-  .dens button{min-height:44px;padding:0 11px}
-  .dens button .l{display:none}
-  .hdr-top .folders-btn{margin-left:0}
-  /* compact on phone: rows stay dense, tap targets stay ≥44px */
-  [data-density="compact"] .hdr-top{padding-top:10px}
-  [data-density="compact"] .seg button{min-height:40px;font-size:12.5px}
-  [data-density="compact"] .count{padding:5px 9px}
-  [data-density="compact"] .host-chip{min-height:32px}
-  [data-density="compact"] .content{padding:8px 10px 140px}
-  [data-density="compact"] .list-h{padding:7px 10px}
-  [data-density="compact"] .task-row{grid-template-columns:auto minmax(0,1fr) auto;gap:6px 8px;padding:7px 10px 6px}
-  [data-density="compact"] .task-act{grid-column:auto;width:auto;justify-content:flex-end;padding-top:0}
-  [data-density="compact"] .task-act .btn{flex:none}
-  [data-density="compact"] .btn{min-height:44px;padding:0 10px}
-  [data-density="compact"] .dispatch-wrap{flex-direction:column;align-items:flex-end;gap:2px;width:auto}
-  [data-density="compact"] .dispatch-wrap .btn{width:auto}
-  [data-density="compact"] .dispatch-wrap .hint{font-size:10px;text-align:right;max-width:96px}
-  [data-density="compact"] .dispatching{width:auto;min-height:44px}
-  [data-density="compact"] .task-name a{padding:13px 0;margin:-13px 0}
-  [data-density="compact"] .parked{margin:0 10px 8px 10px}
-  [data-density="compact"] .sessions{margin:0 10px 8px 10px;padding-left:16px}
-  [data-density="compact"] .sess{grid-template-columns:minmax(0,1fr) auto;padding:2px 6px 2px 10px;gap:6px}
-  [data-density="compact"] .sess::before{top:22px}
-  [data-density="compact"] .sess::after{top:18px}
-  [data-density="compact"] .sess-line1{flex-wrap:wrap;min-height:44px;gap:2px 6px;align-content:center;line-height:16px}
-  [data-density="compact"] .sess-line1 .sess-c{flex:1 1 auto;white-space:normal;overflow:visible;flex-wrap:wrap;gap:2px 6px;font-size:11px}
-  [data-density="compact"] .sess-line1 .sess-c .sep{display:none}
-  [data-density="compact"] .sess-line1 .sname{display:none}
-  [data-density="compact"] .xt{position:absolute;right:0;top:50%;transform:translateY(-50%);width:26px;height:44px}
-  [data-density="compact"] .sess.x .xt{transform:translateY(-50%) rotate(180deg)}
-  [data-density="compact"] .sess-main{position:relative;padding-right:26px}
-  [data-density="compact"] .sess-act{margin-top:0;width:auto;justify-content:flex-end;gap:4px}
-  [data-density="compact"] .sess-act .btn{flex:none;padding:0 9px}
-  [data-density="compact"] .sess.x{padding-bottom:8px}
-  [data-density="compact"] .unlinked .sess{margin:6px 10px}
 }
 @media (min-width:721px){
   .folders-btn{display:none}
@@ -463,6 +369,116 @@ a{color:inherit}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
+
+/* ── 2d: scenario switcher ─────────────────────────── */
+.hdr-scen{display:flex;align-items:center;gap:10px;padding:10px 24px 0;min-width:0}
+.hdr-scen .lbl{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600;flex:none}
+.scen-seg{display:inline-flex;gap:2px;padding:3px;background:var(--column);border-radius:10px;flex:none}
+.scen-btn{min-height:32px;padding:0 12px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--ink-soft);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.scen-btn[aria-current="true"]{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.scen-btn .sd{width:7px;height:7px;border-radius:50%;background:var(--ink-faint)}
+.scen-btn[data-scen="quiet"] .sd{background:var(--ok)}
+.scen-btn[data-scen="degraded"] .sd{background:var(--bad)}
+.scen-btn[data-scen="overloaded"] .sd{background:var(--c-work)}
+.scen-blurb{font-size:12px;color:var(--ink-soft);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scen-blurb i{color:var(--ink-faint)}
+
+/* ── 2d: banners (degraded) ────────────────────────── */
+.banner{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:11px 14px;border-radius:12px;border:1px solid;margin:0 0 10px;font-size:13px;line-height:1.45}
+.banner .b-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;color:#fff;flex:none;margin-top:1px}
+.banner .b-ic svg{width:13px;height:13px}
+.banner b{display:block;font-size:13.5px;margin-bottom:1px}
+.banner .b-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.banner.dead{background:var(--c-needs-bg);border-color:#f7c5c9;color:#7a2a31}
+.banner.dead .b-ic{background:var(--bad)}
+.banner.stale-t{background:var(--c-wait-bg);border-color:#f6dfae;color:#6b4a0a}
+.banner.stale-t .b-ic{background:var(--c-wait)}
+.banner .mono{color:inherit}
+.banners{margin-bottom:6px}
+
+/* ── 2d: quiet hero ────────────────────────────────── */
+.hero{position:relative;overflow:hidden;background:var(--card);border:1px solid #bfe6cd;border-radius:14px;box-shadow:var(--shadow);padding:22px 22px 18px;margin:4px 0 18px}
+.hero::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--ok)}
+.hero-top{display:flex;align-items:center;gap:12px}
+.hero-ic{width:40px;height:40px;border-radius:12px;background:#e8f7ee;color:#1d7a43;display:grid;place-items:center;flex:none}
+.hero-ic svg{width:20px;height:20px}
+.hero h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.hero .sub{margin:4px 0 0;font-size:13px;color:var(--ink-soft)}
+.hero-next{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--ws)}
+.hero-next .k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);white-space:nowrap}
+.hero-next .k b{display:block;font-size:13px;color:var(--ink);font-weight:700;letter-spacing:0;text-transform:none;margin-top:1px}
+.hero-next .nm{font-size:14px;font-weight:600;min-width:0}
+.hero-next .nm .task-meta{margin-top:5px}
+.hero-fine{margin:12px 0 0;font-size:12px;color:var(--ink-faint);font-style:italic}
+
+/* ── 2d: no sessions in Space ──────────────────────── */
+.nosess{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:14px 16px;border:1px dashed var(--c-stale);border-radius:12px;background:var(--c-stale-bg);margin:4px 0 16px;font-size:13px;line-height:1.45;color:var(--ink-soft)}
+.nosess .z{width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-faint)}
+.nosess .z svg{width:16px;height:16px}
+.nosess b{color:var(--ink)}
+.nosess .facts{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-variant-numeric:tabular-nums}
+.nosess .facts span::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink-faint);margin-right:6px;vertical-align:1px}
+
+/* ── 2d: empty list row ────────────────────────────── */
+.list-empty{padding:18px 16px;align-items:flex-start}
+.list-empty .z{flex:none;margin-top:1px}
+.list-empty .le-t{color:var(--ink);font-weight:600;font-size:13px}
+.list-empty .le-s{margin-top:2px;font-size:12.5px;color:var(--ink-faint)}
+.list-empty .le-a{margin-top:8px}
+
+/* ── 2d: unknown sessions (dead publisher) ─────────── */
+.sess.unknown{border-style:dashed;border-color:var(--c-stale);background:repeating-linear-gradient(135deg,var(--c-stale-bg) 0 8px,#fff 8px 16px)}
+.sess.unknown .host{opacity:.55}
+.sess.unknown .sname{color:var(--ink-soft)}
+.sstat.unknown{color:var(--ink-soft)}.sstat.unknown .d{background:transparent;border:2px solid var(--c-stale);width:6px;height:6px}
+.sess.unknown .sess-now{color:var(--ink-soft)}
+.lastknown{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--ink-soft);border:1px dashed var(--c-stale);border-radius:5px;padding:1px 6px}
+.count.unk{border-style:dashed;background:var(--c-stale-bg)}
+.count.unk b{color:var(--ink-soft)}
+.host-chip.dead{border-color:#f7c5c9;background:var(--c-needs-bg)}
+.host-chip.dead .nm{color:#b93540}
+.host-chip .why b{display:block;margin-bottom:2px}
+.host-chip .why ul{margin:4px 0 0;padding-left:15px}
+.host-chip .why li{margin:2px 0}
+.host-chip .why .todo{display:block;margin-top:6px;color:#f6dfae;font-weight:600}
+
+/* ── 2d: missing titles ────────────────────────────── */
+.notitle{display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.notitle code{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.01em;background:var(--column);padding:2px 6px;border-radius:5px;color:var(--ink)}
+.notitle em{font-style:normal;font-size:12px;color:var(--warn);font-weight:600}
+
+/* ── 2d: provenance + resume tooltips ──────────────── */
+.tt{position:relative;display:inline-flex;align-items:center;gap:4px}
+.tt-t{font:inherit;color:inherit;text-decoration:underline dotted var(--ink-faint);text-underline-offset:2px;cursor:help;font-style:italic;color:var(--ink-faint)}
+.tt-i{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);font-size:11px;font-weight:700;display:grid;place-items:center;flex:none;position:relative}
+.tt-i:hover{color:var(--brand-dark);border-color:var(--brand)}
+.tt-box{position:absolute;left:0;top:calc(100% + 6px);z-index:35;width:max-content;max-width:290px;padding:9px 11px;border-radius:9px;background:var(--ink);color:#fff;font-size:12px;font-weight:500;line-height:1.42;box-shadow:0 6px 20px rgba(42,46,67,.22);display:none;text-align:left;font-style:normal;text-transform:none;letter-spacing:0}
+.tt-box b{color:#fff;display:block;margin-bottom:2px}
+.tt-box ul{margin:4px 0 0;padding-left:15px}
+.tt-box li{margin:2px 0}
+.tt-box .ok-l{color:#8fd3a7}.tt-box .no-l{color:#ffb3b8;font-weight:700;display:block;margin-top:5px}
+.tt-box .fine{display:block;margin-top:6px;color:#c9d1e6;font-style:italic}
+.tt.right .tt-box{left:auto;right:0}
+.tt.open .tt-box{display:block}
+@media (hover:hover){.tt:hover .tt-box,.tt:focus-within .tt-box{display:block}}
+
+/* ── 2d: overloaded density ────────────────────────── */
+.list.sticky-h{overflow:visible}
+.list.sticky-h .list-h{position:sticky;top:var(--hdr-h,0px);z-index:6;border-radius:12px 12px 0 0;box-shadow:0 1px 0 var(--line)}
+.list.sticky-h .task:last-of-type,.list.sticky-h .more{border-radius:0 0 12px 12px}
+.list-h .showing{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.list.dense .task-row{padding:8px 16px 7px;gap:10px}
+.list.dense .task-name{font-size:13.5px}
+.list.dense .task-meta{margin-top:3px;gap:4px 8px}
+.list.dense .sessions{margin-bottom:8px}
+.list.dense .sess{padding:6px 10px;margin-top:4px}
+.list.dense .sess-meta{display:none}
+.list.dense .sess-now{-webkit-line-clamp:1;font-size:12.5px;margin-top:2px}
+.list.dense .sess-act .ctx{display:none}
+.more{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line);background:var(--ws)}
+.more .btn{min-width:160px}
+.more .hint{white-space:normal}
+.dens-note{padding:6px 16px 8px;font-size:11.5px;color:var(--ink-faint);border-top:1px dashed var(--line);background:var(--ws)}
 </style>
 </head>
 <body>
@@ -481,13 +497,10 @@ a{color:inherit}
     <header class="hdr" id="hdr">
       <div class="hdr-top">
         <div class="hdr-title"><h1 id="space-name">Winn.solutions</h1><span class="built" id="built"></span></div>
-        <div class="dens" id="dens" role="group" aria-label="Row density">
-          <button type="button" data-density="comfortable" aria-pressed="false" title="Comfortable rows"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg><span class="l">Comfortable</span></button>
-          <button type="button" data-density="compact" aria-pressed="false" title="Compact rows"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3h10M3 5.5h10M3 8h10M3 10.5h10M3 13h10"/></svg><span class="l">Compact</span></button>
-        </div>
         <button class="btn folders-btn" id="folders-btn" type="button" aria-haspopup="dialog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1.5 1.5h4.5A1.5 1.5 0 0 1 14 6v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5z"/></svg>Folders</button>
         <div class="seg" id="seg" role="tablist" aria-label="Spaces"></div>
       </div>
+      <div class="hdr-scen" id="scen"><span class="lbl">Scenario</span><div class="scen-seg" id="scen-seg" role="tablist" aria-label="Scenario (mock)"></div><span class="scen-blurb" id="scen-blurb"></span></div>
       <div class="hdr-counts" id="counts" aria-label="Space totals"></div>
       <div class="hdr-hosts" id="hosts"><span class="lbl">Hosts</span></div>
     </header>
@@ -519,7 +532,7 @@ a{color:inherit}
 </div>
 
 <!-- phone folders sheet -->
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Folders and lists" hidden>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Folders and lists">
   <div class="sheet-h"><h2>Jump to</h2><button class="btn ghost sm" type="button" data-close>Close</button></div>
   <div class="sheet-b" id="sheet-body"></div>
 </div>
@@ -698,18 +711,77 @@ const SPACE = {
   ]
 };
 
+/* ── 2d: scenarios (mock) — DATA is derived from SPACE, never mutated in place ─── */
+const SCENARIOS = {
+  normal:     { label:'Normal',     blurb:'the data as published' },
+  quiet:      { label:'Quiet',      blurb:'nothing needs you — zero-state hero with the next due item' },
+  degraded:   { label:'Degraded',   blurb:'mini publisher dead 1h · titles file stale 22m' },
+  overloaded: { label:'Overloaded', blurb:'18 open tasks in one List — sticky headers, show 12 more' }
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+const SYNTH_STEMS = [
+  'Collector: dedupe session rows when two hosts publish the same tmux name',
+  'Session bar: show elapsed-active next to idle',
+  'Rail: retry the spawn once when the tmux socket is busy',
+  'Index page: sort concepts by last QA time',
+  'Publish script: fail loudly when the mirror is unreachable',
+  'Host chip: tick the publish age live between snapshots',
+  'Dispatch: refuse when the task already has a live session',
+  'Board: remember the last opened Space across reloads',
+  'Drawer: copy the session id to the clipboard',
+  'Link picker: search by task id prefix',
+  'Summary: mark a “now” line older than 30m as stale text',
+  'Unlinked bucket: suggest a task from the branch name',
+  'Stats strip: count unknown sessions separately'
+];
+function synthTasks(n){
+  const states=['ready-for-agent','needs-triage','ready-for-agent','ready-for-human','ready-for-agent','needs-triage','ready-for-agent'];
+  const dues=['2026-09-05','2026-09-02',null,'2026-09-09','2026-09-03',null,'2026-09-16','2026-09-07','2026-09-01',null,'2026-09-11','2026-09-08',null];
+  const out=[];
+  for(let i=0;i<n;i++){
+    const id='86eyz'+(0x2a3b1+i*4327).toString(36).padStart(5,'0').slice(-5);
+    out.push({ id, name:SYNTH_STEMS[i%SYNTH_STEMS.length], status:'to do', agent_state:states[i%states.length], due:dues[i%dues.length], doneWhen: i%4!==3, priority: i%5===0?1 : i%3===0?3 : 2, assignee: i%4===3?'Jarred':'Kai', url:'https://app.clickup.com/t/'+id });
+  }
+  return out;
+}
+function deriveScenario(name){
+  const d = clone(SPACE); d.scenario = name; d.titlesStaleMin = 0;
+  if(name==='quiet'){
+    for(const sp of d.spaces) for(const f of sp.folders) for(const l of f.lists)
+      l.tasks = l.tasks.filter(t => t.agent_state!=='needs-info' && t.status!=='proposed-done');
+    const keep = new Set(d.spaces.flatMap(sp=>sp.folders.flatMap(f=>f.lists.flatMap(l=>l.tasks.map(t=>t.id)))));
+    d.sessions = d.sessions.filter(s => s.status!=='stale' && (s.clickupTasks.length===0 || s.clickupTasks.some(id=>keep.has(id))));
+    for(const s of d.sessions){
+      if(s.status==='needs_input'){ s.status='working'; s.idle='0m'; s.lastActivity='just now'; s.summaryAgeMin=2;
+        s.summary.now = s.name==='fb-8b1d44e0a2c9' ? 'Label settled; wiring the picker to the spawn call and running the three-host smoke test' : 'Porting the rate-limit backoff into dispatch.mjs before the archive'; }
+    }
+    d.hosts.macbook = { liveness:'fresh', publishAgeSec:41 };
+  }
+  if(name==='degraded'){
+    d.hosts.mini = { liveness:'dead', publishAgeSec:3660, note:'no publish in 1h 1m — the collector on the mini is not running, or the mini is offline' };
+    for(const s of d.sessions) if(s.host==='mini'){ s.lastKnown=s.status; s.status='unknown'; s.lastSeen='1h ago'; s.summaryAgeMin += 61; s.lastActivity='unknown'; }
+    d.titlesStaleMin = 22;
+    for(const sp of d.spaces) for(const f of sp.folders) for(const l of f.lists) for(const t of l.tasks) t.name = null;
+  }
+  if(name==='overloaded'){
+    const l = d.spaces[0].folders[0].lists[0];
+    l.tasks = l.tasks.concat(synthTasks(13));
+  }
+  return d;
+}
+let DATA = deriveScenario('normal');
+
 /* ── state ─────────────────────────────────────────────────────────────── */
-const DENSITY_KEY = 'fb-space-density';
 const state = {
-  spaceId: SPACE.spaces[0].id,          // W.s by default
+  scenario: 'normal',
+  spaceId: DATA.spaces[0].id,           // W.s by default
   dispatching: new Set(),               // task ids flipped to "dispatching…"
   answered: new Set(),                  // parked tasks answered (mock)
   answering: null,                      // task id with the answer box open
   links: {},                            // session_id → [task ids] added by the mock Link picker
+  expanded: new Set(),                  // list ids with "show N more" expanded
   pickerFor: null,
-  drawerFor: null,
-  density: (()=>{ try{ const d=localStorage.getItem(DENSITY_KEY); return d==='comfortable'||d==='compact' ? d : 'compact'; }catch(e){ return 'compact'; } })(),
-  expanded: new Set(SPACE.sessions.filter(s=>s.status==='needs_input').map(s=>s.session_id))   // needs-input chips start open: the question is the point
+  drawerFor: null
 };
 const TODAY = SPACE.builtAt.slice(0,10);
 
@@ -717,18 +789,32 @@ const TODAY = SPACE.builtAt.slice(0,10);
 const $ = (s, r=document) => r.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const HOST_COLOR = { mactop:'var(--h-mactop)', mini:'var(--h-mini)', macbook:'var(--h-macbook)' };
-const STATUS_RANK = { needs_input:0, working:1, waiting:2, stale:3, ended:4 };
-const STATUS_LABEL = { needs_input:'needs input', working:'working', waiting:'waiting', stale:'stale', ended:'ended' };
+const STATUS_RANK = { needs_input:0, working:1, waiting:2, unknown:3, stale:4, ended:5 };
+const STATUS_LABEL = { needs_input:'needs input', working:'working', waiting:'waiting', unknown:'unknown', stale:'stale', ended:'ended' };
 const AS_LABEL = { 'needs-triage':'needs triage', 'ready-for-human':'ready for human', 'ready-for-agent':'ready for agent', 'in-progress':'in progress', 'needs-info':'needs info', 'out-of-scope':'out of scope' };
+const TIER_NOT = {
+  attach: { ok:'Attaches to the live tmux. Nothing is lost — the process never stopped.', no:[] },
+  resume: { ok:'Restarts from the saved transcript.', no:['tool output since the last save','background processes the session had started','scratch files outside the repo'] },
+  revive: { ok:'Starts a fresh session from a distilled brief (context was maxed).', no:['the verbatim transcript — a brief stands in','all tool output and screenshots','in-flight edits that were never committed','why it chose what it chose — only what it did'] }
+};
+function taskLabel(t){ return t.name || t.id; }
+function tierTipHTML(tier){ const t=TIER_NOT[tier]; return `<b>Resume · ${tier}</b>${esc(t.ok)}${t.no.length?`<span class="no-l">Does not restore</span><ul>${t.no.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<span class="fine">Never a full restore unless it says attach.</span>`; }
+function provTipHTML(s){
+  const h = DATA.hosts[s.host];
+  if(s.status==='unknown') return `<b>Last summary before ${esc(s.host)} went dark</b>Written by the session ${esc(summaryAge(s).replace('summary ',''))}. Nothing newer exists — the host has not published in ${fmtAge(h.publishAgeSec)}.`;
+  return `<b>Where this came from</b>Written by the session ${esc(summaryAge(s).replace('summary ','').replace(' old',' ago'))}, published by the ${esc(s.host)} collector ${fmtAge(h.publishAgeSec)} ago.<span class="fine">Age counts from the session’s own timestamp, not the fleet snapshot. “Now” may have moved on.</span>`;
+}
 const TIER_COPY = { attach:'Attach to the live tmux — full context.', resume:'Resume from the saved transcript — recent tool output not restored.', revive:'Revive into a fresh session from a distilled brief — context was maxed; partial by design.' };
 
 function sessionTasks(s){ return [...(s.clickupTasks||[]), ...(state.links[s.session_id]||[])]; }
-function sessionsFor(taskId){ return SPACE.sessions.filter(s => sessionTasks(s).includes(taskId)).sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]); }
-function unlinkedSessions(){ return SPACE.sessions.filter(s => sessionTasks(s).length===0); }
-function currentSpace(){ return SPACE.spaces.find(s=>s.id===state.spaceId); }
+function sessionsFor(taskId){ return DATA.sessions.filter(s => sessionTasks(s).includes(taskId)).sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]); }
+function unlinkedSessions(){ return DATA.sessions.filter(s => sessionTasks(s).length===0); }
+function currentSpace(){ return DATA.spaces.find(s=>s.id===state.spaceId); }
 function spaceTasks(sp){ return sp.folders.flatMap(f=>f.lists.flatMap(l=>l.tasks)); }
-function findTask(id){ for(const sp of SPACE.spaces) for(const t of spaceTasks(sp)) if(t.id===id) return {task:t, space:sp}; return null; }
+function findTask(id){ for(const sp of DATA.spaces) for(const t of spaceTasks(sp)) if(t.id===id) return {task:t, space:sp}; return null; }
 function isLive(s){ return s.status==='working'||s.status==='needs_input'||s.status==='waiting'; }
+function isUnknown(s){ return s.status==='unknown'; }
+function spaceSessions(sp){ const ids=new Set(spaceTasks(sp).map(t=>t.id)); return DATA.sessions.filter(s=>sessionTasks(s).some(id=>ids.has(id))); }
 function needsYou(t){ return t.agent_state==='needs-info' || sessionsFor(t.id).some(s=>s.status==='needs_input'); }
 function inProg(t){ return t.agent_state==='in-progress' || t.status==='in progress' || sessionsFor(t.id).some(isLive); }
 function rank(t){ return needsYou(t)?0 : inProg(t)?1 : 2; }
@@ -737,13 +823,14 @@ function canDispatch(t){ return t.doneWhen && ['ready-for-agent','needs-triage',
 function stats(sp){
   const tasks = spaceTasks(sp);
   const ids = new Set(tasks.map(t=>t.id));
-  const live = SPACE.sessions.filter(s => isLive(s) && sessionTasks(s).some(id=>ids.has(id)));
+  const live = DATA.sessions.filter(s => isLive(s) && sessionTasks(s).some(id=>ids.has(id)));
   return {
     open: tasks.length,
     needsYou: tasks.filter(needsYou).length,
     live: live.length,
     parked: tasks.filter(t=>t.agent_state==='needs-info').length,
-    proposed: tasks.filter(t=>t.status==='proposed-done').length
+    proposed: tasks.filter(t=>t.status==='proposed-done').length,
+    unknown: DATA.sessions.filter(s => isUnknown(s) && sessionTasks(s).some(id=>ids.has(id))).length
   };
 }
 function fmtDue(d){
@@ -768,15 +855,14 @@ const ICON = {
   link:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 9.5a3 3 0 0 0 4.2 0l1.8-1.8a3 3 0 0 0-4.2-4.2l-.8.8M9.5 6.5a3 3 0 0 0-4.2 0L3.5 8.3a3 3 0 0 0 4.2 4.2l.8-.8"/></svg>',
   resume:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a5 5 0 0 1 8.6-3.5L13 6M13 2.5V6h-3.5M13 8a5 5 0 0 1-8.6 3.5L3 10"/></svg>',
   check:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5"/></svg>',
-  warn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.3"/></svg>',
-  chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5 8 10.5l4-4"/></svg>'
+  warn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.3"/></svg>'
 };
 
 /* ── render: rail + phone segmented control ───────────────────────────── */
 function renderSpaces(){
   const rail = $('#rail-spaces'), seg = $('#seg');
   rail.innerHTML=''; seg.innerHTML='';
-  for(const sp of SPACE.spaces){
+  for(const sp of DATA.spaces){
     const st = stats(sp); const cur = sp.id===state.spaceId;
     rail.insertAdjacentHTML('beforeend', `<button class="space-btn" type="button" data-space="${sp.id}" aria-current="${cur}"><span class="space-key">${esc(sp.key)}</span><span class="nm">${esc(sp.name)}</span><span class="ct">${st.needsYou?`<b>${st.needsYou}</b> · `:''}${st.open}</span></button>`);
     seg.insertAdjacentHTML('beforeend', `<button type="button" role="tab" data-space="${sp.id}" aria-current="${cur}">${esc(sp.key)}${st.needsYou?` <b>${st.needsYou}</b>`:''}</button>`);
@@ -799,61 +885,74 @@ function treeHTML(sp){
 function renderTree(){ const sp=currentSpace(); $('#rail-tree').innerHTML = treeHTML(sp); $('#sheet-body').innerHTML = treeHTML(sp); }
 
 /* ── render: header ───────────────────────────────────────────────────── */
+function renderScenario(){
+  $('#scen-seg').innerHTML = Object.entries(SCENARIOS).map(([k,v])=>`<button class="scen-btn" type="button" role="tab" data-scen="${k}" aria-current="${k===state.scenario}"><span class="sd" aria-hidden="true"></span>${v.label}</button>`).join('');
+  $('#scen-blurb').innerHTML = `<i>mock ·</i> ${esc(SCENARIOS[state.scenario].blurb)}`;
+}
+function hostWhy(name,h){
+  const sp = currentSpace();
+  const n = spaceSessions(sp).filter(s=>s.host===name).length;
+  if(h.liveness==='fresh') return `<b>${esc(name)} is publishing</b>Last fleet snapshot ${fmtAge(h.publishAgeSec)} ago. ${n?`${n} session${n>1?'s':''} in this Space run${n>1?'':'s'} here.`:'No sessions in this Space run here.'}`;
+  if(h.liveness==='stale') return `<b>${esc(name)} is stale</b>${esc(h.note||'No recent publish')}.<ul><li>${n?`${n} session${n>1?'s':''} in this Space ${n>1?'are':'is'} shown from the last snapshot`:'Nothing in this Space runs here'}</li><li>Status, idle and context may be out of date</li></ul><span class="todo">To fix: wake the laptop — the collector republishes within 30s.</span>`;
+  return `<b>${esc(name)} is dead</b>${esc(h.note||'No recent publish')}.<ul><li>${n?`${n} session${n>1?'s':''} in this Space ${n>1?'are':'is'} unknown — shown with ${n>1?'their':'its'} last-known state`:'Nothing in this Space runs here'}</li><li>They may still be running; the board cannot tell</li><li>Dispatch to ${esc(name)} is blocked until it publishes</li></ul><span class="todo">To fix: ssh in and restart the collector, or power the ${esc(name)} on.</span>`;
+}
 function renderHeader(){
   const sp = currentSpace(); const st = stats(sp);
+  renderScenario();
   $('#space-name').textContent = sp.name;
-  $('#built').textContent = `built ${new Date(SPACE.builtAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} · from ${SPACE.self}`;
-  $('#counts').innerHTML = [
+  $('#built').textContent = `built ${new Date(DATA.builtAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})} · from ${DATA.self}`;
+  const counts = [
     ['open', st.open, 'open tasks', ''],
     ['needs', st.needsYou, 'need you', st.needsYou?'hot':''],
     ['live', st.live, 'live sessions', 'live'],
     ['parked', st.parked, 'parked', 'parked'],
     ['proposed', st.proposed, 'proposed done', 'done']
-  ].map(([k,n,l,c])=>`<div class="count ${c}"><b>${n}</b><span>${l}</span></div>`).join('');
+  ];
+  if(st.unknown) counts.push(['unknown', st.unknown, 'unknown', 'unk']);
+  $('#counts').innerHTML = counts.map(([k,n,l,c])=>`<div class="count ${c}"><b>${n}</b><span>${l}</span></div>`).join('');
   const hosts = $('#hosts'); hosts.querySelectorAll('.host-chip').forEach(n=>n.remove());
-  for(const [name,h] of Object.entries(SPACE.hosts)){
-    const why = h.liveness==='fresh' ? `Publishing normally — last fleet snapshot ${fmtAge(h.publishAgeSec)} ago.` : h.liveness==='stale' ? `Stale: ${esc(h.note||'no recent publish')}. Sessions shown for this host may be out of date.` : `Dead: no publish in ${fmtAge(h.publishAgeSec)}. Its sessions are unknown.`;
-    hosts.insertAdjacentHTML('beforeend', `<button class="host-chip ${h.liveness}" type="button" aria-expanded="false" title="${why}"><span class="dot" aria-hidden="true"></span><span class="nm">${name}</span><span class="age">${h.liveness==='fresh'?fmtAge(h.publishAgeSec):'stale · '+fmtAge(h.publishAgeSec)}</span><span class="why" role="tooltip">${why}</span></button>`);
+  for(const [name,h] of Object.entries(DATA.hosts)){
+    const why = hostWhy(name,h);
+    const age = h.liveness==='fresh' ? fmtAge(h.publishAgeSec) : h.liveness==='stale' ? 'stale · '+fmtAge(h.publishAgeSec) : 'dead · last seen '+fmtAge(h.publishAgeSec);
+    hosts.insertAdjacentHTML('beforeend', `<button class="host-chip ${h.liveness}" type="button" aria-expanded="false" title="${esc(why.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim())}"><span class="dot" aria-hidden="true"></span><span class="nm">${name}</span><span class="age">${age}</span><span class="why" role="tooltip">${why}</span></button>`);
   }
 }
 
 /* ── render: sessions inline ──────────────────────────────────────────── */
 function sessionHTML(s, {unlinked=false}={}){
-  const ended = s.status==='ended';
+  const ended = s.status==='ended', unknown = s.status==='unknown';
   const ctxCls = s.contextPct>=90?'max': s.contextPct>=70?'hi':'';
-  const open = state.expanded.has(s.session_id);
-  const action = ended
-    ? `<button class="btn" type="button" data-resume="${s.session_id}" title="${TIER_COPY[s.resumeTier]}">${ICON.resume}Resume <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>`
+  const action = unknown
+    ? `<button class="btn" type="button" data-checkhost="${esc(s.host)}">${ICON.warn}Check ${esc(s.host)}</button>`
+    : ended
+    ? `<span class="tt right"><button class="btn" type="button" data-resume="${s.session_id}">${ICON.resume}Resume <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button><button class="tt-i" type="button" data-tt aria-label="What Resume restores">?</button><span class="tt-box" role="tooltip">${tierTipHTML(s.resumeTier)}</span></span>`
     : `<button class="btn ${s.status==='needs_input'?'primary':''}" type="button" data-open="${s.session_id}">${s.status==='needs_input'?'Answer':'Open'} ${ICON.open}</button>`;
-  const link = unlinked ? `<button class="btn" type="button" data-link="${s.session_id}">${ICON.link}Link task</button>` : '';
+  const link = unlinked && !unknown ? `<button class="btn" type="button" data-link="${s.session_id}">${ICON.link}Link task</button>` : '';
   const src = s.source==='omnara' ? `<span class="k">via</span> omnara` : `<span class="k">via</span> rail`;
-  return `<div class="sess ${s.status} ${open?'x':''}" style="--join:${HOST_COLOR[s.host]}">
+  const statLabel = unknown ? `unknown — last seen ${esc(s.lastSeen)}` : STATUS_LABEL[s.status];
+  const prov = `<span class="tt"><button class="tt-t" type="button" data-tt>${summaryAge(s)}</button><span class="tt-box" role="tooltip">${provTipHTML(s)}</span></span>`;
+  return `<div class="sess ${s.status}" style="--join:${HOST_COLOR[s.host]}">
     <div class="sess-main">
-      <button class="sess-line1" type="button" data-toggle="${s.session_id}" aria-expanded="${open}" title="${open?'Collapse':'Show what this session is doing now'}">
+      <div class="sess-line1">
         <span class="host" style="--hc:${HOST_COLOR[s.host]}">${esc(s.host)}</span>
-        <span class="sstat ${s.status}" title="${STATUS_LABEL[s.status]}"><span class="d"></span><span class="t">${STATUS_LABEL[s.status]}</span></span>
+        <span class="sstat ${s.status}"><span class="d"></span>${statLabel}</span>
         <span class="sname">${esc(s.name)}</span>
-        <span class="sess-c"><span>${esc(s.model)}</span><span class="sep">·</span><span>${esc(s.elapsedActive)} <span style="color:var(--ink-faint)">/ idle</span> ${esc(s.idle)}</span><span class="sep">·</span><span class="age">${summaryAge(s)}</span></span>
-        <span class="xt" aria-hidden="true">${ICON.chev}</span>
-      </button>
+        ${unknown ? `<span class="lastknown">last known: ${STATUS_LABEL[s.lastKnown]}</span>` : ''}
+      </div>
       <div class="sess-meta">
         <span>${esc(s.model)}</span>
         <span><span class="k">branch</span> ${esc(s.branch)}</span>
-        <span><span class="k">active</span> ${esc(s.elapsedActive)}</span>
+        ${unknown ? `<span><span class="k">active</span> ? </span><span><span class="k">idle</span> ? </span><span><span class="k">ctx</span> ?</span>` : `<span><span class="k">active</span> ${esc(s.elapsedActive)}</span>
         <span><span class="k">idle</span> ${esc(s.idle)}</span>
-        <span><span class="k">ctx</span> ${s.contextPct}%</span>
+        <span><span class="k">ctx</span> ${s.contextPct}%</span>`}
         <span>${src}</span>
-        <span class="age">${summaryAge(s)}</span>
+        ${prov}
       </div>
-      <div class="sess-now"><span class="k">now</span>${esc(s.summary.now)}</div>
-      <div class="sess-x">
-        <div class="row"><span class="nx"><span class="k">next</span>${esc(s.summary.next)}</span></div>
-        <div class="row"><span class="mono">${esc(s.name)}</span><span><span class="k">branch</span>${esc(s.branch)}</span><span><span class="k">ctx</span>${s.contextPct}% · ${fmtTok(s.tokens)} · $${s.cost.toFixed(1)}</span><span>${src}</span><span><span class="k">last</span>${esc(s.lastActivity)}</span></div>
-      </div>
+      <div class="sess-now"><span class="k">${unknown?'last now':'now'}</span>${esc(s.summary.now)}</div>
     </div>
     <div class="sess-act">
       ${link}${action}
-      <span class="ctx ${ctxCls}" title="context ${s.contextPct}% · ${fmtTok(s.tokens)} tokens · ${s.msgs} msgs · $${s.cost.toFixed(2)}"><span class="bar"><i style="width:${s.contextPct}%"></i></span><span class="hint">${fmtTok(s.tokens)} · $${s.cost.toFixed(1)}</span></span>
+      ${unknown ? `<span class="hint">no snapshot since ${esc(s.lastSeen)}</span>` : `<span class="ctx ${ctxCls}" title="context ${s.contextPct}% · ${fmtTok(s.tokens)} tokens · ${s.msgs} msgs · $${s.cost.toFixed(2)}"><span class="bar"><i style="width:${s.contextPct}%"></i></span><span class="hint">${fmtTok(s.tokens)} · $${s.cost.toFixed(1)}</span></span>`}
     </div>
   </div>`;
 }
@@ -868,9 +967,11 @@ function taskHTML(t){
   let act='';
   if(dispatching){
     act = `<span class="dispatching"><span class="spin" aria-hidden="true"></span>dispatching…</span>`;
+  } else if(ss.length && ss.every(isUnknown) && t.agent_state!=='needs-info'){
+    act = `<div class="dispatch-wrap"><button class="btn primary" type="button" disabled title="Its only session is on a host that stopped publishing — dispatching now could run it twice">${ICON.play}Dispatch</button><span class="hint">session state unknown — check ${esc(ss[0].host)} first</span></div>`;
   } else if(ss.length===0 && t.agent_state!=='needs-info'){
     if(canDispatch(t)){
-      act = `<div class="dispatch-wrap"><button class="btn primary" type="button" data-dispatch="${t.id}">${ICON.play}Dispatch</button><span class="hint">spawns on ${SPACE.self}</span></div>`;
+      act = `<div class="dispatch-wrap"><button class="btn primary" type="button" data-dispatch="${t.id}">${ICON.play}Dispatch</button><span class="hint">spawns on ${DATA.self}</span></div>`;
     } else if(!t.doneWhen){
       act = `<div class="dispatch-wrap"><button class="btn primary" type="button" disabled title="Add a DONE-WHEN contract in ClickUp to make this dispatchable">${ICON.play}Dispatch</button><span class="hint">needs DONE-WHEN</span></div>`;
     } else {
@@ -885,7 +986,7 @@ function taskHTML(t){
     <div class="task-row">
       <span class="prio p${t.priority}" title="priority ${t.priority} · ${t.priority===1?'drop everything':t.priority===2?'normal':'whenever'}">${ICON.flag}</span>
       <div class="task-main">
-        <h4 class="task-name"><a href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(t.name)}">${esc(t.name)}</a></h4>
+        <h4 class="task-name"><a href="${esc(t.url)}" target="_blank" rel="noopener">${t.name ? esc(t.name) : `<span class="notitle"><code>${esc(t.id)}</code><em>title unavailable</em></span>`}</a></h4>
         <div class="task-meta">
           <span class="st ${stCls}"><span class="sq"></span>${esc(t.status)}</span>
           <span class="chip as-${t.agent_state}">${AS_LABEL[t.agent_state]}</span>
@@ -914,51 +1015,85 @@ function parkedHTML(t){
 }
 
 /* ── render: content ──────────────────────────────────────────────────── */
-function renderContent(){
-  const sp = currentSpace();
+function bannersHTML(sp){
   let h='';
+  const dead = Object.entries(DATA.hosts).filter(([,x])=>x.liveness==='dead');
+  for(const [name,x] of dead){
+    const n = spaceSessions(sp).filter(s=>s.host===name).length;
+    h += `<div class="banner dead"><span class="b-ic" aria-hidden="true">${ICON.warn}</span><div><b>${esc(name)} publisher dead — last seen ${fmtAge(x.publishAgeSec)} ago</b>${n?`${n} session${n>1?'s':''} in this Space ${n>1?'were':'was'} on ${esc(name)}. ${n>1?'They show':'It shows'} below as <i>unknown</i> with the last-known state. ${n>1?'They':'It'} may still be running — the board cannot tell.`:`No session in this Space was on ${esc(name)}, so nothing here is affected.`} Dispatch to ${esc(name)} is blocked until it publishes.<div class="b-act"><button class="btn sm" type="button" data-checkhost="${esc(name)}">${ICON.warn}Check ${esc(name)}</button></div></div></div>`;
+  }
+  if(DATA.titlesStaleMin){
+    h += `<div class="banner stale-t"><span class="b-ic" aria-hidden="true">${ICON.warn}</span><div><b>Titles file stale ${DATA.titlesStaleMin}m — showing task ids</b>Task names come from the ClickUp titles cache the collector refreshes every 5m. It last succeeded ${DATA.titlesStaleMin}m ago, so names are withheld rather than guessed. Ids, states, dues and sessions are current.<div class="b-act"><button class="btn sm" type="button" data-refresh-titles>${ICON.resume}Refresh titles</button></div></div></div>`;
+  }
+  return h ? `<div class="banners">${h}</div>` : '';
+}
+function heroHTML(sp, st){
+  const tasks = spaceTasks(sp);
+  const working = spaceSessions(sp).filter(s=>s.status==='working').length;
+  const withDue = tasks.filter(t=>t.due).sort((a,b)=>a.due.localeCompare(b.due) || a.priority-b.priority);
+  const nx = withDue[0];
+  const nxDue = nx ? fmtDue(nx.due) : null;
+  const fresh = Math.max(...Object.values(DATA.hosts).map(h=>h.publishAgeSec));
+  return `<section class="hero" aria-label="Nothing needs you">
+    <div class="hero-top"><span class="hero-ic" aria-hidden="true">${ICON.check}</span><div><h2>Nothing needs you in ${esc(sp.name)}</h2><p class="sub">0 sessions waiting on input · 0 parked questions · 0 proposed-done to confirm. ${working?`${working} session${working>1?'s are':' is'} working on ${working>1?'their':'its'} own.`:'No session is running here.'}</p></div></div>
+    ${nx ? `<div class="hero-next"><span class="k">Next due<b>${nxDue.text}</b></span><span class="nm">${esc(taskLabel(nx))}<div class="task-meta"><span class="chip as-${nx.agent_state}">${AS_LABEL[nx.agent_state]}</span><span class="dw ${nx.doneWhen?'ok':'missing'}">${nx.doneWhen?ICON.check+'DONE-WHEN':ICON.warn+'no DONE-WHEN'}</span><span class="assg"><span class="av ${nx.assignee==='Jarred'?'j':''}">${initials(nx.assignee)}</span>${esc(nx.assignee)}</span></div></span><a class="btn" href="${esc(nx.url)}" target="_blank" rel="noopener">Open in ClickUp ${ICON.ext}</a></div>` : `<div class="hero-next"><span class="k">Next due<b>—</b></span><span class="nm" style="font-weight:500;color:var(--ink-soft)">No due dates set in this Space.</span></div>`}
+    <p class="hero-fine">Checked against every host’s snapshot (oldest ${fmtAge(fresh)} ago). This card leaves the moment anything needs an answer.</p>
+  </section>`;
+}
+function noSessionsHTML(sp){
+  const tasks = spaceTasks(sp);
+  const disp = tasks.filter(canDispatch).length, noDW = tasks.filter(t=>!t.doneWhen).length, blocked = tasks.length - disp - noDW;
+  return `<section class="nosess" aria-label="No sessions in this Space"><span class="z" aria-hidden="true">${ICON.link}</span><div><b>No sessions in ${esc(sp.name)}.</b> Nothing is being worked here right now — no live, ended or unknown session points at a task in this Space. Unlinked sessions (below) are fleet-wide and may belong here.
+    <div class="facts"><span>${tasks.length} open task${tasks.length===1?'':'s'}</span><span>${disp} dispatchable now</span><span>${noDW} waiting on DONE-WHEN</span>${blocked?`<span>${blocked} not dispatchable by state</span>`:''}</div></div></section>`;
+}
+function emptyListHTML(l){
+  return `<div class="list-empty"><span class="z">${ICON.check}</span><div><div class="le-t">No open tasks in ${esc(l.name)}</div><div class="le-s">Nothing to dispatch and nothing running. A task added in ClickUp shows up here on the next snapshot (≤30s).</div><div class="le-a"><button class="btn sm" type="button" data-addtask="${esc(l.name)}">Add a task in ClickUp</button></div></div></div>`;
+}
+const FOLD_AT = 8, FOLD_SHOW = 6;
+function renderContent(){
+  const sp = currentSpace(); const st = stats(sp);
+  let h = bannersHTML(sp);
+  if(st.needsYou===0 && st.proposed===0 && st.parked===0) h += heroHTML(sp, st);
+  if(spaceSessions(sp).length===0) h += noSessionsHTML(sp);
   for(const f of sp.folders){
     h += `<section class="folder"><h2 class="folder-h">${ICON.folder}${esc(f.name)}<span class="rule"></span></h2>`;
     for(const l of f.lists){
       const ts = sortTasks(l.tasks); const ny = ts.filter(needsYou).length;
       const liveN = ts.reduce((n,t)=>n+sessionsFor(t.id).filter(isLive).length,0);
-      h += `<div class="list" id="list-${l.id}"><div class="list-h"><h3>${esc(l.name)}</h3><span class="ct">${ts.length? (ny?`<b>${ny} need you</b> · `:'')+`${ts.length} open`:'0 open'}</span><span class="spacer"></span>${liveN?`<span class="pill">${liveN} live</span>`:''}</div>`;
-      h += ts.length ? ts.map(taskHTML).join('') : `<div class="list-empty"><span class="z">${ICON.check}</span>No open tasks in ${esc(l.name)} — nothing to dispatch here.</div>`;
+      const big = ts.length>=FOLD_AT, open = state.expanded.has(l.id);
+      const shown = big && !open ? ts.slice(0,FOLD_SHOW) : ts;
+      const hidden = ts.length - shown.length;
+      h += `<div class="list ${big?'sticky-h dense':''}" id="list-${l.id}"><div class="list-h"><h3>${esc(l.name)}</h3><span class="ct">${ts.length? (ny?`<b>${ny} need you</b> · `:'')+`${ts.length} open`:'0 open'}</span>${big?`<span class="showing">· showing ${shown.length}</span>`:''}<span class="spacer"></span>${liveN?`<span class="pill">${liveN} live</span>`:''}</div>`;
+      h += ts.length ? shown.map(taskHTML).join('') : emptyListHTML(l);
+      if(big && hidden) h += `<div class="more"><button class="btn" type="button" data-more="${l.id}">Show ${hidden} more</button><span class="hint">sorted: need you → in progress → the rest; the ${hidden} hidden are none of the first two</span></div>`;
+      else if(big && open) h += `<div class="more"><button class="btn ghost" type="button" data-less="${l.id}">Show fewer</button></div>`;
+      if(big) h += `<div class="dens-note">Dense rows: session details collapse to host · status · now. Open a session for the full record.</div>`;
       h += `</div>`;
     }
     h += `</section>`;
   }
   const un = unlinkedSessions().sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]);
   h += `<section class="unlinked" id="unlinked"><h2 class="folder-h">${ICON.link}Unlinked<span class="rule"></span></h2><div class="list"><div class="list-h"><h3><span class="n">${un.length}</span>Sessions with no task</h3><span class="spacer"></span><span class="pill">fleet-wide</span></div>
-    ${un.length ? `<div class="why">These sessions publish no ClickUp task id. They are shown in every Space until linked.</div><div class="sessions">${un.map(s=>sessionHTML(s,{unlinked:true})).join('')}</div>` : `<div class="list-empty"><span class="z">${ICON.check}</span>Every session is linked to a task.</div>`}
+    ${un.length ? `<div class="why">These sessions publish no ClickUp task id. They are shown in every Space until linked.</div><div class="sessions">${un.map(s=>sessionHTML(s,{unlinked:true})).join('')}</div>` : `<div class="list-empty"><span class="z">${ICON.check}</span><div><div class="le-t">Every session is linked to a task</div><div class="le-s">New rail sessions publish their task id at spawn; omnara sessions appear here until you link them.</div></div></div>`}
   </div></section>`;
   $('#content').innerHTML = h;
 }
-function renderDensity(){
-  document.documentElement.dataset.density = state.density;
-  document.querySelectorAll('#dens button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.density===state.density)));
-}
-function setDensity(d){
-  if(d===state.density) return;
-  state.density=d; try{ localStorage.setItem(DENSITY_KEY,d); }catch(e){}
-  renderDensity();
-  toast(d==='compact' ? 'Compact rows — saved for next time. Tap a session line to see its Now.' : 'Comfortable rows — saved for next time.');
-}
-function render(){ renderDensity(); renderSpaces(); renderTree(); renderHeader(); renderContent(); }
+function render(){ DATA = deriveScenario(state.scenario); renderSpaces(); renderTree(); renderHeader(); renderContent(); syncHdrH(); }
+function syncHdrH(){ document.documentElement.style.setProperty('--hdr-h', $('#hdr').offsetHeight+'px'); }
+if('ResizeObserver' in window) new ResizeObserver(syncHdrH).observe($('#hdr')); window.addEventListener('resize', syncHdrH);
 
 /* ── overlays ─────────────────────────────────────────────────────────── */
 function openScrim(){ $('#scrim').classList.add('on'); }
 function closeAll(){
   $('#scrim').classList.remove('on');
   $('#drawer').classList.remove('on'); setTimeout(()=>{ if(!$('#drawer').classList.contains('on')) $('#drawer').hidden=true; },220);
-  $('#picker').classList.remove('on');
-  const sh=$('#sheet'); sh.classList.remove('on'); setTimeout(()=>{ if(!sh.classList.contains('on')) sh.hidden=true; },220);
+  $('#picker').classList.remove('on'); $('#sheet').classList.remove('on');
   state.drawerFor=null; state.pickerFor=null;
 }
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2600); }
 
 function openDrawer(id, mode){
-  const s = SPACE.sessions.find(x=>x.session_id===id); if(!s) return;
+  const s = DATA.sessions.find(x=>x.session_id===id); if(!s) return;
   state.drawerFor=id;
   const tasks = sessionTasks(s).map(findTask).filter(Boolean);
   $('#drawer-eyebrow').innerHTML = `<span class="host" style="--hc:${HOST_COLOR[s.host]}">${esc(s.host)}</span> &nbsp;<span class="sstat ${s.status}"><span class="d"></span>${STATUS_LABEL[s.status]}</span>`;
@@ -967,7 +1102,7 @@ function openDrawer(id, mode){
     ? `<span class="dim">$ tmux attach -t ${esc(s.name)}</span>\n<span class="dim">no server running — session ended ${esc(s.lastActivity)}</span>\n<span class="c">›</span> resume tier: <b>${s.resumeTier}</b> — ${esc(TIER_COPY[s.resumeTier])}`
     : `<span class="dim">$ tmux attach -t ${esc(s.name)}</span>\n<span class="p">●</span> ${esc(s.project)} <span class="dim">(${esc(s.branch)})</span> · ${esc(s.model)} · ctx ${s.contextPct}%\n<span class="c">›</span> ${esc(s.summary.now)}\n<span class="dim">[live transcript preview would stream here — placeholder]</span>`;
   $('#drawer-body').innerHTML = `
-    ${tasks.length ? `<p class="linkto">Linked to ${tasks.map(x=>`<a href="${esc(x.task.url)}" target="_blank" rel="noopener">${esc(x.task.name)}</a>`).join(' · ')}</p>` : `<p class="linkto">Not linked to any task.</p>`}
+    ${tasks.length ? `<p class="linkto">Linked to ${tasks.map(x=>`<a href="${esc(x.task.url)}" target="_blank" rel="noopener">${esc(taskLabel(x.task))}</a>`).join(' · ')}</p>` : `<p class="linkto">Not linked to any task.</p>`}
     <div class="sum">
       <div class="now"><span class="k">Now</span><p>${esc(s.summary.now)}</p></div>
       <div><span class="k">Next</span><p>${esc(s.summary.next)}</p></div>
@@ -985,7 +1120,7 @@ function openDrawer(id, mode){
       <dt>Session id</dt><dd class="mono">${esc(s.session_id)}</dd>
     </dl>
     <div class="term">${term}</div>
-    ${s.status==='ended' ? `<p class="note"><b>Resume is a ${s.resumeTier}.</b> ${esc(TIER_COPY[s.resumeTier])} It never claims a full restore.</p>` : s.status==='stale' ? `<p class="note"><b>Stale.</b> ${esc(SPACE.hosts[s.host].note||'Host has not published recently')} — what you see here may be out of date.</p>` : ''}`;
+    ${s.status==='ended' ? `<p class="note"><b>Resume is a ${s.resumeTier}.</b> ${esc(TIER_COPY[s.resumeTier])}${TIER_NOT[s.resumeTier].no.length?` Does not restore: ${esc(TIER_NOT[s.resumeTier].no.join('; '))}.`:''} It never claims a full restore.</p>` : s.status==='stale' ? `<p class="note"><b>Stale.</b> ${esc(DATA.hosts[s.host].note||'Host has not published recently')} — what you see here may be out of date.</p>` : ''}`;
   $('#drawer-foot').innerHTML = s.status==='ended'
     ? `<button class="btn primary" type="button" data-resume="${s.session_id}">${ICON.resume}Resume <span class="tier ${s.resumeTier}" style="background:rgba(255,255,255,.22);color:#fff">${s.resumeTier}</span></button><button class="btn" type="button" data-close>Close</button>`
     : `<button class="btn primary" type="button" data-attach="${s.session_id}">${ICON.open}${s.status==='needs_input'?'Answer in session':'Attach'}</button>${tasks.length?'':`<button class="btn" type="button" data-link="${s.session_id}">${ICON.link}Link task</button>`}<button class="btn" type="button" data-close>Close</button>`;
@@ -993,7 +1128,7 @@ function openDrawer(id, mode){
 }
 
 function openPicker(id){
-  const s = SPACE.sessions.find(x=>x.session_id===id); if(!s) return;
+  const s = DATA.sessions.find(x=>x.session_id===id); if(!s) return;
   state.pickerFor=id;
   $('#picker-sub').innerHTML = `Attach <span class="mono">${esc(s.name)}</span> (${esc(s.project)} · ${esc(s.branch)}) to a task in ${esc(currentSpace().name)}.`;
   $('#picker-q').value='';
@@ -1004,10 +1139,10 @@ function openPicker(id){
 function renderPicker(q){
   const sp=currentSpace(); q=q.trim().toLowerCase(); let h='';
   for(const f of sp.folders) for(const l of f.lists){
-    const ts = l.tasks.filter(t=>!q || t.name.toLowerCase().includes(q) || t.id.includes(q));
+    const ts = l.tasks.filter(t=>!q || (t.name||'').toLowerCase().includes(q) || t.id.includes(q));
     if(!ts.length) continue;
     h += `<div class="pk-grp">${esc(f.name)} / ${esc(l.name)}</div>`;
-    h += ts.map(t=>`<button class="pk-item" type="button" data-pick="${t.id}"><span class="prio p${t.priority}">${ICON.flag}</span><span class="nm">${esc(t.name)}<small>${esc(t.id)} · ${AS_LABEL[t.agent_state]}</small></span>${ICON.link}</button>`).join('');
+    h += ts.map(t=>`<button class="pk-item" type="button" data-pick="${t.id}"><span class="prio p${t.priority}">${ICON.flag}</span><span class="nm">${esc(taskLabel(t))}${t.name?'':' <em style="color:var(--warn);font-size:11px">title unavailable</em>'}<small>${esc(t.id)} · ${AS_LABEL[t.agent_state]}</small></span>${ICON.link}</button>`).join('');
   }
   $('#picker-body').innerHTML = h || `<div class="list-empty">No task matches “${esc(q)}”.</div>`;
 }
@@ -1016,18 +1151,23 @@ function renderPicker(q){
 document.addEventListener('click', e => {
   const b = e.target.closest('button, a'); if(!b) return;
   const d = b.dataset;
+  if(d.scen){ state.scenario=d.scen; state.answering=null; state.expanded.clear(); render(); closeAll(); toast(`Scenario: ${SCENARIOS[d.scen].label} — ${SCENARIOS[d.scen].blurb} (mock)`); return; }
+  if(d.more){ state.expanded.add(d.more); render(); return; }
+  if(d.less){ state.expanded.delete(d.less); render(); document.getElementById('list-'+d.less)?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  if(d.checkhost){ toast(`Would ssh to ${d.checkhost} and read tmux ls + the collector log (mock). Until it publishes, its sessions stay unknown.`); return; }
+  if(b.hasAttribute('data-refresh-titles')){ toast('Would re-pull the ClickUp titles cache now (mock). Names appear on the next snapshot; ids stay until then.'); return; }
+  if(d.addtask){ toast(`Would open ClickUp’s new-task form in ${d.addtask} (mock).`); return; }
+  if(b.hasAttribute('data-tt')){ const w=b.closest('.tt'); const on=w.classList.toggle('open'); document.querySelectorAll('.tt.open').forEach(x=>{ if(x!==w) x.classList.remove('open'); }); b.setAttribute('aria-expanded',on); return; }
   if(d.space){ state.spaceId=d.space; state.answering=null; render(); closeAll(); $('#main').scrollTo({top:0}); window.scrollTo({top:0}); return; }
   if(d.jump){ closeAll(); const el=document.getElementById(d.jump); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return; }
-  if(b.id==='folders-btn'){ const sh=$('#sheet'); sh.hidden=false; requestAnimationFrame(()=>{ sh.classList.add('on'); openScrim(); sh.querySelector('[data-close]').focus(); }); return; }
-  if(d.density){ setDensity(d.density); return; }
-  if(d.toggle){ const el=b.closest('.sess'); const on=el.classList.toggle('x'); b.setAttribute('aria-expanded',on); b.title = on?'Collapse':'Show what this session is doing now'; if(on) state.expanded.add(d.toggle); else state.expanded.delete(d.toggle); return; }
+  if(b.id==='folders-btn'){ $('#sheet').classList.add('on'); openScrim(); return; }
   if(b.classList.contains('host-chip')){ const on=b.classList.toggle('open'); b.setAttribute('aria-expanded',on); document.querySelectorAll('.host-chip.open').forEach(x=>{ if(x!==b){x.classList.remove('open');x.setAttribute('aria-expanded','false');} }); return; }
-  if(d.dispatch){ state.dispatching.add(d.dispatch); render(); toast(`Dispatching ${d.dispatch} on ${SPACE.self} — a session will appear under the task once the rail publishes it.`); return; }
+  if(d.dispatch){ state.dispatching.add(d.dispatch); render(); toast(`Dispatching ${d.dispatch} on ${DATA.self} — a session will appear under the task once the rail publishes it.`); return; }
   if(d.open){ openDrawer(d.open); return; }
-  if(d.attach){ closeAll(); toast(`Attaching to ${SPACE.sessions.find(s=>s.session_id===d.attach).name} (mock)`); return; }
-  if(d.resume){ const s=SPACE.sessions.find(x=>x.session_id===d.resume); closeAll(); toast(`Resume (${s.resumeTier}): ${TIER_COPY[s.resumeTier]}`); return; }
+  if(d.attach){ closeAll(); toast(`Attaching to ${DATA.sessions.find(s=>s.session_id===d.attach).name} (mock)`); return; }
+  if(d.resume){ const s=DATA.sessions.find(x=>x.session_id===d.resume); closeAll(); toast(`Resume (${s.resumeTier}): ${TIER_COPY[s.resumeTier]}`); return; }
   if(d.link){ openPicker(d.link); return; }
-  if(d.pick){ const sid=state.pickerFor; (state.links[sid] ||= []).push(d.pick); const t=findTask(d.pick).task; closeAll(); render(); toast(`Linked to “${t.name}”`); document.getElementById('task-'+d.pick)?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  if(d.pick){ const sid=state.pickerFor; (state.links[sid] ||= []).push(d.pick); const t=findTask(d.pick).task; closeAll(); render(); toast(`Linked to “${taskLabel(t)}”`); document.getElementById('task-'+d.pick)?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   if(d.answer){ state.answering=d.answer; render(); document.getElementById('ans-'+d.answer)?.focus(); return; }
   if(d.cancelAnswer){ state.answering=null; render(); return; }
   if(d.sendAnswer){ const ta=document.getElementById('ans-'+d.sendAnswer); if(!ta.value.trim()){ ta.focus(); toast('Type an answer first.'); return; } state.answered.add(d.sendAnswer); state.answering=null; render(); toast('Answer sent — the parked session resumes with it (mock).'); return; }
@@ -1037,8 +1177,9 @@ document.addEventListener('click', e => {
 $('#scrim').addEventListener('click', closeAll);
 $('#picker-q').addEventListener('input', e => renderPicker(e.target.value));
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeAll(); });
-document.addEventListener('click', e => { if(!e.target.closest('.host-chip')) document.querySelectorAll('.host-chip.open').forEach(x=>{x.classList.remove('open');x.setAttribute('aria-expanded','false');}); }, true);
+document.addEventListener('click', e => { if(!e.target.closest('.host-chip')) document.querySelectorAll('.host-chip.open').forEach(x=>{x.classList.remove('open');x.setAttribute('aria-expanded','false');}); if(!e.target.closest('.tt')) document.querySelectorAll('.tt.open').forEach(x=>x.classList.remove('open')); }, true);
 
+$('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); // phone Folders sheet is closed on load
 render();
 </script>
 </body>

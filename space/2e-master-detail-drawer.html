@@ -1,10 +1,10 @@
-<!-- fleetboard space view · concept 2a master-detail-density · Master-detail (01) evolved dense: single-line task rows with a chip row, one-line session chips (host · status · model · elapsed/idle · summary age) that expand on hover/tap to show the Now line, a Comfortable/Compact density toggle persisted in localStorage, and the phone Folders sheet fixed to load closed · phone-first, light theme, self-contained -->
+<!-- fleetboard space view · concept 2e master-detail-drawer · 01 master-detail evolved around opening a session: a session chip opens a right-side drawer (bottom sheet on phone) with a live terminal tail, a reply composer for needs_input, tiered Resume for ended sessions and the task rail; the Space view stays visible and dimmed behind it · phone-first, light theme, self-contained -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FleetBoard — Space · master-detail-density</title>
+<title>FleetBoard — Space · master-detail-drawer</title>
 <style>
 :root{
   --brand:#7b68ee; --brand-dark:#5f4dd0; --brand-soft:#efecfd;
@@ -30,8 +30,9 @@ button:disabled{cursor:not-allowed}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-[hidden]{display:none!important}
 .mono{font-family:var(--mono);font-size:12px;letter-spacing:-.01em}
+[hidden]{display:none!important}
+body.lock{overflow:hidden}
 
 /* ── shell ─────────────────────────────────────────── */
 .app{display:grid;grid-template-columns:var(--rail-w) minmax(0,1fr);height:100dvh;height:100vh}
@@ -72,11 +73,6 @@ a{color:inherit}
 .hdr-title h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-title .built{font-size:12px;color:var(--ink-faint);white-space:nowrap}
 .seg{display:none}
-.dens{display:inline-flex;flex:none;gap:2px;padding:2px;border-radius:8px;background:var(--column);margin-left:auto}
-.dens button{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 9px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
-.dens button svg{width:14px;height:14px;flex:none}
-.dens button:hover{color:var(--ink)}
-.dens button[aria-pressed="true"]{background:var(--card);color:var(--brand-dark);box-shadow:var(--shadow)}
 .hdr-counts{display:flex;gap:6px;align-items:stretch;padding:10px 24px 0;overflow-x:auto;scrollbar-width:none}
 .hdr-counts::-webkit-scrollbar{display:none}
 .count{flex:none;display:flex;flex-direction:column;justify-content:center;min-width:92px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:var(--shadow);text-align:left}
@@ -196,6 +192,8 @@ a{color:inherit}
 .sess{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-top:6px}
 .sess::before{content:"";position:absolute;left:-15px;top:50%;width:13px;height:2px;background:var(--join,var(--line));border-radius:2px}
 .sess::after{content:"";position:absolute;left:-4px;top:calc(50% - 4px);width:8px;height:8px;border-radius:50%;background:var(--join,var(--line));border:2px solid #fff;box-shadow:0 0 0 1px var(--join,var(--line))}
+.sess[data-sid]{cursor:pointer;transition:box-shadow .12s,border-color .12s}
+.sess[data-sid]:hover{box-shadow:0 0 0 3px var(--brand-soft);border-color:#cfc7f7}
 .sess.needs_input{border-color:#f7c5c9;background:linear-gradient(90deg,var(--c-needs-bg),#fff 55%)}
 .sess.working{border-color:#c7ddff}
 .sess.waiting{border-color:#f6dfae}
@@ -203,21 +201,7 @@ a{color:inherit}
 .sess.ended{background:var(--ws);border-color:var(--line);color:var(--ink-soft)}
 .sess.ended .sname{color:var(--ink-soft)}
 .sess-main{min-width:0}
-.sess-line1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0;width:100%;text-align:left;border-radius:6px}
-.sess-line1:focus-visible{outline-offset:3px}
-.xt{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;color:var(--ink-faint);margin-left:auto;flex:none;transition:transform .16s}
-.xt svg{width:12px;height:12px}
-.sess-line1:hover .xt{background:var(--column);color:var(--ink)}
-.sess.x .xt{transform:rotate(180deg)}
-.sess-c{display:none;align-items:center;gap:8px;min-width:0;font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sess-c > span{flex:none}
-.sess-c .sep{color:var(--line)}
-.sess-c .age{color:var(--ink-faint);font-style:italic}
-.sess-x{display:none;margin-top:5px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-.sess-x .row{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:3px}
-.sess-x .k{color:var(--ink-faint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:10px;margin-right:4px}
-.sess-x .nx{color:var(--ink)}
-.sess.x .sess-x{display:block}
+.sess-line1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
 .host{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px 0 6px;border-radius:5px;color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em;background:var(--hc,#6b7186)}
 .host::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.85)}
 .sess.ended .host{opacity:.6}
@@ -259,34 +243,126 @@ a{color:inherit}
 .unlinked .sessions::before{display:none}
 .unlinked .sess::before,.unlinked .sess::after{display:none}
 
-/* drawer / sheet / picker */
-.scrim{position:fixed;inset:0;background:rgba(42,46,67,.32);z-index:40;opacity:0;pointer-events:none;transition:opacity .16s}
+/* ── session drawer (concept 2e) ─────────────────── */
+.scrim{position:fixed;inset:0;background:rgba(42,46,67,.34);z-index:40;opacity:0;pointer-events:none;transition:opacity .16s}
 .scrim.on{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--card);z-index:50;box-shadow:-12px 0 40px rgba(42,46,67,.18);transform:translateX(102%);transition:transform .2s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(820px,100vw);background:var(--card);z-index:50;box-shadow:-16px 0 48px rgba(42,46,67,.2);transform:translateX(102%);transition:transform .22s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow:hidden;border-left:3px solid var(--hc,var(--brand))}
 .drawer.on{transform:none}
-.drawer-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
-.drawer-h .t{flex:1;min-width:0}
-.drawer-h .t .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);font-weight:600}
-.drawer-h .t h2{margin:2px 0 0;font-size:15px;font-family:var(--mono);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.drawer-b{flex:1;overflow:auto;padding:16px}
-.drawer-f{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;background:var(--ws)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12.5px;margin:0 0 14px}
-.kv dt{color:var(--ink-faint);font-weight:600}
-.kv dd{margin:0;font-variant-numeric:tabular-nums}
-.sum{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px}
-.sum > div{padding:10px 12px;border-top:1px solid var(--line)}
+.drawer-h{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px 18px 12px;border-bottom:1px solid var(--line);background:var(--card)}
+.drawer-h .t{min-width:0}
+.drawer-h .eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.drawer-h .eyebrow .src{font-size:11.5px;color:var(--ink-faint)}
+.drawer-h h2{margin:6px 0 0;font-size:17px;font-family:var(--mono);font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawer-h .sub{margin-top:5px;font-size:12.5px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.drawer-h .sub a{color:var(--brand-dark);text-decoration:none;display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%}
+.drawer-h .sub a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38ch}
+.drawer-h .sub a:hover span{text-decoration:underline}
+.drawer-h .sub a svg{width:12px;height:12px;flex:none}
+.drawer-h .x{align-self:start}
+.model{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;background:var(--column);color:var(--ink-soft);font-size:11px;font-weight:600;font-family:var(--mono)}
+.stats{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;background:var(--ws);flex:none}
+.stats::-webkit-scrollbar{display:none}
+.stat{flex:none;display:flex;align-items:center;gap:8px;min-height:42px;padding:4px 11px 4px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+.stat .v{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.1;white-space:nowrap}
+.stat .l{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600;line-height:1.1;margin-top:3px;white-space:nowrap}
+.ring{width:26px;height:26px;flex:none}
+.ring circle{fill:none;stroke-width:3.2}
+.ring .bg{stroke:var(--column)}
+.ring .fg{stroke:var(--c-work);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+.stat.hi .ring .fg{stroke:var(--warn)}.stat.max .ring .fg{stroke:var(--bad)}
+.stat.max .v{color:var(--bad)}
+.drawer-b{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) 260px;align-items:start}
+.pane{min-width:0;padding:16px 18px 20px}
+.tasks-rail{border-left:1px solid var(--line);background:var(--ws);padding:16px 14px 20px;min-width:0;align-self:stretch}
+.sec-h{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.sec-h .age{font-weight:500;text-transform:none;letter-spacing:0;font-style:italic;margin-left:auto;white-space:nowrap}
+.sum{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.sum > div{padding:9px 12px;border-top:1px solid var(--line)}
 .sum > div:first-child{border-top:0}
-.sum .k{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:3px}
+.sum .k{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:2px}
 .sum .now{background:var(--brand-soft)}
 .sum .now .k{color:var(--brand-dark)}
 .sum p{margin:0;font-size:13.5px;line-height:1.45}
-.sum-age{font-size:11.5px;color:var(--ink-faint);font-style:italic;margin:-6px 0 14px}
-.term{background:#1b1e2b;color:#c9d1e6;border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
-.term .p{color:#8fd3a7}.term .c{color:#7b68ee}.term .dim{color:#6b7186}
-.note{font-size:12px;color:var(--ink-soft);margin-top:10px;line-height:1.45}
+
+/* terminal — the one dark surface, framed by the drawer's light chrome */
+.term{--tbg:#161925;background:var(--tbg);color:#c9d1e6;border-radius:12px;overflow:hidden;border:1px solid #2a2f45;margin:0 0 12px;display:flex;flex-direction:column}
+.term-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#1f2333;border-bottom:1px solid #2a2f45;font-size:11.5px;color:#9aa3c2;font-weight:600;min-width:0}
+.term-bar .dots{display:flex;gap:5px;margin-right:2px;flex:none}
+.term-bar .dots i{width:9px;height:9px;border-radius:50%;display:block}
+.term-bar .ttl{font-family:var(--mono);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tbadge{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.tbadge i{width:6px;height:6px;border-radius:50%}
+.tbadge.live{background:rgba(39,174,96,.16);color:#5fdb96}.tbadge.live i{background:#3ecf7a;animation:pulse 1.4s infinite}
+.tbadge.ask{background:rgba(240,85,95,.18);color:#ff8a92}.tbadge.ask i{background:#ff6b74;animation:pulseHot 1.2s infinite}
+.tbadge.paused{background:rgba(240,169,46,.16);color:#ffcb6b}.tbadge.paused i{background:#f0a92e}
+.tbadge.frozen,.tbadge.ended{background:rgba(152,161,179,.16);color:#a3abc4}.tbadge.frozen i,.tbadge.ended i{background:#6b7186}
+.term-scroll{max-height:46vh;overflow:auto;padding:12px 14px 10px;font-family:var(--mono);font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;overscroll-behavior:contain}
+.tl{display:block}
+.tl.user{color:#eef1fb;margin-top:6px}
+.tl.user::before{content:"❯ ";color:#8fd3a7;font-weight:700}
+.tl.user:first-child{margin-top:0}
+.tl.tool{color:#d8ddf0;margin-top:6px}
+.tl.tool b{color:#b3a7ff;font-weight:600}
+.tl.text,.tl.ok,.tl.err{color:#c9d1e6;margin-top:6px}
+.tl.ok{color:#8fd3a7}.tl.err{color:#ff8a92}
+.tl.out{color:#7d86a6;padding-left:2ch}
+.tl.ask{color:#ffd6da;background:rgba(240,85,95,.11);border-left:2px solid #f0555f;padding:5px 10px;margin:8px 0 4px;border-radius:0 6px 6px 0}
+.tl.opt{color:#e8ecf8;padding-left:2ch}
+.tl.opt b{color:#8fd3a7;font-weight:600}
+.tl.sys{color:#6b7186;font-style:italic;margin-top:6px}
+.tl.spin{color:#b3a7ff;margin-top:6px}
+.tl.spin .sp{display:inline-block;width:1ch}
+.tmux{display:flex;font-family:var(--mono);font-size:11px;line-height:1.8;background:var(--hc,#27ae60);color:#fff;padding:0 8px;white-space:nowrap;overflow:hidden;gap:0}
+.tmux .win{background:rgba(0,0,0,.3);padding:0 6px;margin:0 6px 0 4px;font-weight:700}
+.tmux .r{margin-left:auto;opacity:.9}
+.tmux.dead{background:#2a2f45;color:#8b91ad;font-style:italic}
+
+/* reply composer (needs_input) */
+.composer{border:1px solid #f7c5c9;background:var(--c-needs-bg);border-radius:12px;padding:12px;margin-bottom:12px}
+.composer .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b93540;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.composer .lbl .d{width:8px;height:8px;border-radius:50%;background:var(--c-needs);animation:pulseHot 1.2s infinite;flex:none}
+.composer .q{font-size:13.5px;line-height:1.45;color:var(--ink);margin-bottom:9px}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.opt-btn{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid #f0b3b8;background:#fff;font-size:12.5px;font-weight:600;color:#b93540}
+.opt-btn:hover{background:#fff5f6}
+.opt-btn[aria-pressed="true"]{background:var(--c-needs);border-color:var(--c-needs);color:#fff}
+.composer textarea{width:100%;min-height:72px;padding:9px 11px;border:1px solid #f0b3b8;border-radius:9px;font:inherit;font-size:14px;line-height:1.4;background:#fff;resize:vertical;display:block}
+.composer textarea:focus{outline:2px solid var(--c-needs);outline-offset:1px}
+.composer .row{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.composer .row .hint{white-space:normal}
+.composer.sent{background:#e8f7ee;border-color:#bfe6cd}
+.composer.sent .lbl{color:#1d7a43}
+.composer.sent .lbl .d{background:var(--ok);animation:none}
+.composer.sent .q{color:var(--ink-soft);font-style:italic}
+
+/* resume (ended) */
+.resume-box{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--ws);margin-bottom:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 14px;align-items:center}
+.resume-box .t{font-size:13px;line-height:1.45;color:var(--ink-soft)}
+.resume-box .t b{color:var(--ink);display:block;margin-bottom:2px}
+.note{font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;line-height:1.45;padding:10px 12px;border-radius:10px;background:var(--c-stale-bg);border:1px dashed var(--c-stale)}
 .note b{color:var(--ink)}
-.linkto{font-size:12px;color:var(--ink-soft);margin:0 0 12px}
-.linkto a{color:var(--brand-dark)}
+
+/* task rail */
+.trow{display:block;width:100%;text-align:left;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:6px;text-decoration:none;color:inherit}
+.trow:hover{border-color:#cfc7f7}
+.trow.this{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+.trow .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-dark);margin-bottom:4px}
+.trow .nm{font-size:13px;font-weight:600;line-height:1.35;display:flex;gap:6px;align-items:flex-start}
+.trow .nm .prio{width:14px;height:14px;margin-top:2px}
+.trow .nm .prio svg{width:12px;height:12px}
+.trow .m{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:6px;font-size:11.5px;color:var(--ink-soft);align-items:center}
+.trow .m .chip{height:20px;font-size:10.5px}
+.trow .m .tid{margin-left:auto}
+.trow .m .live{color:#1e64c8;font-weight:600}
+.trow.sib .nm{font-weight:500}
+.rail-note{font-size:12.5px;color:var(--ink-soft);line-height:1.45;margin:0 0 10px}
+.rail-actions{display:flex;flex-direction:column;gap:8px}
+.drawer-f{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;background:var(--card);flex:none;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.drawer-f .spacer{flex:1}
+@media (max-width:899px){
+  .drawer-b{grid-template-columns:1fr}
+  .tasks-rail{border-left:0;border-top:1px solid var(--line)}
+}
 
 .picker{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%);width:min(520px,calc(100vw - 24px));max-height:min(80vh,640px);background:var(--card);border-radius:14px;box-shadow:0 24px 60px rgba(42,46,67,.28);z-index:50;display:none;flex-direction:column;overflow:hidden}
 .picker.on{display:flex}
@@ -307,69 +383,15 @@ a{color:inherit}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* phone sheet (folders nav) */
-.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;z-index:50;visibility:hidden;transform:translateY(105%);transition:transform .2s cubic-bezier(.2,.8,.2,1);max-height:78vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
-.sheet.on{transform:none;visibility:visible}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;z-index:50;transform:translateY(105%);transition:transform .2s cubic-bezier(.2,.8,.2,1);max-height:78vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
+.sheet.on{transform:none}
 .sheet-h{padding:10px 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
 .sheet-h::before{content:"";position:absolute;left:50%;top:6px;width:36px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}
 .sheet-h h2{margin:6px 0 0;font-size:15px;flex:1}
 .sheet-b{overflow:auto;padding:6px 8px 12px}
 .sheet-b .tree-list{min-height:44px}
 
-/* ── density: compact ──────────────────────────────── */
-[data-density="compact"]{--tap:30px}
-[data-density="compact"] .hdr-top{padding-top:10px}
-[data-density="compact"] .hdr-title h1{font-size:17px}
-[data-density="compact"] .hdr-counts{padding-top:8px;gap:5px}
-[data-density="compact"] .count{min-width:0;flex-direction:row;align-items:baseline;gap:6px;padding:4px 10px;border-radius:8px}
-[data-density="compact"] .count b{font-size:15px}
-[data-density="compact"] .count span{font-size:11px}
-[data-density="compact"] .hdr-hosts{padding:8px 24px 9px}
-[data-density="compact"] .host-chip{min-height:24px;padding:2px 8px 2px 7px;font-size:11px}
-[data-density="compact"] .host-chip .dot{width:7px;height:7px}
-[data-density="compact"] .content{padding-top:10px}
-[data-density="compact"] .folder{margin-top:14px}
-[data-density="compact"] .folder-h{margin-bottom:6px}
-[data-density="compact"] .list{border-radius:10px;margin-bottom:8px}
-[data-density="compact"] .list-h{padding:7px 12px}
-[data-density="compact"] .list-h h3{font-size:13px}
-[data-density="compact"] .list-empty{padding:12px 12px;font-size:12.5px}
-[data-density="compact"] .task-row{gap:8px 10px;padding:7px 12px 6px;align-items:center}
-[data-density="compact"] .prio{width:16px;height:16px;margin-top:0}
-[data-density="compact"] .prio svg{width:12px;height:12px}
-[data-density="compact"] .task-name{font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-[data-density="compact"] .task-name a{display:block;overflow:hidden;text-overflow:ellipsis}
-[data-density="compact"] .task-meta{margin-top:3px;gap:3px 7px;font-size:11.5px}
-[data-density="compact"] .chip{height:18px;padding:0 6px;font-size:10.5px;border-radius:5px}
-[data-density="compact"] .st{font-size:11.5px}
-[data-density="compact"] .assg .av{width:14px;height:14px;font-size:8px}
-[data-density="compact"] .task-act{padding-top:0}
-[data-density="compact"] .btn{min-height:30px;padding:0 10px;font-size:12px;border-radius:7px}
-[data-density="compact"] .btn svg{width:13px;height:13px}
-[data-density="compact"] .btn .tier{padding:1px 5px;font-size:9.5px}
-[data-density="compact"] .dispatch-wrap{flex-direction:row-reverse;align-items:center;gap:8px}
-[data-density="compact"] .dispatching{min-height:30px;padding:0 10px;font-size:12px}
-[data-density="compact"] .parked{margin:0 12px 8px 38px;padding:8px 10px;gap:8px}
-[data-density="compact"] .parked .q{font-size:12.5px}
-[data-density="compact"] .parked .q-ic{width:20px;height:20px;font-size:12px}
-[data-density="compact"] .sessions{margin:0 12px 8px 20px;padding-left:20px}
-[data-density="compact"] .sessions::before{top:-2px;bottom:10px}
-[data-density="compact"] .sess{padding:4px 8px 4px 10px;margin-top:4px;border-radius:8px;gap:8px}
-[data-density="compact"] .sess.x{padding-bottom:8px}
-[data-density="compact"] .sess-line1{flex-wrap:nowrap;min-height:26px;gap:7px}
-[data-density="compact"] .sess-line1 > *{flex:none}
-[data-density="compact"] .sess-line1 .sess-c{display:flex;flex:1 1 auto}
-[data-density="compact"] .sess .sstat .t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-[data-density="compact"] .sess .sstat .d{width:9px;height:9px}
-[data-density="compact"] .host{height:18px;font-size:10.5px;padding:0 6px 0 5px}
-[data-density="compact"] .sess-meta{display:none}
-[data-density="compact"] .sess-now{display:none;margin-top:6px;font-size:12.5px}
-[data-density="compact"] .sess.x .sess-now{display:-webkit-box}
-@media (hover:hover){[data-density="compact"] .sess:hover .sess-now{display:-webkit-box}}
-[data-density="compact"] .sess-act{flex-direction:row;align-items:center;gap:6px}
-[data-density="compact"] .sess-act .ctx{display:none}
-[data-density="compact"] .unlinked .sess{margin:6px 12px}
-[data-density="compact"] .unlinked .why{padding-top:6px}
-
+/* ── phone ─────────────────────────────────────────── */
 @media (max-width:720px){
   :root{--tap:44px}
   .app{grid-template-columns:1fr;height:auto;min-height:100vh}
@@ -415,46 +437,21 @@ a{color:inherit}
   .sess-act .btn{flex:1}
   .sess-act .ctx{order:-1;flex:none}
   .sess-act .ctx{display:none}
-  .drawer{top:auto;left:0;right:0;width:auto;max-height:88vh;border-radius:16px 16px 0 0;transform:translateY(105%);box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
+  .drawer{top:auto;left:0;right:0;width:auto;max-height:92vh;max-height:92dvh;border-radius:16px 16px 0 0;border-left:0;border-top:3px solid var(--hc,var(--brand));transform:translateY(105%);box-shadow:0 -10px 40px rgba(42,46,67,.2)}
   .drawer.on{transform:none}
+  .drawer::before{content:"";position:absolute;left:50%;top:6px;width:36px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}
+  .drawer-h{padding:18px 14px 10px}
+  .drawer-h h2{font-size:15px}
+  .stats{padding:8px 14px}
+  .pane{padding:14px 14px 16px}
+  .tasks-rail{padding:14px 14px 18px}
+  .term-scroll{max-height:42vh}
+  .resume-box{grid-template-columns:1fr}
+  .drawer-f{padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+  .drawer-f .btn{flex:1}
+  .drawer-f .spacer{display:none}
   .picker{top:auto;bottom:0;left:0;transform:none;width:100%;max-height:82vh;border-radius:16px 16px 0 0}
   .tree-list{min-height:44px}
-  .dens{order:2;margin-left:auto}
-  .dens button{min-height:44px;padding:0 11px}
-  .dens button .l{display:none}
-  .hdr-top .folders-btn{margin-left:0}
-  /* compact on phone: rows stay dense, tap targets stay ≥44px */
-  [data-density="compact"] .hdr-top{padding-top:10px}
-  [data-density="compact"] .seg button{min-height:40px;font-size:12.5px}
-  [data-density="compact"] .count{padding:5px 9px}
-  [data-density="compact"] .host-chip{min-height:32px}
-  [data-density="compact"] .content{padding:8px 10px 140px}
-  [data-density="compact"] .list-h{padding:7px 10px}
-  [data-density="compact"] .task-row{grid-template-columns:auto minmax(0,1fr) auto;gap:6px 8px;padding:7px 10px 6px}
-  [data-density="compact"] .task-act{grid-column:auto;width:auto;justify-content:flex-end;padding-top:0}
-  [data-density="compact"] .task-act .btn{flex:none}
-  [data-density="compact"] .btn{min-height:44px;padding:0 10px}
-  [data-density="compact"] .dispatch-wrap{flex-direction:column;align-items:flex-end;gap:2px;width:auto}
-  [data-density="compact"] .dispatch-wrap .btn{width:auto}
-  [data-density="compact"] .dispatch-wrap .hint{font-size:10px;text-align:right;max-width:96px}
-  [data-density="compact"] .dispatching{width:auto;min-height:44px}
-  [data-density="compact"] .task-name a{padding:13px 0;margin:-13px 0}
-  [data-density="compact"] .parked{margin:0 10px 8px 10px}
-  [data-density="compact"] .sessions{margin:0 10px 8px 10px;padding-left:16px}
-  [data-density="compact"] .sess{grid-template-columns:minmax(0,1fr) auto;padding:2px 6px 2px 10px;gap:6px}
-  [data-density="compact"] .sess::before{top:22px}
-  [data-density="compact"] .sess::after{top:18px}
-  [data-density="compact"] .sess-line1{flex-wrap:wrap;min-height:44px;gap:2px 6px;align-content:center;line-height:16px}
-  [data-density="compact"] .sess-line1 .sess-c{flex:1 1 auto;white-space:normal;overflow:visible;flex-wrap:wrap;gap:2px 6px;font-size:11px}
-  [data-density="compact"] .sess-line1 .sess-c .sep{display:none}
-  [data-density="compact"] .sess-line1 .sname{display:none}
-  [data-density="compact"] .xt{position:absolute;right:0;top:50%;transform:translateY(-50%);width:26px;height:44px}
-  [data-density="compact"] .sess.x .xt{transform:translateY(-50%) rotate(180deg)}
-  [data-density="compact"] .sess-main{position:relative;padding-right:26px}
-  [data-density="compact"] .sess-act{margin-top:0;width:auto;justify-content:flex-end;gap:4px}
-  [data-density="compact"] .sess-act .btn{flex:none;padding:0 9px}
-  [data-density="compact"] .sess.x{padding-bottom:8px}
-  [data-density="compact"] .unlinked .sess{margin:6px 10px}
 }
 @media (min-width:721px){
   .folders-btn{display:none}
@@ -481,10 +478,6 @@ a{color:inherit}
     <header class="hdr" id="hdr">
       <div class="hdr-top">
         <div class="hdr-title"><h1 id="space-name">Winn.solutions</h1><span class="built" id="built"></span></div>
-        <div class="dens" id="dens" role="group" aria-label="Row density">
-          <button type="button" data-density="comfortable" aria-pressed="false" title="Comfortable rows"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg><span class="l">Comfortable</span></button>
-          <button type="button" data-density="compact" aria-pressed="false" title="Compact rows"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3h10M3 5.5h10M3 8h10M3 10.5h10M3 13h10"/></svg><span class="l">Compact</span></button>
-        </div>
         <button class="btn folders-btn" id="folders-btn" type="button" aria-haspopup="dialog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1.5 1.5h4.5A1.5 1.5 0 0 1 14 6v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5z"/></svg>Folders</button>
         <div class="seg" id="seg" role="tablist" aria-label="Spaces"></div>
       </div>
@@ -497,12 +490,10 @@ a{color:inherit}
 
 <div class="scrim" id="scrim"></div>
 
-<!-- session drawer -->
+<!-- session drawer (concept 2e) -->
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
-  <div class="drawer-h">
-    <div class="t"><div class="eyebrow" id="drawer-eyebrow">Session</div><h2 id="drawer-title"></h2></div>
-    <button class="btn ghost sm" type="button" data-close aria-label="Close">Close</button>
-  </div>
+  <div class="drawer-h" id="drawer-head"></div>
+  <div class="stats" id="drawer-stats" aria-label="Session numbers"></div>
   <div class="drawer-b" id="drawer-body"></div>
   <div class="drawer-f" id="drawer-foot"></div>
 </aside>
@@ -698,8 +689,134 @@ const SPACE = {
   ]
 };
 
+
+/* ── terminal tails + reply options, keyed by session_id (mock transcript of each tmux pane) ── */
+const HOSTNAME = { mactop:'MacTop-Pro', mini:'mini', macbook:'MacBook' };
+const TRANSCRIPT = {
+  "5c1e0f2a-1b3d-4e5f-8a6b-7c8d9e0f1a2b": { lines: [
+    ["user","Concept 07 cockpit — check it at 390px and fix whatever overflows in the header."],
+    ["text","Rendering 07-cockpit.html at 390×844 and inspecting the header strip."],
+    ["tool","Bash(browse screenshot mockups/space/07-cockpit.html --width 390 --out /tmp/qa-07-phone.png)"],
+    ["out","/tmp/qa-07-phone.png (390×844) · 0 console errors"],
+    ["tool","Read(/tmp/qa-07-phone.png)"],
+    ["out","Read image (390×844)"],
+    ["text","The health strip overflows by 38px: five count tiles at min-width 92px do not fit under 390 with 14px gutters. Switching the strip to a horizontal rail with a hidden scrollbar."],
+    ["tool","Edit(mockups/space/07-cockpit.html)"],
+    ["out","Updated 07-cockpit.html with 6 additions and 2 removals"],
+    ["tool","Bash(browse screenshot mockups/space/07-cockpit.html --width 390 --out /tmp/qa-07-phone-2.png)"],
+    ["out","/tmp/qa-07-phone-2.png (390×844) · 0 console errors"],
+    ["spin","Verifying the fix… (esc to interrupt)"]
+  ]},
+  "9d2f1a3b-2c4e-4f60-9b7c-8d9e0f1a2b3c": { options:["mactop","MacTop-Pro"], lines: [
+    ["user","Wire the host picker to the spawn call. Default host is mactop; the chosen host shows as a tag at the top of the session bar."],
+    ["tool","Read(rail/spawn.mjs)"],
+    ["out","Read 142 lines"],
+    ["tool","Grep(pattern: \"host\", path: rail/)"],
+    ["out","Found 11 matches in 4 files"],
+    ["tool","Edit(rail/spawn.mjs)"],
+    ["out","Updated rail/spawn.mjs with 9 additions and 2 removals"],
+    ["tool","Bash(node rail/spawn.mjs --dry-run --host mactop --task 86eyq1c4d5)"],
+    ["out","spawn: host=mactop tmux=fb-8b1d44e0a2c9 cwd=~/Projects/fleetboard"],
+    ["cont","ok (dry-run, nothing launched)"],
+    ["text","The picker is wired. One label question before I put the tag on the session bar:"],
+    ["ask","Should the default host tag read “mactop” (the fleet id the collector publishes) or the hostname “MacTop-Pro”? The bar can show either; everything else in FleetBoard uses the fleet id."],
+    ["opt","1. mactop — matches the host chips and the join color everywhere else"],
+    ["opt","2. MacTop-Pro — what `hostname` returns on the box"],
+    ["sys","Waiting for your reply · idle 14m"]
+  ]},
+  "a1b2c3d4-3d5f-4a71-8c8d-9e0f1a2b3c4d": { lines: [
+    ["user","The four pollers 429 each other every 15 minutes. Stagger them so they stop colliding."],
+    ["tool","Bash(launchctl list | grep -E 'poll|dispatch|collector|auditor')"],
+    ["out","com.jarred.clickup-poller · com.jarred.followup-dispatch · com.jarred.fleet-collector · com.jarred.board-auditor · com.jarred.gm-sage-poll"],
+    ["tool","Read(~/Library/LaunchAgents/com.jarred.clickup-poller.plist)"],
+    ["out","Read 38 lines"],
+    ["text","All five fire on StartInterval 900 from the same boot offset. Moving them to StartCalendarInterval with 3-minute offsets (:00 :03 :06 :09 :12)."],
+    ["tool","Edit(~/Library/LaunchAgents/com.jarred.clickup-poller.plist)"],
+    ["out","Updated with 12 additions and 3 removals"],
+    ["tool","Bash(for p in clickup-poller followup-dispatch fleet-collector board-auditor gm-sage-poll; do launchctl unload ~/Library/LaunchAgents/com.jarred.$p.plist; launchctl load ~/Library/LaunchAgents/com.jarred.$p.plist; done)"],
+    ["out","(no output)"],
+    ["tool","Bash(grep -c ' 429 ' ~/.openclaw/logs/clickup-*.log)"],
+    ["out","before: 41 in a 30 min window · after: 2"],
+    ["ok","Proposed done. Five plists staggered; 429s down from 41 to 2 over 30 minutes. Moved 86eyq2c4d5 to proposed-done for your confirm."],
+    ["sys","Session ended 3h ago · tmux has no session fb-0c7e91b3d5f2"]
+  ]},
+  "b2c3d4e5-4e60-4b82-9d9e-0f1a2b3c4d5e": { options:["Archive as-is","Port the backoff first"], lines: [
+    ["user","Retire the mini-only biz-agent-dispatch: archive it into the repo and unload it on the mini."],
+    ["tool","Bash(ssh mini 'cat ~/.openclaw/bin/biz-agent-dispatch.py' > /tmp/mini-biz-dispatch.py)"],
+    ["out","(no output)"],
+    ["tool","Bash(diff ~/Projects/ops-tracker/archive/biz-agent-dispatch.py /tmp/mini-biz-dispatch.py)"],
+    ["out","3 hunks · +41 −6"],
+    ["cont","+  rate-limit backoff (exponential, 4 tries)"],
+    ["cont","+  Slack reply on dispatch failure"],
+    ["cont","+  DISPATCH_MAX=3 env cap"],
+    ["text","The mini copy has drifted from the repo. Archiving it as-is keeps the edits in git, but dispatch.mjs (the replacement) has no backoff yet, so that behavior would stop at runtime."],
+    ["ask","Archive the mini copy as-is, or port the rate-limit backoff into dispatch.mjs first and then archive?"],
+    ["opt","1. Archive as-is — fastest; backoff lives only in git history until re-added"],
+    ["opt","2. Port the backoff first — about 20 minutes; keeps runtime behavior before unloading"],
+    ["sys","Parked · waiting for your reply · idle 47m"]
+  ]},
+  "c3d4e5f6-5f71-4c93-8eaf-1a2b3c4d5e6f": { lines: [
+    ["user","Revived from fb-2d8c5e0a9b41 — the brief is in HANDOFF.md. Continue the restore drill from the checksum step."],
+    ["tool","Read(HANDOFF.md)"],
+    ["out","Read 61 lines"],
+    ["tool","Bash(tmutil listbackups | tail -1)"],
+    ["out","/Volumes/Synology-TM/2026-08-30-031502"],
+    ["tool","Bash(diskutil apfs addVolume disk3 APFS drill-scratch)"],
+    ["out","Created new APFS Volume disk3s7 (drill-scratch)"],
+    ["tool","Bash(rsync -a --info=progress2 /Volumes/Synology-TM/2026-08-30-031502/Data/Users/jarredwinn/Projects/ /Volumes/drill-scratch/Projects/)"],
+    ["out","18.4G  71%  112.3MB/s  0:02:41"],
+    ["spin","Restoring… (2m 41s · 18.4 GB) (esc to interrupt)"]
+  ]},
+  "d4e5f6a7-6082-4da4-9fb0-2b3c4d5e6f70": { lines: [
+    ["user","Run the quarterly restore drill on the mini and write the record."],
+    ["tool","Bash(ssh mini 'tmutil listbackups')"],
+    ["out","91 backups · newest /Volumes/Synology-TM/2026-08-30-031502"],
+    ["tool","Bash(ssh mini 'find /Volumes/Synology-TM/2026-08-30-031502/Data/Users/jarredwinn -type f' > /tmp/snapshot-listing.txt)"],
+    ["out","(no output)"],
+    ["tool","Read(/tmp/snapshot-listing.txt)"],
+    ["out","Read 214,880 lines"],
+    ["err","Context window at 97% — this session cannot continue."],
+    ["sys","Session ended 26m ago · revived into fb-b93f2d1e7a08 on mini from a distilled brief"]
+  ]},
+  "e5f6a7b8-7193-4eb5-80c1-3c4d5e6f7081": { lines: [
+    ["user","Triage the admin@ backlog: classify each message, file it, and surface anything that needs Jarred."],
+    ["tool","Bash(gog gmail search 'in:inbox -label:filed' --max 400 --json > /tmp/backlog.json)"],
+    ["out","212 messages"],
+    ["tool","Bash(python3 triage/classify.py /tmp/backlog.json)"],
+    ["out","enrollment 88 · vendor 41 · state-licensing 9 · family-question 37 · spam 23 · unsure 14"],
+    ["tool","Bash(python3 triage/file.py --apply /tmp/backlog.json)"],
+    ["out","labeled 198 · skipped 14 (unsure)"],
+    ["ok","198 filed. 14 messages are routed for your review: they touch licensing dates and one refund, and the routing rules do not cover them."],
+    ["sys","Idle 22m · nothing to do until the 14 are reviewed"]
+  ]},
+  "f6a7b8c9-82a4-4fc6-91d2-4d5e6f708192": { lines: [
+    ["user","Collapse the three brand token export scripts into one."],
+    ["tool","Read(scripts/export-tokens-figma.mjs)"],
+    ["out","Read 88 lines"],
+    ["tool","Read(scripts/export-tokens-css.mjs)"],
+    ["out","Read 64 lines"],
+    ["tool","Read(scripts/export-tokens-deck.mjs)"],
+    ["out","Read 121 lines"],
+    ["text","All three read the same tokens.json and differ only in the emitter. Writing one script with --format figma|css|deck."],
+    ["tool","Write(scripts/export-tokens.mjs)"],
+    ["out","Wrote 143 lines"],
+    ["tool","Bash(node scripts/export-tokens.mjs --format css --check)"],
+    ["out","212 tokens · byte-identical to the old export-tokens-css.mjs output"],
+    ["spin","Running the figma emitter… (esc to interrupt)"]
+  ]},
+  "07b8c9d0-93b5-4ad7-a2e3-5e6f70819203": { lines: [
+    ["user","Sketch three ways the launch rail could pick a host. Notes only, no code."],
+    ["text","Three sketches, shortest first."],
+    ["text","1. A host segmented control on the launch button (mactop · mini · macbook) with the fresh/stale dot beside each."],
+    ["text","2. Host inferred from the task's List (fleetboard → mactop, gm-* → mini) with an override in the confirm sheet."],
+    ["text","3. “Best host” chosen by load, shown as a tag you can tap to change before spawn."],
+    ["tool","Write(notes/host-picker-sketches.md)"],
+    ["out","Wrote 29 lines"],
+    ["sys","Frozen 3h 04m ago — macbook asleep, last publish 1h 30m ago"]
+  ]}
+};
+
 /* ── state ─────────────────────────────────────────────────────────────── */
-const DENSITY_KEY = 'fb-space-density';
 const state = {
   spaceId: SPACE.spaces[0].id,          // W.s by default
   dispatching: new Set(),               // task ids flipped to "dispatching…"
@@ -708,8 +825,7 @@ const state = {
   links: {},                            // session_id → [task ids] added by the mock Link picker
   pickerFor: null,
   drawerFor: null,
-  density: (()=>{ try{ const d=localStorage.getItem(DENSITY_KEY); return d==='comfortable'||d==='compact' ? d : 'compact'; }catch(e){ return 'compact'; } })(),
-  expanded: new Set(SPACE.sessions.filter(s=>s.status==='needs_input').map(s=>s.session_id))   // needs-input chips start open: the question is the point
+  replied: {}                           // session_id → reply text sent from the drawer composer (mock)
 };
 const TODAY = SPACE.builtAt.slice(0,10);
 
@@ -723,13 +839,15 @@ const AS_LABEL = { 'needs-triage':'needs triage', 'ready-for-human':'ready for h
 const TIER_COPY = { attach:'Attach to the live tmux — full context.', resume:'Resume from the saved transcript — recent tool output not restored.', revive:'Revive into a fresh session from a distilled brief — context was maxed; partial by design.' };
 
 function sessionTasks(s){ return [...(s.clickupTasks||[]), ...(state.links[s.session_id]||[])]; }
-function sessionsFor(taskId){ return SPACE.sessions.filter(s => sessionTasks(s).includes(taskId)).sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]); }
+function sessionsFor(taskId){ return SPACE.sessions.filter(s => sessionTasks(s).includes(taskId)).sort((a,b)=>STATUS_RANK[effStatus(a)]-STATUS_RANK[effStatus(b)]); }
 function unlinkedSessions(){ return SPACE.sessions.filter(s => sessionTasks(s).length===0); }
 function currentSpace(){ return SPACE.spaces.find(s=>s.id===state.spaceId); }
 function spaceTasks(sp){ return sp.folders.flatMap(f=>f.lists.flatMap(l=>l.tasks)); }
 function findTask(id){ for(const sp of SPACE.spaces) for(const t of spaceTasks(sp)) if(t.id===id) return {task:t, space:sp}; return null; }
+function effStatus(s){ return state.replied[s.session_id] ? 'working' : s.status; }
+function findList(taskId){ for(const sp of SPACE.spaces) for(const f of sp.folders) for(const l of f.lists) if(l.tasks.some(t=>t.id===taskId)) return {list:l, folder:f, space:sp}; return null; }
 function isLive(s){ return s.status==='working'||s.status==='needs_input'||s.status==='waiting'; }
-function needsYou(t){ return t.agent_state==='needs-info' || sessionsFor(t.id).some(s=>s.status==='needs_input'); }
+function needsYou(t){ return (t.agent_state==='needs-info' && !state.answered.has(t.id)) || sessionsFor(t.id).some(s=>effStatus(s)==='needs_input'); }
 function inProg(t){ return t.agent_state==='in-progress' || t.status==='in progress' || sessionsFor(t.id).some(isLive); }
 function rank(t){ return needsYou(t)?0 : inProg(t)?1 : 2; }
 function sortTasks(ts){ return [...ts].sort((a,b)=> rank(a)-rank(b) || a.priority-b.priority || String(a.due||'9').localeCompare(String(b.due||'9'))); }
@@ -768,8 +886,7 @@ const ICON = {
   link:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 9.5a3 3 0 0 0 4.2 0l1.8-1.8a3 3 0 0 0-4.2-4.2l-.8.8M9.5 6.5a3 3 0 0 0-4.2 0L3.5 8.3a3 3 0 0 0 4.2 4.2l.8-.8"/></svg>',
   resume:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a5 5 0 0 1 8.6-3.5L13 6M13 2.5V6h-3.5M13 8a5 5 0 0 1-8.6 3.5L3 10"/></svg>',
   check:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5"/></svg>',
-  warn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.3"/></svg>',
-  chev:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5 8 10.5l4-4"/></svg>'
+  warn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.3"/></svg>'
 };
 
 /* ── render: rail + phone segmented control ───────────────────────────── */
@@ -820,22 +937,20 @@ function renderHeader(){
 /* ── render: sessions inline ──────────────────────────────────────────── */
 function sessionHTML(s, {unlinked=false}={}){
   const ended = s.status==='ended';
+  const st = effStatus(s); const replied = state.replied[s.session_id];
   const ctxCls = s.contextPct>=90?'max': s.contextPct>=70?'hi':'';
-  const open = state.expanded.has(s.session_id);
   const action = ended
-    ? `<button class="btn" type="button" data-resume="${s.session_id}" title="${TIER_COPY[s.resumeTier]}">${ICON.resume}Resume <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>`
-    : `<button class="btn ${s.status==='needs_input'?'primary':''}" type="button" data-open="${s.session_id}">${s.status==='needs_input'?'Answer':'Open'} ${ICON.open}</button>`;
+    ? `<button class="btn ghost" type="button" data-open="${s.session_id}">Open ${ICON.open}</button><button class="btn" type="button" data-resume="${s.session_id}" title="${TIER_COPY[s.resumeTier]}">${ICON.resume}Resume <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>`
+    : `<button class="btn ${st==='needs_input'?'primary':''}" type="button" data-open="${s.session_id}">${st==='needs_input'?'Answer':'Open'} ${ICON.open}</button>`;
   const link = unlinked ? `<button class="btn" type="button" data-link="${s.session_id}">${ICON.link}Link task</button>` : '';
   const src = s.source==='omnara' ? `<span class="k">via</span> omnara` : `<span class="k">via</span> rail`;
-  return `<div class="sess ${s.status} ${open?'x':''}" style="--join:${HOST_COLOR[s.host]}">
+  return `<div class="sess ${st}" style="--join:${HOST_COLOR[s.host]}" data-sid="${s.session_id}" title="Open session">
     <div class="sess-main">
-      <button class="sess-line1" type="button" data-toggle="${s.session_id}" aria-expanded="${open}" title="${open?'Collapse':'Show what this session is doing now'}">
+      <div class="sess-line1">
         <span class="host" style="--hc:${HOST_COLOR[s.host]}">${esc(s.host)}</span>
-        <span class="sstat ${s.status}" title="${STATUS_LABEL[s.status]}"><span class="d"></span><span class="t">${STATUS_LABEL[s.status]}</span></span>
+        <span class="sstat ${st}"><span class="d"></span>${replied?'resuming':STATUS_LABEL[st]}</span>
         <span class="sname">${esc(s.name)}</span>
-        <span class="sess-c"><span>${esc(s.model)}</span><span class="sep">·</span><span>${esc(s.elapsedActive)} <span style="color:var(--ink-faint)">/ idle</span> ${esc(s.idle)}</span><span class="sep">·</span><span class="age">${summaryAge(s)}</span></span>
-        <span class="xt" aria-hidden="true">${ICON.chev}</span>
-      </button>
+      </div>
       <div class="sess-meta">
         <span>${esc(s.model)}</span>
         <span><span class="k">branch</span> ${esc(s.branch)}</span>
@@ -845,11 +960,7 @@ function sessionHTML(s, {unlinked=false}={}){
         <span>${src}</span>
         <span class="age">${summaryAge(s)}</span>
       </div>
-      <div class="sess-now"><span class="k">now</span>${esc(s.summary.now)}</div>
-      <div class="sess-x">
-        <div class="row"><span class="nx"><span class="k">next</span>${esc(s.summary.next)}</span></div>
-        <div class="row"><span class="mono">${esc(s.name)}</span><span><span class="k">branch</span>${esc(s.branch)}</span><span><span class="k">ctx</span>${s.contextPct}% · ${fmtTok(s.tokens)} · $${s.cost.toFixed(1)}</span><span>${src}</span><span><span class="k">last</span>${esc(s.lastActivity)}</span></div>
-      </div>
+      <div class="sess-now"><span class="k">now</span>${replied ? 'Resuming with your reply: “'+esc(replied)+'”' : esc(s.summary.now)}</div>
     </div>
     <div class="sess-act">
       ${link}${action}
@@ -885,7 +996,7 @@ function taskHTML(t){
     <div class="task-row">
       <span class="prio p${t.priority}" title="priority ${t.priority} · ${t.priority===1?'drop everything':t.priority===2?'normal':'whenever'}">${ICON.flag}</span>
       <div class="task-main">
-        <h4 class="task-name"><a href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(t.name)}">${esc(t.name)}</a></h4>
+        <h4 class="task-name"><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.name)}</a></h4>
         <div class="task-meta">
           <span class="st ${stCls}"><span class="sq"></span>${esc(t.status)}</span>
           <span class="chip as-${t.agent_state}">${AS_LABEL[t.agent_state]}</span>
@@ -928,68 +1039,158 @@ function renderContent(){
     }
     h += `</section>`;
   }
-  const un = unlinkedSessions().sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]);
+  const un = unlinkedSessions().sort((a,b)=>STATUS_RANK[effStatus(a)]-STATUS_RANK[effStatus(b)]);
   h += `<section class="unlinked" id="unlinked"><h2 class="folder-h">${ICON.link}Unlinked<span class="rule"></span></h2><div class="list"><div class="list-h"><h3><span class="n">${un.length}</span>Sessions with no task</h3><span class="spacer"></span><span class="pill">fleet-wide</span></div>
     ${un.length ? `<div class="why">These sessions publish no ClickUp task id. They are shown in every Space until linked.</div><div class="sessions">${un.map(s=>sessionHTML(s,{unlinked:true})).join('')}</div>` : `<div class="list-empty"><span class="z">${ICON.check}</span>Every session is linked to a task.</div>`}
   </div></section>`;
   $('#content').innerHTML = h;
 }
-function renderDensity(){
-  document.documentElement.dataset.density = state.density;
-  document.querySelectorAll('#dens button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.density===state.density)));
-}
-function setDensity(d){
-  if(d===state.density) return;
-  state.density=d; try{ localStorage.setItem(DENSITY_KEY,d); }catch(e){}
-  renderDensity();
-  toast(d==='compact' ? 'Compact rows — saved for next time. Tap a session line to see its Now.' : 'Comfortable rows — saved for next time.');
-}
-function render(){ renderDensity(); renderSpaces(); renderTree(); renderHeader(); renderContent(); }
+function render(){ renderSpaces(); renderTree(); renderHeader(); renderContent(); }
 
 /* ── overlays ─────────────────────────────────────────────────────────── */
 function openScrim(){ $('#scrim').classList.add('on'); }
 function closeAll(){
   $('#scrim').classList.remove('on');
-  $('#drawer').classList.remove('on'); setTimeout(()=>{ if(!$('#drawer').classList.contains('on')) $('#drawer').hidden=true; },220);
+  const d=$('#drawer'); d.classList.remove('on'); setTimeout(()=>{ if(!d.classList.contains('on')) d.hidden=true; },230);
+  const sh=$('#sheet'); sh.classList.remove('on'); setTimeout(()=>{ if(!sh.classList.contains('on')) sh.hidden=true; },230);
   $('#picker').classList.remove('on');
-  const sh=$('#sheet'); sh.classList.remove('on'); setTimeout(()=>{ if(!sh.classList.contains('on')) sh.hidden=true; },220);
+  document.body.classList.remove('lock');
+  stopSpin();
   state.drawerFor=null; state.pickerFor=null;
 }
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2600); }
 
-function openDrawer(id, mode){
+/* ── session drawer (concept 2e) ─────────────────────────────────────── */
+const SPIN = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+let spinTimer=null;
+function stopSpin(){ clearInterval(spinTimer); spinTimer=null; }
+function startSpin(){
+  stopSpin();
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const els = document.querySelectorAll('#drawer .tl.spin .sp'); if(!els.length) return;
+  let i=0; spinTimer=setInterval(()=>{ i=(i+1)%SPIN.length; els.forEach(e=>e.textContent=SPIN[i]); },110);
+}
+function termLine([k,s]){
+  const t = esc(s);
+  switch(k){
+    case 'user': return `<span class="tl user">${t}</span>`;
+    case 'tool': return `<span class="tl tool">⏺ ${t.replace(/^(\w+)\(/,'<b>$1</b>(')}</span>`;
+    case 'text': return `<span class="tl text">⏺ ${t}</span>`;
+    case 'ok':   return `<span class="tl ok">⏺ ${t}</span>`;
+    case 'err':  return `<span class="tl err">⏺ ${t}</span>`;
+    case 'out':  return `<span class="tl out">⎿  ${t}</span>`;
+    case 'cont': return `<span class="tl out">   ${t}</span>`;
+    case 'ask':  return `<span class="tl ask">${t}</span>`;
+    case 'opt':  return `<span class="tl opt">${t.replace(/^(\d\.\s)([^—]+?)(\s—)/,'$1<b>$2</b>$3')}</span>`;
+    case 'sys':  return `<span class="tl sys">${t}</span>`;
+    case 'spin': return `<span class="tl spin"><span class="sp" aria-hidden="true">⠋</span> ${t}</span>`;
+  }
+  return '';
+}
+function ringHTML(pct){ const C=(2*Math.PI*10.5).toFixed(2); return `<svg class="ring" viewBox="0 0 26 26" aria-hidden="true"><circle class="bg" cx="13" cy="13" r="10.5"/><circle class="fg" cx="13" cy="13" r="10.5" stroke-dasharray="${C}" stroke-dashoffset="${(C*(1-pct/100)).toFixed(2)}"/></svg>`; }
+function trowHTML(t, isThis){
+  const due=fmtDue(t.due); const live=sessionsFor(t.id).filter(isLive).length;
+  return `<a class="trow ${isThis?'this':'sib'}" href="${esc(t.url)}" target="_blank" rel="noopener" title="Open in ClickUp">
+    ${isThis?'<span class="tag">This session’s task</span>':''}
+    <div class="nm"><span class="prio p${t.priority}">${ICON.flag}</span><span>${esc(t.name)}</span></div>
+    <div class="m"><span class="chip as-${t.agent_state}">${AS_LABEL[t.agent_state]}</span><span class="due ${due.cls}">${ICON.cal}${due.text}</span><span class="dw ${t.doneWhen?'ok':'missing'}">${t.doneWhen?ICON.check:ICON.warn}${t.doneWhen?'DONE-WHEN':'no DONE-WHEN'}</span>${!isThis&&live?`<span class="live">${live} live</span>`:''}<span class="tid">${esc(t.id)}</span></div>
+  </a>`;
+}
+function openDrawer(id){
   const s = SPACE.sessions.find(x=>x.session_id===id); if(!s) return;
   state.drawerFor=id;
-  const tasks = sessionTasks(s).map(findTask).filter(Boolean);
-  $('#drawer-eyebrow').innerHTML = `<span class="host" style="--hc:${HOST_COLOR[s.host]}">${esc(s.host)}</span> &nbsp;<span class="sstat ${s.status}"><span class="d"></span>${STATUS_LABEL[s.status]}</span>`;
-  $('#drawer-title').textContent = s.name;
-  const term = s.status==='ended'
-    ? `<span class="dim">$ tmux attach -t ${esc(s.name)}</span>\n<span class="dim">no server running — session ended ${esc(s.lastActivity)}</span>\n<span class="c">›</span> resume tier: <b>${s.resumeTier}</b> — ${esc(TIER_COPY[s.resumeTier])}`
-    : `<span class="dim">$ tmux attach -t ${esc(s.name)}</span>\n<span class="p">●</span> ${esc(s.project)} <span class="dim">(${esc(s.branch)})</span> · ${esc(s.model)} · ctx ${s.contextPct}%\n<span class="c">›</span> ${esc(s.summary.now)}\n<span class="dim">[live transcript preview would stream here — placeholder]</span>`;
-  $('#drawer-body').innerHTML = `
-    ${tasks.length ? `<p class="linkto">Linked to ${tasks.map(x=>`<a href="${esc(x.task.url)}" target="_blank" rel="noopener">${esc(x.task.name)}</a>`).join(' · ')}</p>` : `<p class="linkto">Not linked to any task.</p>`}
-    <div class="sum">
-      <div class="now"><span class="k">Now</span><p>${esc(s.summary.now)}</p></div>
-      <div><span class="k">Next</span><p>${esc(s.summary.next)}</p></div>
-      <div><span class="k">Goal</span><p>${esc(s.summary.goal)}</p></div>
+  const st = effStatus(s); const replied = state.replied[s.session_id];
+  const tr = TRANSCRIPT[s.session_id] || {lines:[]};
+  const linked = sessionTasks(s).map(findTask).filter(Boolean);
+  const hc = HOST_COLOR[s.host];
+  const d=$('#drawer'); d.style.setProperty('--hc', hc);
+
+  // header: host tag · status · model · tmux name · project/branch · task link(s)
+  $('#drawer-head').innerHTML = `
+    <div class="t">
+      <div class="eyebrow"><span class="host" style="--hc:${hc}">${esc(s.host)}</span><span class="sstat ${st}"><span class="d"></span>${replied?'resuming':STATUS_LABEL[st]}</span><span class="model">${esc(s.model)}</span><span class="src">via ${esc(s.source)}</span></div>
+      <h2 id="drawer-title">${esc(s.name)}</h2>
+      <div class="sub"><span>${esc(s.project)} · <span class="mono">${esc(s.branch)}</span></span>${linked.map(x=>`<a href="${esc(x.task.url)}" target="_blank" rel="noopener">${ICON.ext}<span>${esc(x.task.name)}</span></a>`).join('')}${linked.length?'':'<span class="hint">no task linked</span>'}</div>
     </div>
-    <p class="sum-age">${summaryAge(s)} · last activity ${esc(s.lastActivity)}</p>
-    <dl class="kv">
-      <dt>Project</dt><dd>${esc(s.project)}</dd>
-      <dt>Branch</dt><dd class="mono">${esc(s.branch)}</dd>
-      <dt>Model</dt><dd>${esc(s.model)}</dd>
-      <dt>Source</dt><dd>${esc(s.source)}</dd>
-      <dt>Context</dt><dd>${s.contextPct}% · ${fmtTok(s.tokens)} tokens</dd>
-      <dt>Active / idle</dt><dd>${esc(s.elapsedActive)} / ${esc(s.idle)}</dd>
-      <dt>Messages</dt><dd>${s.msgs} · $${s.cost.toFixed(2)}</dd>
-      <dt>Session id</dt><dd class="mono">${esc(s.session_id)}</dd>
-    </dl>
-    <div class="term">${term}</div>
-    ${s.status==='ended' ? `<p class="note"><b>Resume is a ${s.resumeTier}.</b> ${esc(TIER_COPY[s.resumeTier])} It never claims a full restore.</p>` : s.status==='stale' ? `<p class="note"><b>Stale.</b> ${esc(SPACE.hosts[s.host].note||'Host has not published recently')} — what you see here may be out of date.</p>` : ''}`;
-  $('#drawer-foot').innerHTML = s.status==='ended'
-    ? `<button class="btn primary" type="button" data-resume="${s.session_id}">${ICON.resume}Resume <span class="tier ${s.resumeTier}" style="background:rgba(255,255,255,.22);color:#fff">${s.resumeTier}</span></button><button class="btn" type="button" data-close>Close</button>`
-    : `<button class="btn primary" type="button" data-attach="${s.session_id}">${ICON.open}${s.status==='needs_input'?'Answer in session':'Attach'}</button>${tasks.length?'':`<button class="btn" type="button" data-link="${s.session_id}">${ICON.link}Link task</button>`}<button class="btn" type="button" data-close>Close</button>`;
-  const d=$('#drawer'); d.hidden=false; requestAnimationFrame(()=>{ d.classList.add('on'); openScrim(); d.querySelector('[data-close]').focus(); });
+    <button class="btn ghost sm x" type="button" data-close aria-label="Close session drawer">Close</button>`;
+
+  // numeric chips
+  const ctxCls = s.contextPct>=90?'max': s.contextPct>=70?'hi':'';
+  $('#drawer-stats').innerHTML = `
+    <div class="stat ${ctxCls}" title="context window used">${ringHTML(s.contextPct)}<div><div class="v">${s.contextPct}%</div><div class="l">context</div></div></div>
+    <div class="stat" title="${s.tokens.toLocaleString()} tokens"><div><div class="v">${fmtTok(s.tokens)}</div><div class="l">tokens</div></div></div>
+    <div class="stat"><div><div class="v">${s.msgs}</div><div class="l">msgs</div></div></div>
+    <div class="stat" title="estimated from token counts"><div><div class="v">~$${s.cost.toFixed(2)}</div><div class="l">est. cost</div></div></div>
+    <div class="stat"><div><div class="v">${esc(s.elapsedActive)} <span style="color:var(--ink-faint);font-weight:500">/</span> ${esc(s.idle)}</div><div class="l">active / idle</div></div></div>`;
+
+  // terminal
+  const badge = st==='working' ? `<span class="tbadge live"><i></i>live</span>`
+    : st==='needs_input' ? `<span class="tbadge ask"><i></i>waiting for you</span>`
+    : st==='waiting' ? `<span class="tbadge paused"><i></i>idle ${esc(s.idle)}</span>`
+    : st==='stale' ? `<span class="tbadge frozen"><i></i>frozen · ${esc(s.lastActivity)}</span>`
+    : `<span class="tbadge ended"><i></i>ended · ${esc(s.lastActivity)}</span>`;
+  let lines = tr.lines.map(termLine).join('');
+  if(replied) lines += termLine(['user', replied]) + termLine(['spin','Resuming with your reply… (esc to interrupt)']);
+  const clock = new Date(SPACE.builtAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+  const tmux = st==='ended'
+    ? `<div class="tmux dead">no server running — session ${esc(s.name)} exited ${esc(s.lastActivity)}</div>`
+    : `<div class="tmux" aria-hidden="true">[${esc(s.name)}]<span class="win">0:claude*</span>${esc(s.project)}<span class="r">"${HOSTNAME[s.host]}" ${clock}</span></div>`;
+  const term = `<div class="term" role="region" aria-label="Terminal tail">
+    <div class="term-bar"><span class="dots" aria-hidden="true"><i style="background:#f0555f"></i><i style="background:#f0a92e"></i><i style="background:#27ae60"></i></span><span class="ttl">${s.source==='rail'?'tmux':'omnara'} · ${esc(s.name)} · ${esc(s.host)}</span>${badge}</div>
+    <div class="term-scroll" id="term-scroll" tabindex="0">${lines || '<span class="tl sys">(no transcript captured for this session)</span>'}</div>
+    ${tmux}
+  </div>`;
+
+  // composer / resume / notes
+  let action='';
+  if(st==='needs_input'){
+    const q = (tr.lines.find(l=>l[0]==='ask')||[,s.summary.now])[1];
+    action = `<div class="composer">
+      <div class="lbl"><span class="d" aria-hidden="true"></span>Waiting on you · idle ${esc(s.idle)}</div>
+      <div class="q">${esc(q)}</div>
+      ${tr.options?`<div class="opts">${tr.options.map(o=>`<button class="opt-btn" type="button" data-reply-opt="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join('')}</div>`:''}
+      <textarea id="reply-box" placeholder="Reply to the session…" aria-label="Reply to the session" rows="3"></textarea>
+      <div class="row"><button class="btn primary" type="button" data-reply-send="${s.session_id}">${ICON.open}Send reply</button><span class="hint">lands in the tmux pane as your next turn</span></div>
+    </div>`;
+  } else if(replied){
+    action = `<div class="composer sent"><div class="lbl"><span class="d" aria-hidden="true"></span>Reply sent · session resuming</div><div class="q">“${esc(replied)}”</div></div>`;
+  } else if(st==='ended'){
+    action = `<div class="resume-box"><div class="t"><b>Resume is a ${s.resumeTier}.</b>${esc(TIER_COPY[s.resumeTier])} It never claims a full restore.</div><button class="btn primary" type="button" data-resume="${s.session_id}">${ICON.resume}Resume <span class="tier" style="background:rgba(255,255,255,.22);color:#fff">${s.resumeTier}</span></button></div>`;
+  } else if(st==='stale'){
+    action = `<p class="note"><b>Stale.</b> ${esc(SPACE.hosts[s.host].note||'Host has not published recently')} — this tail is frozen and may be out of date.</p>`;
+  } else if(st==='waiting'){
+    action = `<p class="note"><b>Idle, nothing pending.</b> Attach to give it the next step; the summary above is ${summaryAge(s).replace('summary ','')}.</p>`;
+  }
+
+  // task rail: this task + siblings in the same List
+  const linkedIds = new Set(linked.map(x=>x.task.id));
+  const sibs=[]; const seen=new Set(); let listName='';
+  for(const x of linked){ const L=findList(x.task.id); if(!L) continue; listName=L.list.name; for(const t of L.list.tasks){ if(!linkedIds.has(t.id) && !seen.has(t.id)){ seen.add(t.id); sibs.push(t); } } }
+  const rail = `
+    <div class="sec-h">Tasks</div>
+    ${linked.length ? linked.map(x=>trowHTML(x.task,true)).join('') : `<p class="rail-note">Not linked to a ClickUp task, so it shows in the Unlinked bucket of every Space.</p><div class="rail-actions"><button class="btn" type="button" data-link="${s.session_id}">${ICON.link}Link task</button></div>`}
+    ${sibs.length ? `<div class="sec-h" style="margin-top:14px">Also in ${esc(listName)}</div>${sortTasks(sibs).map(t=>trowHTML(t,false)).join('')}` : ''}`;
+
+  $('#drawer-body').innerHTML = `
+    <div class="pane">
+      <div class="sec-h">Summary<span class="age">${summaryAge(s)} · last activity ${esc(s.lastActivity)}</span></div>
+      <div class="sum">
+        <div class="now"><span class="k">Now</span><p>${replied ? 'Resuming with your reply: “'+esc(replied)+'”' : esc(s.summary.now)}</p></div>
+        <div><span class="k">Next</span><p>${esc(s.summary.next)}</p></div>
+        <div><span class="k">Goal</span><p>${esc(s.summary.goal)}</p></div>
+      </div>
+      <div class="sec-h">Terminal<span class="age">${st==='working'?'streaming':st==='ended'?'final tail':'last '+tr.lines.length+' lines'}</span></div>
+      ${term}
+      ${action}
+    </div>
+    <aside class="tasks-rail" aria-label="Tasks for this session">${rail}</aside>`;
+
+  $('#drawer-foot').innerHTML = st==='ended'
+    ? `<button class="btn primary" type="button" data-resume="${s.session_id}">${ICON.resume}Resume <span class="tier" style="background:rgba(255,255,255,.22);color:#fff">${s.resumeTier}</span></button><span class="spacer"></span><button class="btn" type="button" data-close>Close</button>`
+    : `<button class="btn ${st==='needs_input'?'':'primary'}" type="button" data-attach="${s.session_id}">${ICON.open}Attach to tmux</button>${linked.length?'':`<button class="btn" type="button" data-link="${s.session_id}">${ICON.link}Link task</button>`}<span class="spacer"></span><button class="btn" type="button" data-close>Close</button>`;
+
+  d.hidden=false; document.body.classList.add('lock');
+  requestAnimationFrame(()=>{ d.classList.add('on'); openScrim(); const ts=$('#term-scroll'); if(ts) ts.scrollTop=ts.scrollHeight; startSpin(); d.querySelector('[data-close]').focus(); });
 }
 
 function openPicker(id){
@@ -998,7 +1199,7 @@ function openPicker(id){
   $('#picker-sub').innerHTML = `Attach <span class="mono">${esc(s.name)}</span> (${esc(s.project)} · ${esc(s.branch)}) to a task in ${esc(currentSpace().name)}.`;
   $('#picker-q').value='';
   renderPicker('');
-  $('#drawer').classList.remove('on'); $('#drawer').hidden=true;
+  $('#drawer').classList.remove('on'); $('#drawer').hidden=true; stopSpin();
   $('#picker').classList.add('on'); openScrim(); $('#picker-q').focus();
 }
 function renderPicker(q){
@@ -1018,14 +1219,17 @@ document.addEventListener('click', e => {
   const d = b.dataset;
   if(d.space){ state.spaceId=d.space; state.answering=null; render(); closeAll(); $('#main').scrollTo({top:0}); window.scrollTo({top:0}); return; }
   if(d.jump){ closeAll(); const el=document.getElementById(d.jump); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return; }
-  if(b.id==='folders-btn'){ const sh=$('#sheet'); sh.hidden=false; requestAnimationFrame(()=>{ sh.classList.add('on'); openScrim(); sh.querySelector('[data-close]').focus(); }); return; }
-  if(d.density){ setDensity(d.density); return; }
-  if(d.toggle){ const el=b.closest('.sess'); const on=el.classList.toggle('x'); b.setAttribute('aria-expanded',on); b.title = on?'Collapse':'Show what this session is doing now'; if(on) state.expanded.add(d.toggle); else state.expanded.delete(d.toggle); return; }
+  if(b.id==='folders-btn'){ const sh=$('#sheet'); sh.hidden=false; requestAnimationFrame(()=>{ sh.classList.add('on'); openScrim(); }); return; }
   if(b.classList.contains('host-chip')){ const on=b.classList.toggle('open'); b.setAttribute('aria-expanded',on); document.querySelectorAll('.host-chip.open').forEach(x=>{ if(x!==b){x.classList.remove('open');x.setAttribute('aria-expanded','false');} }); return; }
   if(d.dispatch){ state.dispatching.add(d.dispatch); render(); toast(`Dispatching ${d.dispatch} on ${SPACE.self} — a session will appear under the task once the rail publishes it.`); return; }
   if(d.open){ openDrawer(d.open); return; }
   if(d.attach){ closeAll(); toast(`Attaching to ${SPACE.sessions.find(s=>s.session_id===d.attach).name} (mock)`); return; }
   if(d.resume){ const s=SPACE.sessions.find(x=>x.session_id===d.resume); closeAll(); toast(`Resume (${s.resumeTier}): ${TIER_COPY[s.resumeTier]}`); return; }
+  if(d.replyOpt!==undefined){ const ta=$('#reply-box'); if(ta){ ta.value=d.replyOpt; ta.focus(); } document.querySelectorAll('.opt-btn').forEach(x=>x.setAttribute('aria-pressed', x===b ? 'true':'false')); return; }
+  if(d.replySend){ const ta=$('#reply-box'); const v=(ta?ta.value:'').trim(); if(!v){ ta?.focus(); toast('Type a reply first.'); return; }
+    state.replied[d.replySend]=v; const s=SPACE.sessions.find(x=>x.session_id===d.replySend);
+    for(const id of sessionTasks(s)){ const t=findTask(id); if(t && t.task.agent_state==='needs-info'){ state.answered.add(id); if(state.answering===id) state.answering=null; } }
+    render(); openDrawer(d.replySend); toast('Reply sent — the session resumes with it (mock).'); return; }
   if(d.link){ openPicker(d.link); return; }
   if(d.pick){ const sid=state.pickerFor; (state.links[sid] ||= []).push(d.pick); const t=findTask(d.pick).task; closeAll(); render(); toast(`Linked to “${t.name}”`); document.getElementById('task-'+d.pick)?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   if(d.answer){ state.answering=d.answer; render(); document.getElementById('ans-'+d.answer)?.focus(); return; }
@@ -1035,6 +1239,8 @@ document.addEventListener('click', e => {
   if(b.hasAttribute('data-close') || b.id==='scrim'){ closeAll(); return; }
 });
 $('#scrim').addEventListener('click', closeAll);
+// clicking anywhere on a session chip (not on one of its buttons/links) opens the drawer
+document.addEventListener('click', e => { if(e.target.closest('button, a, textarea, input')) return; const c=e.target.closest('.sess[data-sid]'); if(c) openDrawer(c.dataset.sid); });
 $('#picker-q').addEventListener('input', e => renderPicker(e.target.value));
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeAll(); });
 document.addEventListener('click', e => { if(!e.target.closest('.host-chip')) document.querySelectorAll('.host-chip.open').forEach(x=>{x.classList.remove('open');x.setAttribute('aria-expanded','false');}); }, true);
