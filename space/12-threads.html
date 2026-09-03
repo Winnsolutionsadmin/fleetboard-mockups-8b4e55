@@ -1,0 +1,747 @@
+<!-- fleetboard space view · concept 12 threads · every task is a thread card whose body is a vertical timeline of its sessions as turns, latest "Now:" line on each, live turn pulsing at the bottom · phone-first, light theme, self-contained -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>FleetBoard — Space · threads</title>
+<style>
+:root{
+  --brand:#7b68ee; --brand-dark:#5f4dd0; --brand-soft:#efecfd;
+  --ink:#2a2e43; --ink-soft:#6b7186; --ink-faint:#9aa1b5;
+  --line:#e6e9f2; --ws:#fafbfc; --column:#f3f4f7; --card:#fff;
+  --c-needs:#f0555f; --c-needs-bg:#fdeef0;
+  --c-work:#4c9aff;  --c-work-bg:#eef5ff;
+  --c-wait:#f0a92e;  --c-wait-bg:#fdf6ea;
+  --c-stale:#98a1b3; --c-stale-bg:#f3f4f7;
+  --ok:#27ae60; --warn:#f0a92e; --bad:#e5484d;
+  --shadow:0 1px 3px rgba(42,46,67,.08), 0 1px 2px rgba(42,46,67,.05);
+  --h-mactop:#5f4dd0; --h-mini:#0e9994; --h-macbook:#0073ea;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --spine-x:9px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ws);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:14px;line-height:1.42;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;margin:0}
+a{color:inherit}
+.mono{font-family:var(--mono);font-size:.92em}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* ── sticky Space header ────────────────────────────── */
+.hdr{position:sticky;top:0;z-index:20;background:rgba(250,251,252,.94);
+  -webkit-backdrop-filter:saturate(1.3) blur(12px);backdrop-filter:saturate(1.3) blur(12px);
+  border-bottom:1px solid var(--line)}
+.hdr-in{max-width:1180px;margin:0 auto;padding:10px 16px 6px}
+.hdr-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+.space-name{font-size:20px;font-weight:700;letter-spacing:-.012em;margin:0;line-height:1.2}
+.space-name small{font-size:12px;font-weight:600;color:var(--ink-faint);letter-spacing:0;margin-left:8px}
+.seg{display:inline-flex;background:var(--column);border-radius:10px;padding:3px;gap:2px;margin-left:auto}
+.seg button{min-height:36px;padding:0 14px;border:0;background:transparent;border-radius:8px;font-weight:600;
+  color:var(--ink-soft);cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--brand-dark);box-shadow:var(--shadow)}
+.rail{display:flex;gap:8px;overflow-x:auto;padding:10px 0 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;margin:0 -16px;padding-left:16px;padding-right:16px}
+.rail::-webkit-scrollbar{display:none}
+.stat{flex:0 0 auto;display:inline-flex;align-items:baseline;gap:6px;padding:5px 11px;border:1px solid var(--line);
+  background:var(--card);border-radius:999px;font-size:12px;color:var(--ink-soft);scroll-snap-align:start;white-space:nowrap}
+.stat b{font-size:15px;color:var(--ink);font-weight:700}
+.stat.hot b{color:var(--c-needs)}
+.stat.live b{color:var(--c-work)}
+.stat.park b{color:var(--c-wait)}
+.stat.prop b{color:var(--ok)}
+.rail .sep{flex:0 0 1px;background:var(--line);margin:4px 4px}
+.hostchip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);
+  background:var(--card);border-radius:999px;font-size:12px;color:var(--ink-soft);cursor:default;white-space:nowrap}
+.hostchip .dot{width:8px;height:8px;border-radius:50%;background:var(--h)}
+.hostchip.stale{border-style:dashed;color:var(--ink-faint);cursor:pointer}
+.hostchip.stale .dot{background:transparent;border:2px solid var(--warn);width:9px;height:9px}
+.hostchip.stale .age{color:var(--warn);font-weight:600}
+.hostchip.dead .dot{background:var(--bad)}
+.hostchip b{color:var(--ink);font-weight:600}
+
+/* ── hierarchy ──────────────────────────────────────── */
+main{max-width:1180px;margin:0 auto;padding:6px 16px 90px}
+.folder{margin:22px 0 8px;display:flex;align-items:center;gap:10px}
+.folder:first-child{margin-top:12px}
+.folder h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:0;font-weight:700}
+.folder .ln{flex:1;height:1px;background:var(--line)}
+.folder .k{font-size:11px;color:var(--ink-faint);font-weight:600}
+.list{margin:6px 0 14px}
+.list-h{font-size:14px;font-weight:600;margin:0 0 8px;display:flex;gap:8px;align-items:center;color:var(--ink)}
+.list-h .n{font-size:11px;color:var(--ink-faint);font-weight:700;background:var(--column);padding:2px 8px;border-radius:999px}
+.list-h .glyph{color:var(--ink-faint);font-weight:400}
+.threads{display:block}
+.empty-list{border:1px dashed var(--line);border-radius:12px;padding:16px 14px;color:var(--ink-faint);font-size:13px;background:transparent}
+.empty-list b{color:var(--ink-soft);font-weight:600}
+@media (min-width:900px){
+  .threads{columns:2;column-gap:16px}
+  .thread{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid}
+}
+
+/* ── thread card ─────────────────────────────────────── */
+.thread{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin:0 0 12px;
+  position:relative;display:inline-block;width:100%}
+.thread.needs-you{box-shadow:inset 3px 0 0 var(--c-needs),var(--shadow)}
+.thread.orphans{border-style:dashed;background:transparent;box-shadow:none}
+.t-head{padding:12px 14px 10px}
+.t-title{display:flex;gap:8px;align-items:flex-start}
+.pri{flex:0 0 auto;width:18px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;
+  border-radius:5px;letter-spacing:-.05em;margin-top:1px}
+.pri.p1{color:#fff;background:var(--c-needs)}
+.pri.p2{color:var(--ink-soft);background:var(--column)}
+.pri.p3{color:var(--ink-faint);background:transparent;border:1px dashed var(--line)}
+.t-title h4{font-size:15px;font-weight:600;margin:0;line-height:1.3;letter-spacing:-.005em;flex:1 1 auto}
+.t-title .id{flex:0 0 auto;font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-decoration:none;
+  display:inline-flex;align-items:center;gap:3px;min-height:28px;padding:0 6px;margin:-4px -6px 0 0;border-radius:6px}
+.t-title .id:hover{background:var(--brand-soft);color:var(--brand-dark)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;
+  border:1px solid transparent;line-height:1.3;white-space:nowrap}
+.chip .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.st-todo{color:var(--ink-soft);background:var(--column)}
+.st-inprog{color:var(--c-work);background:var(--c-work-bg)}
+.st-prop{color:var(--ok);background:#eaf7ef;border-color:#bfe6cd}
+.ag-needs-triage{color:var(--ink-soft);background:var(--card);border:1px dashed var(--ink-faint)}
+.ag-ready-for-human{color:var(--c-needs);background:var(--c-needs-bg)}
+.ag-ready-for-agent{color:var(--brand-dark);background:var(--brand-soft)}
+.ag-in-progress{color:var(--c-work);background:var(--c-work-bg);border-color:#cfe2ff}
+.ag-needs-info{color:#b47a12;background:var(--c-wait-bg);border-color:#f6dfae}
+.ag-out-of-scope{color:var(--c-stale);background:var(--c-stale-bg);text-decoration:line-through}
+.due{color:var(--ink-soft);background:transparent;border-color:var(--line);font-weight:500}
+.due.over{color:#fff;background:var(--bad);border-color:var(--bad);font-weight:700}
+.due.today{color:var(--c-wait);border-color:#f6dfae;font-weight:700}
+.dw{font-weight:600}
+.dw.ok{color:var(--ok)}
+.dw.miss{color:var(--c-wait)}
+.who{color:var(--ink-faint);font-weight:500;margin-left:auto;font-size:11.5px}
+
+/* ── the turns timeline (signature) ─────────────────── */
+.turns{padding:6px 14px 12px 14px;border-top:1px solid var(--line);margin:0;list-style:none}
+.turn{position:relative;padding:9px 0 9px 28px;--host:var(--c-stale)}
+.turn::before{content:"";position:absolute;left:var(--spine-x);top:0;bottom:0;width:2px;background:var(--line);border-radius:2px}
+.turn:first-child::before{top:20px}
+.turn:last-child::before{bottom:calc(100% - 20px)}
+.node{position:absolute;left:4px;top:15px;width:12px;height:12px;border-radius:50%;background:var(--host);box-shadow:0 0 0 3px var(--card);z-index:1}
+.turn.live .node::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--host);opacity:0;
+  animation:pulse 1.9s cubic-bezier(.2,.6,.3,1) infinite}
+.turn.hot .node::after{animation-duration:1.1s}
+.turn.ended .node,.turn.stale .node{background:var(--card);border:2px solid var(--c-stale)}
+.turn.stale .node{border-style:dashed;border-color:var(--warn)}
+.turn.parked .node{background:var(--c-wait);width:16px;height:16px;left:2px;top:13px;color:#fff;font-size:10px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.turn.parked .node::before{content:"?"}
+.turn.empty .node{background:transparent;border:2px dashed var(--ink-faint)}
+.turn.dispatching .node{background:var(--brand)}
+.turn.dispatching .node::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--brand);opacity:0;animation:pulse 1.1s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.55);opacity:.85}100%{transform:scale(1.9);opacity:0}}
+.turn .meta{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:12px;color:var(--ink-soft)}
+.host{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--host);
+  background:color-mix(in srgb,var(--host) 10%,#fff);padding:2px 7px;border-radius:5px;border:1px solid color-mix(in srgb,var(--host) 28%,#fff)}
+.host .d{width:6px;height:6px;border-radius:50%;background:var(--host)}
+.turn.ended .host,.turn.stale .host{--host:var(--c-stale)}
+.turn.stale .host{--host:var(--h-macbook);opacity:.65}
+.sst{font-weight:700;font-size:11.5px}
+.sst.needs_input{color:var(--c-needs)}
+.sst.working{color:var(--c-work)}
+.sst.waiting{color:var(--c-wait)}
+.sst.stale{color:var(--c-stale)}
+.sst.ended{color:var(--ink-faint)}
+.model{font-family:var(--mono);font-size:11px;color:var(--ink-soft);background:var(--column);padding:1px 6px;border-radius:4px}
+.el{color:var(--ink-soft)}
+.el b{color:var(--ink);font-weight:600}
+.now{margin:5px 0 0;font-size:13.5px;line-height:1.4;color:var(--ink);display:flex;gap:8px;align-items:baseline}
+.now .k{flex:0 0 auto;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--ink-faint);text-transform:uppercase;margin-top:2px}
+.turn.ended .now,.turn.stale .now{color:var(--ink-soft)}
+.turn.hot .now{font-weight:500}
+.foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:7px;font-size:11.5px;color:var(--ink-faint)}
+.foot .age{white-space:nowrap}
+.foot .nm{font-family:var(--mono);font-size:11px;white-space:nowrap}
+.foot .br{font-family:var(--mono);font-size:11px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;max-width:220px;white-space:nowrap}
+.acts{display:flex;gap:6px;margin-left:auto;align-items:center}
+.btn{min-height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);font-weight:600;
+  font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--ink);white-space:nowrap;line-height:1}
+.btn:hover{border-color:var(--ink-faint)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn.hot{background:var(--c-needs);border-color:var(--c-needs);color:#fff}
+.btn.answer{background:var(--c-wait);border-color:var(--c-wait);color:#fff}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:disabled:hover{border-color:var(--line)}
+.tier{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;
+  background:var(--column);color:var(--ink-soft)}
+.tier.attach{background:#eaf7ef;color:var(--ok)}
+.tier.resume{background:var(--c-wait-bg);color:#b47a12}
+.tier.revive{background:var(--c-needs-bg);color:var(--c-needs)}
+.hint{font-size:11.5px;color:var(--c-wait);font-weight:600}
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--brand-soft);border-top-color:var(--brand);animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* parked question */
+.q{margin:6px 0 0;background:var(--c-wait-bg);border-left:3px solid var(--c-wait);padding:8px 10px;border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.42}
+.q .k{display:block;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;color:#b47a12;text-transform:uppercase;margin-bottom:3px}
+.ans{margin-top:8px;display:grid;gap:8px}
+.ans textarea{width:100%;min-height:72px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;font-size:13.5px;
+  resize:vertical;background:var(--card);color:var(--ink)}
+.ans textarea:focus{border-color:var(--brand);outline:none;box-shadow:0 0 0 3px var(--brand-soft)}
+.ans-row{display:flex;gap:6px;justify-content:flex-end}
+.answered{margin-top:6px;font-size:13px;color:var(--ink-soft);background:var(--column);padding:8px 10px;border-radius:8px}
+.answered b{color:var(--ok)}
+
+/* empty turn (no session) */
+.turn.empty .box{border:1px dashed var(--line);border-radius:10px;padding:9px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:var(--ws)}
+.turn.empty .box .t{color:var(--ink-faint);font-size:13px;flex:1 1 auto}
+.turn.dispatching .box{border-style:solid;border-color:var(--brand-soft);background:var(--brand-soft)}
+.turn.dispatching .box .t{color:var(--brand-dark);font-weight:600;display:inline-flex;align-items:center;gap:8px}
+
+/* orphan thread */
+.thread.orphans .t-head h4{color:var(--ink-soft)}
+.thread.orphans .sub{font-size:12.5px;color:var(--ink-faint);margin:4px 0 0}
+.thread.orphans .turns{border-top-style:dashed}
+
+/* ── dialogs ─────────────────────────────────────────── */
+dialog{border:0;padding:0;background:var(--card);color:var(--ink);box-shadow:0 24px 64px rgba(42,46,67,.28);
+  width:min(440px,100vw);max-width:100vw;height:100dvh;max-height:100dvh;margin:0 0 0 auto;border-radius:0}
+dialog::backdrop{background:rgba(42,46,67,.35);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.dlg-h{display:flex;align-items:flex-start;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card)}
+.dlg-h h5{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em;flex:1}
+.dlg-h .eyebrow{display:block;margin-bottom:4px}
+.x{flex:0 0 auto;width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:18px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.dlg-b{padding:14px 18px 24px;overflow:auto;max-height:calc(100dvh - 70px)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13px;margin:0}
+.kv dt{color:var(--ink-faint);font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding-top:3px}
+.kv dd{margin:0}
+.sum{margin:12px 0 16px;display:grid;gap:10px}
+.sum .row{padding:10px 12px;border-radius:10px;background:var(--column)}
+.sum .row.now{background:var(--brand-soft);color:var(--ink);display:block;font-size:14px;margin:0}
+.sum .row .k{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--ink-faint);margin-bottom:3px}
+.sum .row.now .k{color:var(--brand-dark)}
+.term{margin-top:14px;background:#1e2130;color:#c9cee0;border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.55;white-space:pre-wrap;overflow:hidden}
+.term .p{color:#8e95ad}
+.term .g{color:#7ee0c4}
+.dlg-acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pick{list-style:none;margin:0;padding:0}
+.pick .grp{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin:14px 0 6px}
+.pick .grp:first-child{margin-top:0}
+.pick button{width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 12px;margin:0 0 6px;
+  cursor:pointer;display:flex;gap:10px;align-items:center;min-height:44px;font-size:13.5px}
+.pick button:hover{border-color:var(--brand);background:var(--brand-soft)}
+.pick button .id{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-left:auto;flex:0 0 auto}
+.note{font-size:12.5px;color:var(--ink-soft);margin:0 0 10px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(42,46,67,.3);
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:50;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── phone ───────────────────────────────────────────── */
+@media (max-width:430px){
+  .hdr-in{padding:8px 14px 4px}
+  .space-name{font-size:18px}
+  .seg{margin-left:0;width:100%;display:flex}
+  .seg button{flex:1;min-height:44px}
+  .rail{margin:0 -14px;padding-left:14px;padding-right:14px}
+  main{padding:4px 14px 100px}
+  .t-head{padding:12px 12px 10px}
+  .turns{padding:4px 12px 12px}
+  .btn{min-height:44px;padding:0 14px;font-size:13px}
+  .t-title .id{min-height:44px;padding:0 8px;margin:-10px -8px 0 0}
+  .x{width:44px;height:44px}
+  .acts{width:100%;margin-left:0;margin-top:2px}
+  .acts .btn{flex:1 1 auto;justify-content:center}
+  .foot .br{max-width:100%}
+  dialog{width:100vw;height:auto;max-height:88dvh;margin:auto 0 0;border-radius:16px 16px 0 0}
+  .dlg-b{max-height:calc(88dvh - 70px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .turn.live .node::after,.turn.dispatching .node::after{animation:none;opacity:.35;transform:scale(1.4)}
+  .spin{animation:none}
+  .toast{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="hdr-top">
+      <div>
+        <span class="eyebrow">FleetBoard · Space</span>
+        <h1 class="space-name" id="spaceName"></h1>
+      </div>
+      <div class="seg" role="tablist" aria-label="Space" id="picker"></div>
+    </div>
+    <div class="rail" id="rail" aria-label="Space counts and host liveness"></div>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const SPACE = {
+  "schema": "fleet-space/1",
+  "builtAt": "2026-09-03T09:10:00-07:00",
+  "self": "mactop",
+  "hosts": {
+    "mactop":  { "liveness": "fresh", "publishAgeSec": 6 },
+    "mini":    { "liveness": "fresh", "publishAgeSec": 9 },
+    "macbook": { "liveness": "stale", "publishAgeSec": 5400, "note": "laptop asleep — last publish 1h 30m ago" }
+  },
+  "spaces": [
+    {
+      "id": "sp-ws", "key": "W.s", "name": "Winn.solutions",
+      "folders": [
+        {
+          "id": "fo-fleetboard", "name": "fleetboard",
+          "lists": [
+            {
+              "id": "li-fleetboard", "name": "fleetboard",
+              "tasks": [
+                { "id": "86eyq1a2b3", "name": "Space view: design shotgun (12 breadth + depth iterations)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1a2b3" },
+                { "id": "86eyq1c4d5", "name": "Launch rail: spawn a session on a chosen host (mactop default)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1c4d5" },
+                { "id": "86eyq1e6f7", "name": "Collector: publish clickupTasks + tmux fields on session rows", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-06", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1e6f7" },
+                { "id": "86eyq1g8h9", "name": "Spawn-host tag at the top of the session bar", "status": "to do", "agent_state": "ready-for-agent", "due": null, "doneWhen": false, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1g8h9" },
+                { "id": "86eyq1j0k1", "name": "Hibernation lane: waiting / ready / past-due cards + one-tap resume", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-12", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq1j0k1" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-ops-tracker", "name": "ops-tracker",
+          "lists": [
+            {
+              "id": "li-ops-tracker", "name": "ops-tracker",
+              "tasks": [
+                { "id": "86eyq2a2b3", "name": "dispatch.mjs: pick up ready-for-agent items via the launch rail", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-08", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2a2b3" },
+                { "id": "86eyq2c4d5", "name": "Stagger the four pollers so they stop 429-ing each other", "status": "proposed-done", "agent_state": "in-progress", "due": "2026-09-03", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2c4d5" },
+                { "id": "86eyq2e6f7", "name": "Retire the mini-only biz-agent-dispatch (archive + unload)", "status": "to do", "agent_state": "needs-info", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2e6f7", "question": "The mini copy has 3 edits not in the repo (rate-limit backoff, Slack reply, DISPATCH_MAX). Archive as-is, or port the backoff into dispatch.mjs first?" },
+                { "id": "86eyq2g8h9", "name": "followup-dispatch: crashes on missing openclaw binary (launchd PATH)", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-08", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq2g8h9" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-internal", "name": "Internal",
+          "lists": [
+            {
+              "id": "li-action-items", "name": "Team Action Items",
+              "tasks": [
+                { "id": "86eyq3a2b3", "name": "Rotate the proxy OAuth token before it expires on the 9th", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-09", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3a2b3" },
+                { "id": "86eyq3c4d5", "name": "Verify the Browser Live panel renders crisp at 2x", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-01", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq3c4d5" },
+                { "id": "86eyq3e6f7", "name": "Quarterly backup restore drill on the mini", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-10", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3e6f7" }
+              ]
+            },
+            {
+              "id": "li-recruiting", "name": "Recruiting",
+              "tasks": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-gm", "key": "GM", "name": "Growing Mindfully",
+      "folders": [
+        {
+          "id": "fo-gm-ops", "name": "Operations",
+          "lists": [
+            {
+              "id": "li-gm-sage", "name": "gm-sage",
+              "tasks": [
+                { "id": "86eyq4a2b3", "name": "Triage the inbound admin@ mailbox backlog (classify + file)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4a2b3" },
+                { "id": "86eyq4c4d5", "name": "Reconcile the September roster export against the portal", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-07", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4c4d5" }
+              ]
+            },
+            {
+              "id": "li-gm-insurance", "name": "insurance",
+              "tasks": [
+                { "id": "86eyq4e6f7", "name": "Confirm the new carrier's first invoice has arrived before cancelling the incumbent", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq4e6f7" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-gm-web", "name": "Website",
+          "lists": [
+            {
+              "id": "li-gm-website", "name": "growingmindfully.org",
+              "tasks": [
+                { "id": "86eyq5a2b3", "name": "Waitlist widget: fix the Safari date picker", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-11", "doneWhen": true, "priority": 3, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq5a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-personal", "key": "Personal", "name": "Personal",
+      "folders": [
+        {
+          "id": "fo-house", "name": "House Ops",
+          "lists": [
+            {
+              "id": "li-house", "name": "House Ops",
+              "tasks": [
+                { "id": "86eyq6a2b3", "name": "Pool heater: schedule the warranty visit", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-15", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq6a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "5c1e0f2a-1b3d-4e5f-8a6b-7c8d9e0f1a2b", "name": "fb-3fa9c1e2b7d4", "project": "fleetboard", "branch": "space-view-shotgun", "host": "mactop", "model": "fable", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq1a2b3"],
+      "summary": { "now": "Rendering concept 07 (cockpit) at 390px and fixing a header overflow", "next": "QA all 12 at both widths, build index.html, publish scrubbed copy", "goal": "12 phone-reviewable Space-view mockups on the unlisted mirror" },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 12m", "idle": "0m", "msgs": 63, "cost": 9.8, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 1
+    },
+    {
+      "session_id": "9d2f1a3b-2c4e-4f60-9b7c-8d9e0f1a2b3c", "name": "fb-8b1d44e0a2c9", "project": "fleetboard", "branch": "launch-rail-host-picker", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq1c4d5"],
+      "summary": { "now": "Waiting: should the default host tag read 'mactop' or the hostname 'MacTop-Pro'?", "next": "Wire the picker to the spawn call once the label is settled", "goal": "Spawn a session on a chosen host with the host shown as a tag on the session bar" },
+      "contextPct": 58, "tokens": 2100000, "elapsedActive": "2h 05m", "idle": "14m", "msgs": 88, "cost": 16.2, "resumeTier": "attach", "lastActivity": "14m ago", "summaryAgeMin": 14
+    },
+    {
+      "session_id": "a1b2c3d4-3d5f-4a71-8c8d-9e0f1a2b3c4d", "name": "fb-0c7e91b3d5f2", "project": "ops-tracker", "branch": "cu-86eyq2c4d5-poller-stagger", "host": "mini", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq2c4d5"],
+      "summary": { "now": "Ended: proposed done — five plists staggered, 429 count 41 → 2 over 30 min", "next": "Jarred confirms; nothing else pending", "goal": "Pollers stop rate-limiting each other" },
+      "contextPct": 22, "tokens": 640000, "elapsedActive": "38m", "idle": "3h 10m", "msgs": 29, "cost": 4.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 190
+    },
+    {
+      "session_id": "b2c3d4e5-4e60-4b82-9d9e-0f1a2b3c4d5e", "name": "fb-6e2a80c4f1b7", "project": "ops-tracker", "branch": "cu-86eyq2e6f7-retire-biz-dispatch", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq2e6f7"],
+      "summary": { "now": "Parked with a question: archive the mini copy as-is, or port its backoff first?", "next": "Resume on Jarred's answer", "goal": "biz-agent-dispatch archived into the repo and unloaded on the mini" },
+      "contextPct": 33, "tokens": 900000, "elapsedActive": "52m", "idle": "47m", "msgs": 40, "cost": 6.9, "resumeTier": "attach", "lastActivity": "47m ago", "summaryAgeMin": 47
+    },
+    {
+      "session_id": "c3d4e5f6-5f71-4c93-8eaf-1a2b3c4d5e6f", "name": "fb-b93f2d1e7a08", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill", "host": "mini", "model": "sonnet", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Restoring the 2026-08-30 snapshot into a scratch volume and checksumming", "next": "Compare 200 sampled files, write the drill record", "goal": "Restore drill passes with a written record" },
+      "contextPct": 27, "tokens": 780000, "elapsedActive": "24m", "idle": "0m", "msgs": 18, "cost": 3.2, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 2
+    },
+    {
+      "session_id": "d4e5f6a7-6082-4da4-9fb0-2b3c4d5e6f70", "name": "fb-2d8c5e0a9b41", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill-r1", "host": "mactop", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Ended: context maxed while indexing the snapshot listing", "next": "Revive into a fresh session (done — see the mini session)", "goal": "Restore drill passes with a written record" },
+      "contextPct": 97, "tokens": 4800000, "elapsedActive": "1h 50m", "idle": "26m", "msgs": 120, "cost": 31.0, "resumeTier": "revive", "lastActivity": "26m ago", "summaryAgeMin": 26
+    },
+    {
+      "session_id": "e5f6a7b8-7193-4eb5-80c1-3c4d5e6f7081", "name": "fb-f41a7c3e2d96", "project": "gm-sage", "branch": "cu-86eyq4a2b3-mailbox-triage", "host": "mini", "model": "fable", "status": "waiting", "source": "rail",
+      "clickupTasks": ["86eyq4a2b3"],
+      "summary": { "now": "Idle after filing 212 messages; 14 routed for review", "next": "Second pass on the 14 once the routing rules are confirmed", "goal": "Mailbox backlog classified and filed, review items surfaced" },
+      "contextPct": 49, "tokens": 1600000, "elapsedActive": "1h 30m", "idle": "22m", "msgs": 71, "cost": 12.4, "resumeTier": "attach", "lastActivity": "22m ago", "summaryAgeMin": 22
+    },
+    {
+      "session_id": "f6a7b8c9-82a4-4fc6-91d2-4d5e6f708192", "name": "omnara:collector-brand/velvet-anchor", "project": "collector-brand", "branch": "velvet-anchor", "host": "mactop", "model": "fable", "status": "working", "source": "omnara",
+      "clickupTasks": [],
+      "summary": { "now": "Refactoring the brand token export into a single script", "next": "Run the export against the three sample decks", "goal": "One-command brand token export" },
+      "contextPct": 36, "tokens": 1100000, "elapsedActive": "48m", "idle": "0m", "msgs": 35, "cost": 7.7, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 3
+    },
+    {
+      "session_id": "07b8c9d0-93b5-4ad7-a2e3-5e6f70819203", "name": "fb-c6d13a8e4f57", "project": "miscellaneous", "branch": "scratch-notes", "host": "macbook", "model": "sonnet", "status": "stale", "source": "rail",
+      "clickupTasks": [],
+      "summary": { "now": "Stale: last activity 3h ago (laptop asleep)", "next": "—", "goal": "Scratch exploration; no task linked" },
+      "contextPct": 12, "tokens": 210000, "elapsedActive": "15m", "idle": "3h 04m", "msgs": 9, "cost": 1.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 184
+    }
+  ]
+};
+
+/* ── mock client state (never mutates SPACE) ───────────────── */
+const state = {
+  spaceId: 'sp-ws',
+  dispatching: new Set(),   // task ids
+  resuming: new Set(),      // session ids
+  answering: new Set(),     // task ids with the answer box open
+  answered: new Map(),      // task id -> answer text
+  links: new Map(),         // session id -> task id (mock link)
+};
+
+const TODAY = new Date(SPACE.builtAt); TODAY.setHours(0,0,0,0);
+const LIVE = new Set(['needs_input','working','waiting']);
+const STATUS_RANK = { ended:0, stale:1, waiting:2, working:3, needs_input:4 };
+const STATUS_LABEL = { needs_input:'needs input', working:'working', waiting:'waiting', stale:'stale', ended:'ended' };
+const AGENT_LABEL = { 'needs-triage':'needs triage', 'ready-for-human':'ready for human', 'ready-for-agent':'ready for agent',
+  'in-progress':'in progress', 'needs-info':'needs info', 'out-of-scope':'out of scope' };
+const TIER_HINT = { attach:'attach · live tmux, nothing lost', resume:'resume · rehydrates from summary; not a full restore', revive:'revive · fresh session seeded from a distilled brief' };
+const DISPATCHABLE = new Set(['ready-for-agent','needs-triage','ready-for-human']);
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const taskIndex = new Map();
+for (const sp of SPACE.spaces) for (const fo of sp.folders) for (const li of fo.lists) for (const t of li.tasks)
+  taskIndex.set(t.id, { task:t, space:sp, folder:fo, list:li });
+
+const effectiveTasks = s => state.links.has(s.session_id) ? [...s.clickupTasks, state.links.get(s.session_id)] : s.clickupTasks;
+const sessionsFor = id => SPACE.sessions.filter(s => effectiveTasks(s).includes(id)).sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]);
+const unlinked = () => SPACE.sessions.filter(s => effectiveTasks(s).length === 0).sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]);
+const isParked = t => t.agent_state === 'needs-info';
+const needsYou = t => isParked(t) || sessionsFor(t.id).some(s => s.status === 'needs_input');
+const inProg = t => t.status === 'in progress' || sessionsFor(t.id).some(s => s.status === 'working' || s.status === 'waiting');
+const rank = t => needsYou(t) ? 0 : inProg(t) ? 1 : 2;
+
+function fmtAge(sec){ if (sec < 60) return sec + 's'; const m = Math.round(sec/60); if (m < 60) return m + 'm'; return Math.floor(m/60) + 'h ' + String(m%60).padStart(2,'0') + 'm'; }
+function fmtMin(min){ if (min < 60) return min + 'm'; return Math.floor(min/60) + 'h ' + String(min%60).padStart(2,'0') + 'm'; }
+function fmtTokens(n){ return n >= 1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M' : Math.round(n/1e3) + 'k'; }
+function dueInfo(due){
+  if (!due) return { cls:'', text:'no due date' };
+  const d = new Date(due + 'T00:00:00'); const days = Math.round((d - TODAY) / 864e5);
+  const short = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  if (days < 0) return { cls:'over', text:'overdue ' + (-days) + 'd · ' + short };
+  if (days === 0) return { cls:'today', text:'due today' };
+  if (days === 1) return { cls:'', text:'due tomorrow' };
+  return { cls:'', text:'due ' + short };
+}
+const statusChip = st => st === 'in progress' ? '<span class="chip st-inprog"><i class="d"></i>in progress</span>'
+  : st === 'proposed-done' ? '<span class="chip st-prop"><i class="d"></i>proposed done · confirm?</span>'
+  : '<span class="chip st-todo"><i class="d"></i>to do</span>';
+
+/* ── header ─────────────────────────────────────────────────── */
+function renderHeader(sp){
+  const tasks = sp.folders.flatMap(f => f.lists.flatMap(l => l.tasks));
+  const ids = new Set(tasks.map(t => t.id));
+  const live = SPACE.sessions.filter(s => LIVE.has(s.status) && effectiveTasks(s).some(id => ids.has(id))).length;
+  const n = { open: tasks.length, needs: tasks.filter(needsYou).length, live, parked: tasks.filter(isParked).length, prop: tasks.filter(t => t.status === 'proposed-done').length };
+  document.getElementById('spaceName').innerHTML = esc(sp.name) + '<small>' + tasks.length + (tasks.length === 1 ? ' thread' : ' threads') + '</small>';
+  document.getElementById('picker').innerHTML = SPACE.spaces.map(s =>
+    `<button role="tab" aria-pressed="${s.id === sp.id}" data-action="space" data-id="${s.id}">${esc(s.key)}</button>`).join('');
+  const hosts = Object.entries(SPACE.hosts).map(([h, v]) => {
+    const note = v.note ? esc(v.note) : (v.liveness === 'fresh' ? 'published ' + fmtAge(v.publishAgeSec) + ' ago' : v.liveness);
+    return `<button type="button" class="hostchip ${v.liveness}" style="--h:var(--h-${h})" title="${note}" data-action="host" data-note="${note}" data-host="${h}">
+      <i class="dot"></i><b>${h}</b><span class="age num">${v.liveness === 'fresh' ? fmtAge(v.publishAgeSec) : 'stale · ' + fmtAge(v.publishAgeSec)}</span></button>`;
+  }).join('');
+  document.getElementById('rail').innerHTML =
+    `<span class="stat"><b class="num">${n.open}</b>open</span>
+     <span class="stat hot"><b class="num">${n.needs}</b>needs you</span>
+     <span class="stat live"><b class="num">${n.live}</b>live</span>
+     <span class="stat park"><b class="num">${n.parked}</b>parked</span>
+     <span class="stat prop"><b class="num">${n.prop}</b>proposed done</span>
+     <span class="sep" aria-hidden="true"></span>${hosts}`;
+}
+
+/* ── turns ───────────────────────────────────────────────────── */
+function metaLine(s){
+  return `<div class="meta">
+    <span class="host" title="spawn host: ${s.host}"><i class="d"></i>${s.host}</span>
+    <span class="sst ${s.status}">${STATUS_LABEL[s.status]}</span>
+    <span class="model">${esc(s.model)}</span>
+    <span class="el num"><b>${esc(s.elapsedActive)}</b> active${s.idle !== '0m' ? ' · idle ' + esc(s.idle) : ''}</span>
+  </div>`;
+}
+function footLine(s, actions){
+  return `<div class="foot">
+    <span class="age">summary ${fmtMin(s.summaryAgeMin)} old</span>
+    <span class="nm" title="${esc(s.session_id)}">${esc(s.name)}</span>
+    <span class="br" title="${esc(s.project)} · ${esc(s.branch)}">${esc(s.branch)}</span>
+    <span class="acts">${actions}</span>
+  </div>`;
+}
+function turnHTML(s, task){
+  const parked = task && isParked(task) && s.status === 'needs_input';
+  const cls = ['turn', s.status === 'ended' ? 'ended' : s.status === 'stale' ? 'stale' : 'live', s.status === 'needs_input' ? 'hot' : '', parked ? 'parked' : ''].join(' ');
+  let actions, body = '';
+  const sid = esc(s.session_id);
+  if (s.status === 'ended') {
+    const busy = state.resuming.has(s.session_id);
+    actions = `<button class="btn" data-action="resume" data-sid="${sid}" ${busy ? 'disabled' : ''} title="${TIER_HINT[s.resumeTier]}">${busy ? '<i class="spin"></i>resuming' : 'Resume'} <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>`;
+  } else if (s.status === 'stale') {
+    const busy = state.resuming.has(s.session_id);
+    actions = `<button class="btn ghost" data-action="open" data-sid="${sid}">Open</button>
+      <button class="btn" data-action="resume" data-sid="${sid}" ${busy ? 'disabled' : ''} title="${TIER_HINT[s.resumeTier]}">${busy ? '<i class="spin"></i>resuming' : 'Resume'} <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>`;
+  } else if (parked) {
+    actions = `<button class="btn ghost" data-action="open" data-sid="${sid}">Open</button>`;
+  } else {
+    actions = `<button class="btn ${s.status === 'needs_input' ? 'hot' : 'primary'}" data-action="open" data-sid="${sid}">${s.status === 'needs_input' ? 'Reply' : 'Open'}</button>`;
+  }
+  if (parked) {
+    const tid = esc(task.id);
+    if (state.answered.has(task.id)) {
+      body = `<div class="q"><span class="k">Question</span>${esc(task.question)}</div>
+        <div class="answered"><b>Answered</b> · resuming on ${s.host} — “${esc(state.answered.get(task.id))}”</div>`;
+    } else if (state.answering.has(task.id)) {
+      body = `<div class="q"><span class="k">Question</span>${esc(task.question)}</div>
+        <form class="ans" data-action="send-answer" data-tid="${tid}">
+          <textarea name="a" placeholder="Your answer — the session resumes with it" aria-label="Answer" required></textarea>
+          <div class="ans-row"><button type="button" class="btn ghost" data-action="cancel-answer" data-tid="${tid}">Cancel</button><button type="submit" class="btn answer">Send answer</button></div>
+        </form>`;
+    } else {
+      body = `<div class="q"><span class="k">Question</span>${esc(task.question)}</div>`;
+      actions = `<button class="btn answer" data-action="answer" data-tid="${tid}">Answer</button>` + actions;
+    }
+  } else {
+    body = `<p class="now"><span class="k">Now</span><span>${esc(s.summary.now)}</span></p>`;
+  }
+  return `<li class="${cls}" style="--host:var(--h-${s.host})"><i class="node" aria-hidden="true"></i>${metaLine(s)}${body}${footLine(s, actions)}</li>`;
+}
+function emptyTurn(task){
+  if (state.dispatching.has(task.id))
+    return `<li class="turn empty dispatching"><i class="node" aria-hidden="true"></i><div class="box"><span class="t"><i class="spin"></i>dispatching… spawning on mactop</span></div></li>`;
+  const ok = task.doneWhen && DISPATCHABLE.has(task.agent_state);
+  const why = !task.doneWhen ? 'needs DONE-WHEN' : 'not dispatchable in state “' + AGENT_LABEL[task.agent_state] + '”';
+  return `<li class="turn empty"><i class="node" aria-hidden="true"></i><div class="box">
+    <span class="t">No session yet</span>
+    ${ok ? '' : `<span class="hint">${why}</span>`}
+    <button class="btn primary" data-action="dispatch" data-tid="${esc(task.id)}" ${ok ? '' : 'disabled'} title="${ok ? 'Spawn a session on mactop for this task' : why}">Dispatch</button>
+  </div></li>`;
+}
+function orphanTurn(s){
+  const busy = state.resuming.has(s.session_id);
+  const cls = ['turn', s.status === 'ended' ? 'ended' : s.status === 'stale' ? 'stale' : 'live', s.status === 'needs_input' ? 'hot' : ''].join(' ');
+  const sid = esc(s.session_id);
+  const primary = s.status === 'ended' || s.status === 'stale'
+    ? `<button class="btn" data-action="resume" data-sid="${sid}" ${busy ? 'disabled' : ''} title="${TIER_HINT[s.resumeTier]}">${busy ? '<i class="spin"></i>resuming' : 'Resume'} <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>`
+    : `<button class="btn ghost" data-action="open" data-sid="${sid}">Open</button>`;
+  const actions = `<button class="btn primary" data-action="link" data-sid="${sid}">Link task</button>${primary}`;
+  return `<li class="${cls}" style="--host:var(--h-${s.host})"><i class="node" aria-hidden="true"></i>${metaLine(s)}
+    <p class="now"><span class="k">Now</span><span>${esc(s.summary.now)}</span></p>${footLine(s, actions)}</li>`;
+}
+
+/* ── thread card ────────────────────────────────────────────── */
+function threadHTML(task){
+  const sessions = sessionsFor(task.id);
+  const d = dueInfo(task.due);
+  const ny = needsYou(task);
+  return `<article class="thread ${ny ? 'needs-you' : ''}" data-tid="${esc(task.id)}">
+    <div class="t-head">
+      <div class="t-title">
+        <span class="pri p${task.priority}" title="${task.priority === 1 ? 'priority 1 · drop everything' : task.priority === 2 ? 'priority 2 · normal' : 'priority 3 · whenever'}">${task.priority === 1 ? '!!' : task.priority === 2 ? '·' : '~'}</span>
+        <h4>${esc(task.name)}</h4>
+        <a class="id" href="${esc(task.url)}" target="_blank" rel="noopener noreferrer" title="Open in ClickUp">${esc(task.id)}<span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="chips">
+        ${statusChip(task.status)}
+        <span class="chip ag-${task.agent_state}">${AGENT_LABEL[task.agent_state]}</span>
+        <span class="chip due ${d.cls}">${d.text}</span>
+        <span class="chip dw ${task.doneWhen ? 'ok' : 'miss'}" title="${task.doneWhen ? 'Has a DONE-WHEN contract' : 'No DONE-WHEN contract — cannot dispatch'}">${task.doneWhen ? '✓ DONE-WHEN' : '⚠ no DONE-WHEN'}</span>
+        <span class="who">${esc(task.assignee)}</span>
+      </div>
+    </div>
+    <ol class="turns" aria-label="Sessions on this task">
+      ${sessions.length ? sessions.map(s => turnHTML(s, task)).join('') : emptyTurn(task)}
+    </ol>
+  </article>`;
+}
+function orphanThread(){
+  const list = unlinked();
+  return `<article class="thread orphans">
+    <div class="t-head">
+      <div class="t-title"><span class="pri p3" aria-hidden="true">∅</span><h4>Unlinked sessions <small class="num" style="color:var(--ink-faint);font-weight:600">· ${list.length}</small></h4></div>
+      <p class="sub">Sessions with no task on their row. Fleet-wide, shown in every Space so they are never hidden.</p>
+    </div>
+    <ol class="turns" aria-label="Unlinked sessions">
+      ${list.length ? list.map(orphanTurn).join('') : '<li class="turn empty"><i class="node" aria-hidden="true"></i><div class="box"><span class="t">Every session is linked to a task.</span></div></li>'}
+    </ol>
+  </article>`;
+}
+
+/* ── space ───────────────────────────────────────────────────── */
+function renderSpace(){
+  const sp = SPACE.spaces.find(s => s.id === state.spaceId);
+  renderHeader(sp);
+  let html = '';
+  for (const fo of sp.folders) {
+    const count = fo.lists.reduce((a, l) => a + l.tasks.length, 0);
+    html += `<section class="folder-sec"><div class="folder"><h2>${esc(fo.name)}</h2><span class="ln"></span><span class="k num">${fo.lists.length} ${fo.lists.length === 1 ? 'list' : 'lists'} · ${count} open</span></div>`;
+    for (const li of fo.lists) {
+      const tasks = [...li.tasks].sort((a, b) => rank(a) - rank(b) || a.priority - b.priority || (a.due || '9').localeCompare(b.due || '9'));
+      html += `<div class="list"><h3 class="list-h"><span class="glyph" aria-hidden="true">≡</span>${esc(li.name)}<span class="n num">${tasks.length}</span></h3>`;
+      html += tasks.length
+        ? `<div class="threads">${tasks.map(threadHTML).join('')}</div>`
+        : `<div class="empty-list"><b>No open tasks in ${esc(li.name)}.</b> Nothing to dispatch here — new work in ClickUp shows up as a thread.</div>`;
+      html += `</div>`;
+    }
+    html += `</section>`;
+  }
+  html += `<div class="folder"><h2>Unlinked</h2><span class="ln"></span><span class="k">not in any list</span></div><div class="list">${orphanThread()}</div>`;
+  document.getElementById('main').innerHTML = html;
+}
+
+/* ── dialogs & toast ─────────────────────────────────────────── */
+const dlg = document.getElementById('dlg');
+let toastT;
+function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function openDialog(html){ dlg.innerHTML = html; dlg.showModal(); }
+function sessionDialog(s){
+  const linked = effectiveTasks(s).map(id => taskIndex.get(id)).filter(Boolean);
+  const hs = SPACE.hosts[s.host];
+  openDialog(`
+    <div class="dlg-h"><div style="flex:1"><span class="eyebrow">Session · ${esc(s.source)} · ${esc(s.host)}</span><h5 id="dlgTitle" class="mono">${esc(s.name)}</h5></div>
+      <button class="x" data-action="close" aria-label="Close">×</button></div>
+    <div class="dlg-b">
+      <div class="meta" style="margin-bottom:10px"><span class="host" style="--host:var(--h-${s.host})"><i class="d"></i>${s.host}</span><span class="sst ${s.status}">${STATUS_LABEL[s.status]}</span><span class="model">${esc(s.model)}</span></div>
+      <div class="sum">
+        <div class="row now"><span class="k">Now · summary ${fmtMin(s.summaryAgeMin)} old</span>${esc(s.summary.now)}</div>
+        <div class="row"><span class="k">Next</span>${esc(s.summary.next)}</div>
+        <div class="row"><span class="k">Goal</span>${esc(s.summary.goal)}</div>
+      </div>
+      <dl class="kv">
+        <dt>Task</dt><dd>${linked.length ? linked.map(x => `<a href="${esc(x.task.url)}" target="_blank" rel="noopener noreferrer">${esc(x.task.name)}</a>`).join('<br>') : '<span style="color:var(--ink-faint)">unlinked</span>'}</dd>
+        <dt>Branch</dt><dd class="mono">${esc(s.project)} · ${esc(s.branch)}</dd>
+        <dt>Context</dt><dd class="num">${s.contextPct}% · ${fmtTokens(s.tokens)} tokens · ${s.msgs} msgs · $${s.cost.toFixed(2)}</dd>
+        <dt>Activity</dt><dd class="num">${esc(s.elapsedActive)} active · idle ${esc(s.idle)} · last ${esc(s.lastActivity)}</dd>
+        <dt>Host</dt><dd>${s.host} · ${hs.liveness}${hs.note ? ' — ' + esc(hs.note) : ' · published ' + fmtAge(hs.publishAgeSec) + ' ago'}</dd>
+        <dt>Resume</dt><dd><span class="tier ${s.resumeTier}">${s.resumeTier}</span> <span style="color:var(--ink-soft);font-size:12.5px">${TIER_HINT[s.resumeTier].split(' · ')[1]}</span></dd>
+      </dl>
+      <div class="term" aria-label="Transcript preview (placeholder)"><span class="p">tmux ${esc(s.name)} · tail</span>
+<span class="g">›</span> ${esc(s.summary.now)}
+<span class="p">— transcript preview placeholder · live pane opens in the full app —</span></div>
+      <div class="dlg-acts">
+        ${LIVE.has(s.status) ? `<button class="btn primary" data-action="attach" data-sid="${esc(s.session_id)}">Attach to ${esc(s.host)}</button>` : ''}
+        ${s.status === 'ended' || s.status === 'stale' ? `<button class="btn" data-action="resume" data-sid="${esc(s.session_id)}">Resume <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>` : ''}
+        <button class="btn ghost" data-action="close">Close</button>
+      </div>
+    </div>`);
+}
+function linkDialog(s){
+  let items = '';
+  for (const sp of SPACE.spaces) for (const fo of sp.folders) for (const li of fo.lists) {
+    if (!li.tasks.length) continue;
+    items += `<li class="grp">${esc(sp.key)} › ${esc(fo.name)} › ${esc(li.name)}</li>`;
+    items += li.tasks.map(t => `<li><button data-action="link-pick" data-sid="${esc(s.session_id)}" data-tid="${esc(t.id)}"><span class="pri p${t.priority}" aria-hidden="true">${t.priority === 1 ? '!!' : t.priority === 2 ? '·' : '~'}</span><span>${esc(t.name)}</span><span class="id">${esc(t.id)}</span></button></li>`).join('');
+  }
+  openDialog(`
+    <div class="dlg-h"><div style="flex:1"><span class="eyebrow">Link task</span><h5 id="dlgTitle" class="mono">${esc(s.name)}</h5></div>
+      <button class="x" data-action="close" aria-label="Close">×</button></div>
+    <div class="dlg-b"><p class="note">Pick the ClickUp task this session is working. The id is written to the session row and the turn moves into that thread.</p>
+      <ul class="pick">${items}</ul></div>`);
+}
+
+/* ── events (delegated) ──────────────────────────────────────── */
+const bySid = sid => SPACE.sessions.find(s => s.session_id === sid);
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]'); if (!el) return;
+  const a = el.dataset.action;
+  if (a === 'space') { state.spaceId = el.dataset.id; renderSpace(); window.scrollTo({ top:0 }); return; }
+  if (a === 'host') { toast(el.dataset.host + ': ' + el.dataset.note); return; }
+  if (a === 'dispatch') { state.dispatching.add(el.dataset.tid); renderSpace(); toast('Dispatching on mactop · ' + taskIndex.get(el.dataset.tid).task.name); return; }
+  if (a === 'resume') { const s = bySid(el.dataset.sid); state.resuming.add(s.session_id); if (dlg.open) dlg.close(); renderSpace(); toast('Resuming ' + s.name + ' · tier ' + s.resumeTier + ' — ' + TIER_HINT[s.resumeTier].split(' · ')[1]); return; }
+  if (a === 'attach') { const s = bySid(el.dataset.sid); dlg.close(); toast('Attaching to ' + s.name + ' on ' + s.host); return; }
+  if (a === 'open') { sessionDialog(bySid(el.dataset.sid)); return; }
+  if (a === 'link') { linkDialog(bySid(el.dataset.sid)); return; }
+  if (a === 'link-pick') { const s = bySid(el.dataset.sid); state.links.set(s.session_id, el.dataset.tid); dlg.close(); const hit = taskIndex.get(el.dataset.tid); state.spaceId = hit.space.id; renderSpace(); toast('Linked ' + s.name + ' → ' + hit.task.name); return; }
+  if (a === 'answer') { state.answering.add(el.dataset.tid); renderSpace(); const ta = document.querySelector(`[data-tid="${el.dataset.tid}"] textarea`); if (ta) ta.focus(); return; }
+  if (a === 'cancel-answer') { state.answering.delete(el.dataset.tid); renderSpace(); return; }
+  if (a === 'close') { dlg.close(); return; }
+});
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form[data-action="send-answer"]'); if (!f) return;
+  e.preventDefault();
+  const tid = f.dataset.tid, text = f.a.value.trim(); if (!text) return;
+  state.answered.set(tid, text); state.answering.delete(tid); renderSpace();
+  toast('Answer sent · session resumes');
+});
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+
+renderSpace();
+</script>
+</body>
+</html>

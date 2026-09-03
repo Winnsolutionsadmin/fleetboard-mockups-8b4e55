@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetBoard — Space view · design iterations</title>
+<style>
+  :root{--brand:#7b68ee;--brand-dark:#5f4dd0;--brand-soft:#efecfd;--ink:#2a2e43;--ink-soft:#6b7186;--ink-faint:#9aa1b5;--line:#e6e9f2;--ws:#fafbfc;--card:#fff;--shadow:0 1px 3px rgba(42,46,67,.08),0 1px 2px rgba(42,46,67,.05);--shadow-hover:0 4px 14px rgba(42,46,67,.13)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--ws);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:14px}
+  header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  header h1{font-size:16px;font-weight:700}
+  header p{color:var(--ink-soft);font-size:13px;flex-basis:100%}
+  .tabs{display:flex;gap:6px;margin-left:auto}
+  .tabs button{min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:#fff;font:inherit;font-weight:600;color:var(--ink-soft);cursor:pointer}
+  .tabs button.active{background:var(--brand-soft);color:var(--brand-dark);border-color:var(--brand)}
+  main{padding:16px;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .card:hover{box-shadow:var(--shadow-hover)}
+  .thumb{position:relative;height:210px;background:#f3f4f7;overflow:hidden;border-bottom:1px solid var(--line)}
+  .thumb iframe{position:absolute;top:0;left:0;width:390px;height:844px;border:0;transform:scale(.5);transform-origin:0 0;pointer-events:none;background:#fff}
+  .thumb iframe.wide{width:1280px;height:800px;transform:scale(.234)}
+  .thumb .tag{position:absolute;right:8px;top:8px;background:rgba(42,46,67,.75);color:#fff;font-size:11px;padding:2px 7px;border-radius:999px}
+  .body{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .nn{font-size:11px;font-weight:700;color:var(--brand-dark);letter-spacing:.06em}
+  .name{font-size:15px;font-weight:700}
+  .desc{color:var(--ink-soft);font-size:13px;line-height:1.4;flex:1}
+  .actions{display:flex;gap:8px;margin-top:6px}
+  .actions a{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:600;text-decoration:none;font-size:13px}
+  .open{background:var(--brand);color:#fff}
+  .open:hover{background:var(--brand-dark)}
+  .alt{border:1px solid var(--line);color:var(--ink)}
+  .empty{grid-column:1/-1;color:var(--ink-faint);text-align:center;padding:40px 0}
+  @media (max-width:430px){
+    main{grid-template-columns:1fr;padding:12px}.thumb{height:190px}
+    .tabs{margin-left:0;flex-basis:100%;flex-wrap:wrap}
+    .tabs button{flex:1 1 45%;min-height:44px;font-size:12.5px;padding:0 8px;white-space:nowrap}
+    header h1{font-size:15px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>FleetBoard · Space view — design iterations</h1>
+  <div class="tabs" role="tablist">
+    <button class="active" data-round="1" role="tab">Round 1 · 12 concepts</button>
+    <button data-round="2" role="tab">Round 2 · refinements</button>
+    <button data-view="phone" class="active" title="Thumbnail viewport">Phone</button>
+    <button data-view="wide" title="Thumbnail viewport">Desktop</button>
+  </div>
+  <p>Tap <b>Open</b> to view a concept full-screen on this phone. Every concept renders the same synthetic data: three Spaces, the four task↔session join states, three hosts. Pick one; round 2 iterates on it.</p>
+</header>
+<main id="grid"></main>
+<script>
+const R1 = [
+  ["01","master-detail","Spaces + Folders rail on the left, tasks on the right, sessions inline under each task."],
+  ["02","task-kanban","Columns by task state; session chips live inside the task cards."],
+  ["03","list-swimlanes","One swimlane per List; task rows with session avatars docked right."],
+  ["04","session-first","Session cards are primary, grouped under task headers; no-session tasks collapse to a Dispatch row."],
+  ["05","tree-table","Linear-style expandable tree table: Space ▸ Folder ▸ List ▸ task ▸ sessions."],
+  ["06","timeline","Tasks as rows, sessions as time bars (spawn → now); host-colored, live bars pulse."],
+  ["07","cockpit","Big health strip up top, dense task grid below, needs-you pinned first."],
+  ["08","host-matrix","Rows = tasks, columns = hosts; a cell is that task's session on that host, or Dispatch-here."],
+  ["09","mobile-stack","Phone-native single-column stack with swipe-reveal actions and a bottom tab bar."],
+  ["10","focus","Only what needs you above the fold; everything else collapsed behind counts."],
+  ["11","clickup-mirror","Looks like ClickUp's list view, plus Sessions and Action columns."],
+  ["12","threads","Each task is a thread; its sessions are turns on a vertical timeline."]
+];
+const R2 = []; // filled after the pick: ["2a","<pick>-density","…"], …
+let round = 1, view = "phone";
+function render(){
+  const list = round === 1 ? R1 : R2;
+  const grid = document.getElementById("grid");
+  grid.innerHTML = list.length ? "" : '<div class="empty">Round 2 appears here once a concept is picked.</div>';
+  for (const [nn, slug, desc] of list){
+    const file = `${nn}-${slug}.html`;
+    const el = document.createElement("article");
+    el.className = "card";
+    el.innerHTML = `
+      <div class="thumb"><iframe loading="lazy" class="${view==='wide'?'wide':''}" src="${file}" title="${slug}"></iframe><span class="tag">${view==='wide'?'1280×800':'390×844'}</span></div>
+      <div class="body">
+        <div class="nn">CONCEPT ${nn}</div>
+        <div class="name">${slug}</div>
+        <div class="desc">${desc}</div>
+        <div class="actions"><a class="open" href="${file}">Open</a><a class="alt" href="${file}" target="_blank" rel="noopener">New tab</a></div>
+      </div>`;
+    grid.appendChild(el);
+  }
+}
+document.querySelectorAll("[data-round]").forEach(b=>b.addEventListener("click",()=>{round=+b.dataset.round;document.querySelectorAll("[data-round]").forEach(x=>x.classList.toggle("active",x===b));render();}));
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.view;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===b));render();}));
+render();
+</script>
+</body>
+</html>

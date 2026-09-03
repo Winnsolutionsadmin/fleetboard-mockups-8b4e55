@@ -1,0 +1,740 @@
+<!-- fleetboard space view · concept 06 timeline · tasks as rows in a Folder › List gutter, sessions as host-colored time bars on a shared last-6h→now axis; live bars pulse at the playhead, ended bars carry a Resume handle, session-less tasks show a dashed Dispatch bar, unlinked sessions sit in a final band · phone-first, light theme, self-contained -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Space · timeline</title>
+<style>
+:root{
+  --brand:#7b68ee; --brand-dark:#5f4dd0; --brand-soft:#efecfd;
+  --ink:#2a2e43; --ink-soft:#6b7186; --ink-faint:#9aa1b5;
+  --line:#e6e9f2; --ws:#fafbfc; --column:#f3f4f7; --card:#fff;
+  --c-needs:#f0555f; --c-needs-bg:#fdeef0;
+  --c-work:#4c9aff;  --c-work-bg:#eef5ff;
+  --c-wait:#f0a92e;  --c-wait-bg:#fdf6ea;
+  --c-stale:#98a1b3; --c-stale-bg:#f3f4f7;
+  --ok:#27ae60; --warn:#f0a92e; --bad:#e5484d;
+  --shadow:0 1px 3px rgba(42,46,67,.08), 0 1px 2px rgba(42,46,67,.05);
+  --h-mactop:#5f4dd0; --h-mini:#0e9994; --h-macbook:#0073ea;
+  --gutter:392px; --now-pad:22px; --track-l:0px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ws);color:var(--ink);font:14px/1.4 var(--font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+.mono{font-family:var(--mono);font-size:.94em;letter-spacing:-.01em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ───────── sticky top: picker · stats · axis ───────── */
+.top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+.brandrow{display:flex;align-items:center;gap:18px;padding:10px 16px 8px}
+.wordmark{font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.wordmark span{color:var(--ink-faint);font-weight:500;margin-left:7px}
+.picker{display:flex;gap:2px;background:var(--column);border-radius:10px;padding:3px}
+.picker button{height:34px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--ink-soft);font-weight:600;cursor:pointer;white-space:nowrap}
+.picker button small{font-weight:500;color:var(--ink-faint);margin-left:6px;font-size:12px}
+.picker button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+.picker button[aria-selected="true"] small{color:var(--ink-soft)}
+.stats{display:flex;align-items:center;gap:8px;padding:0 16px 10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.stats::-webkit-scrollbar{display:none}
+.stat{display:inline-flex;align-items:baseline;gap:5px;flex:none;height:30px;line-height:30px;padding:0 11px;border-radius:999px;background:var(--column);font-size:12.5px;color:var(--ink-soft);white-space:nowrap}
+.stat b{font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat.hot{background:var(--c-needs-bg);color:var(--c-needs)} .stat.hot b{color:var(--c-needs)}
+.stat.zero{opacity:.65}
+.hosts{margin-left:auto;display:flex;gap:6px;flex:none}
+.host{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap}
+.host i{width:9px;height:9px;border-radius:50%;background:var(--hc);box-shadow:0 0 0 2px color-mix(in srgb,var(--hc) 20%,#fff)}
+.host em{font-style:normal;font-weight:500;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.host.stale{border-style:dashed;color:var(--ink-soft)}
+.host.stale i{background:var(--c-stale);box-shadow:0 0 0 2px var(--c-stale-bg)}
+.host.stale em{color:var(--c-stale)}
+.host[aria-expanded="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.hostnote{padding:0 16px 10px;font-size:12.5px;color:var(--ink-soft)}
+.hostnote b{color:var(--ink)}
+
+.axis{display:grid;grid-template-columns:var(--gutter) 1fr;border-top:1px solid var(--line);background:#fff}
+.axis .gcell{padding:0 16px;display:flex;align-items:flex-end;padding-bottom:7px;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint)}
+.axis .track{position:relative;height:34px;padding:0 var(--now-pad) 0 var(--track-l)}
+.ruler{position:relative;height:100%}
+.tick{position:absolute;bottom:0;width:1px;height:7px;background:var(--ink-faint)}
+.tick.minor{height:3px;background:#d4d8e3}
+.tick b{position:absolute;bottom:9px;left:0;transform:translateX(-50%);font:600 10.5px/1 var(--mono);color:var(--ink-faint);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tick.hide b{display:none}
+.playhead{position:absolute;right:0;top:0;bottom:0;width:2px;background:var(--brand)}
+.playhead::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top:7px solid var(--brand);border-bottom:0}
+.nowlbl{position:absolute;right:7px;bottom:9px;font:700 10.5px/1 var(--mono);color:var(--brand-dark);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ───────── board ───────── */
+.board{position:relative;padding-bottom:96px}
+.playline{position:absolute;top:0;bottom:0;right:var(--now-pad);width:2px;background:var(--brand);opacity:.28;pointer-events:none}
+.group{display:grid;grid-template-columns:var(--gutter) 1fr;align-items:center;background:var(--column);border-bottom:1px solid var(--line)}
+.group + .group{border-top:0}
+.group .gcell{padding:9px 16px;display:flex;gap:8px;align-items:baseline;min-width:0;flex-wrap:wrap}
+.folder{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.sep{color:var(--ink-faint)}
+.list{font-weight:600;font-size:13.5px}
+.count{color:var(--ink-faint);font-size:12px;font-variant-numeric:tabular-nums}
+.group .gnote{font-size:12px;color:var(--ink-soft);width:100%}
+.group.unl{background:var(--brand-soft);border-top:2px solid var(--brand);margin-top:26px}
+.group.unl .folder{color:var(--brand-dark)}
+.group .track{height:100%;min-height:36px}
+
+.row{display:grid;grid-template-columns:var(--gutter) 1fr;border-bottom:1px solid var(--line);background:var(--card);position:relative}
+.row:hover{background:#fdfdff}
+.row.needs::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c-needs)}
+.tcell{padding:12px 16px 12px 16px;min-width:0}
+.tname{display:flex;gap:9px;align-items:flex-start}
+.pri{flex:none;width:4px;height:17px;border-radius:2px;margin-top:2px;background:var(--ink-faint);opacity:.35}
+.pri.p1{background:var(--c-needs);opacity:1}
+.pri.p2{background:var(--brand);opacity:1}
+.tname a{font-weight:600;font-size:13.5px;line-height:1.35;text-decoration:none;color:var(--ink);overflow-wrap:anywhere}
+.tname a:hover{color:var(--brand-dark);text-decoration:underline}
+.tname a .ext{color:var(--ink-faint);font-size:11px;margin-left:3px;text-decoration:none;display:inline-block}
+.tmeta{display:flex;flex-wrap:wrap;gap:5px 6px;margin-top:7px;align-items:center;font-size:11.5px;color:var(--ink-soft)}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font-size:11px;font-weight:600;white-space:nowrap;letter-spacing:.01em}
+.st{background:#fff;border:1px solid var(--line);color:var(--ink-soft);font-weight:500}
+.st.prog{border-color:#bcd6ff;color:#1f6fd0}
+.st.prop{border-color:#a9dfbf;color:#1e8a4c;background:#f2fbf5}
+.as-needs-triage{background:var(--c-wait-bg);color:#a86a0c}
+.as-ready-for-human{background:var(--brand-soft);color:var(--brand-dark)}
+.as-ready-for-agent{background:var(--c-work-bg);color:#1f6fd0}
+.as-in-progress{background:#e8f7ee;color:#1e8a4c}
+.as-needs-info{background:var(--c-needs-bg);color:var(--c-needs)}
+.as-out-of-scope{background:var(--c-stale-bg);color:var(--c-stale);text-decoration:line-through}
+.due{white-space:nowrap;font-variant-numeric:tabular-nums}
+.due.over{color:var(--bad);font-weight:600}
+.due.today{color:#a86a0c;font-weight:600}
+.dw{white-space:nowrap} .dw.ok{color:var(--ok)} .dw.warn{color:#a86a0c}
+.who{color:var(--ink-faint)}
+.who::before{content:"→ "}
+
+.ask{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--c-needs-bg);border:1px solid #f7c9cd}
+.ask .q{font-size:12.5px;line-height:1.45;color:var(--ink)}
+.ask .q::before{content:"Parked with a question · ";font-weight:700;color:var(--c-needs)}
+.ask .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ask textarea{width:100%;min-height:64px;margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;resize:vertical;background:#fff}
+.ask.sent{background:#f2fbf5;border-color:#a9dfbf}
+.ask.sent .q::before{content:"Answered · ";color:var(--ok)}
+.ask.sent .done{margin-top:6px;font-size:12px;color:#1e8a4c;font-weight:600}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 13px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--brand);color:var(--brand-dark)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-dark);border-color:var(--brand-dark);color:#fff}
+.btn.danger{background:var(--c-needs);border-color:var(--c-needs);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ───────── tracks & bars ───────── */
+.track{position:relative;padding:11px var(--now-pad) 11px var(--track-l);min-width:0}
+.lanes{position:relative}
+.hl{position:absolute;top:-11px;bottom:-11px;width:1px;background:var(--line);pointer-events:none}
+.lane{position:relative;height:50px}
+.lane + .lane{margin-top:2px}
+.bar{position:absolute;top:0;height:28px;min-width:10px;background:none;border:0;padding:0;cursor:pointer;z-index:1;text-align:left}
+.bar .fill{position:absolute;top:6px;height:16px;border-radius:4px;background:var(--host)}
+.bar .fill.solid{left:0}
+.bar .fill.solid.hastail{border-radius:4px 0 0 4px}
+.bar .fill.tail{right:0;background:color-mix(in srgb,var(--host) 16%,#fff);border:1px dashed color-mix(in srgb,var(--host) 50%,#fff);border-left:0;border-radius:0 4px 4px 0}
+.bar.st-ended .fill.solid{background:color-mix(in srgb,var(--host) 52%,#fff)}
+.bar.st-stale .fill.solid{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--host) 40%,#fff) 0 4px,#fff 4px 7px);border:1px solid color-mix(in srgb,var(--host) 40%,#fff)}
+.bar:hover .fill.solid,.bar:focus-visible .fill.solid{filter:brightness(1.08)}
+.mark{position:absolute;top:8px;width:12px;height:12px;border-radius:50%;transform:translateX(-50%);border:2px solid #fff;z-index:2}
+.mark.needs_input{background:var(--c-needs);box-shadow:0 0 0 1.5px var(--c-needs)}
+.mark.waiting{background:var(--c-wait);box-shadow:0 0 0 1.5px var(--c-wait)}
+.head{position:absolute;right:-5px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--host);box-shadow:0 0 0 2px #fff;z-index:2}
+.head::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--host);animation:ping 1.7s cubic-bezier(.2,.7,.3,1) infinite}
+.bar.st-needs_input .head{background:var(--c-needs)} .bar.st-needs_input .head::after{border-color:var(--c-needs)}
+.bar.st-waiting .head{background:var(--c-wait)} .bar.st-waiting .head::after{border-color:var(--c-wait)}
+.bar.live .fill.solid{animation:breathe 2.6s ease-in-out infinite}
+.stalebadge{position:absolute;left:100%;top:6px;margin-left:6px;height:16px;line-height:16px;padding:0 6px;border-radius:4px;background:var(--c-stale-bg);color:var(--c-stale);font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.smeta{position:absolute;top:30px;font-size:11px;line-height:16px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.smeta .mono{color:var(--ink);font-weight:600}
+.sst{font-weight:700;letter-spacing:.02em}
+.sst.needs_input{color:var(--c-needs)} .sst.working{color:#1f6fd0} .sst.waiting{color:#a86a0c} .sst.stale,.sst.ended{color:var(--c-stale)}
+.dash{position:absolute;left:0;right:0;top:6px;height:16px;border-radius:4px;border:1.5px dashed #cfd4e2;background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(42,46,67,.025) 6px 12px)}
+.hbtn{position:absolute;top:0;height:28px;display:flex;align-items:center;background:none;border:0;padding:0;cursor:pointer;z-index:3;white-space:nowrap}
+.hbtn .pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:999px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);font-size:11.5px;font-weight:600;color:var(--ink)}
+.hbtn .pill em{font-style:normal;color:var(--ink-faint);font-weight:500}
+.hbtn:hover .pill,.hbtn:focus-visible .pill{border-color:var(--brand);color:var(--brand-dark)}
+.hbtn.dispatch .pill{background:var(--brand);border-color:var(--brand);color:#fff}
+.hbtn.dispatch:not(:disabled):hover .pill{background:var(--brand-dark);border-color:var(--brand-dark);color:#fff}
+.hbtn.dispatch:disabled{cursor:not-allowed}
+.hbtn.dispatch:disabled .pill{background:var(--column);border-color:var(--line);color:var(--ink-faint);box-shadow:none}
+.bar.dispatching .fill.solid{background:var(--brand)}
+.bar.dispatching .head{background:var(--brand)} .bar.dispatching .head::after{border-color:var(--brand)}
+.emptyrow .tcell{color:var(--ink-faint);font-size:13px;padding:14px 16px}
+.row.unl .tcell{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.row.unl .sid{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.row.unl .sub{width:100%;font-size:11.5px;color:var(--ink-soft)}
+.src{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--column);color:var(--ink-soft)}
+.src.omnara{background:#fff3e0;color:#b25e00}
+.htag{display:inline-flex;align-items:center;gap:5px;height:18px;padding:0 7px;border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:color-mix(in srgb,var(--hc) 12%,#fff);color:var(--hc)}
+.htag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--hc)}
+
+/* ───────── drawer / sheet ───────── */
+.scrim{position:fixed;inset:0;background:rgba(42,46,67,.36);opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:#fff;box-shadow:-10px 0 34px rgba(42,46,67,.16);transform:translateX(104%);transition:transform .26s cubic-bezier(.2,.7,.2,1);z-index:31;overflow:auto;display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.dhead{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.dhead .ttl{flex:1;min-width:0}
+.dhead .ttl .mono{font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.dhead .sub{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--ink-soft)}
+.xbtn{flex:none;width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:18px;line-height:1;cursor:pointer;color:var(--ink-soft)}
+.dbody{padding:14px 18px 18px;display:flex;flex-direction:column;gap:14px;flex:1}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint)}
+.dtask{padding:10px 12px;border-radius:8px;background:var(--column);font-size:13px}
+.dtask a{font-weight:600;text-decoration:none}
+.dtask a:hover{color:var(--brand-dark);text-decoration:underline}
+.summ{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.summ .age{padding:7px 12px;background:var(--column);font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between}
+.summ .age.old{color:#a86a0c}
+.summ dl{margin:0;padding:6px 12px 10px;display:grid;grid-template-columns:52px 1fr;gap:6px 10px;font-size:13px}
+.summ dt{font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);padding-top:2px}
+.summ dd{margin:0;line-height:1.45}
+.summ dd.now{font-weight:600}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fact{padding:8px 10px;border-radius:8px;background:var(--column)}
+.fact small{display:block;font-size:10.5px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.fact b{font-size:13.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tiernote{padding:10px 12px;border-radius:8px;background:var(--c-wait-bg);border:1px solid #f5dcae;font-size:12.5px;color:#7a4d06;line-height:1.45}
+.tiernote b{text-transform:uppercase;letter-spacing:.04em;font-size:11px}
+.dacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.dacts .btn{height:40px;flex:1}
+.plist{display:flex;flex-direction:column;gap:4px}
+.plist .pl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin:8px 0 2px}
+.plist label{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:13px;line-height:1.35}
+.plist label:hover{border-color:var(--brand)}
+.plist input{margin-top:3px;accent-color:var(--brand)}
+.plist label.on{border-color:var(--brand);background:var(--brand-soft)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(42,46,67,.25);opacity:0;pointer-events:none;transition:.22s;z-index:40;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.72}}
+@media (prefers-reduced-motion:reduce){.head::after,.bar.live .fill.solid{animation:none}.drawer,.scrim,.toast{transition:none}}
+
+/* ───────── phone ───────── */
+@media (max-width:430px){
+  :root{--gutter:0px;--now-pad:14px;--track-l:14px}
+  .brandrow{padding:9px 12px 6px;gap:10px;justify-content:space-between}
+  .wordmark span{display:none}
+  .picker button{height:40px;padding:0 10px}
+  .picker button small{display:none}
+  .stats{padding:0 12px 8px}
+  .stat{height:36px;line-height:36px}
+  .host{height:36px}
+  .hosts{margin-left:0}
+  .hostnote{padding:0 12px 8px}
+  .axis,.group,.row{grid-template-columns:1fr}
+  .axis .gcell{display:none}
+  .axis .track{height:30px}
+  .tick b{font-size:10px}
+  .tick.odd b,.tick.minor{display:none}
+  .group .track{display:none}
+  .group .gcell{padding:9px 14px}
+  .playline{display:none}
+  .track::after{content:"";position:absolute;top:0;bottom:0;right:var(--now-pad);width:2px;background:var(--brand);opacity:.28;pointer-events:none}
+  .tcell{padding:12px 14px 4px 14px}
+  .row.needs::before{width:3px}
+  .track{padding:8px var(--now-pad) 10px var(--track-l)}
+  .hl{top:-8px;bottom:-10px}
+  .lane{height:64px}
+  .bar{height:44px}
+  .bar .fill{top:14px}
+  .mark{top:16px}
+  .head{top:17px}
+  .stalebadge{top:14px}
+  .dash{top:14px}
+  .smeta{top:44px;font-size:10.5px}
+  .hbtn{height:44px}
+  .hbtn .pill{height:30px;padding:0 12px;font-size:12px}
+  .btn{height:44px}
+  .xbtn{width:44px;height:44px}
+  .emptyrow .tcell{padding-bottom:14px}
+  .row.unl .tcell{padding-bottom:6px}
+  .drawer{top:auto;left:0;width:100%;max-height:88vh;border-radius:16px 16px 0 0;transform:translateY(104%)}
+  .drawer::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:#d4d8e3;margin:8px auto 0}
+  .dhead{padding-top:10px}
+  .facts{grid-template-columns:repeat(2,1fr)}
+  .dacts .btn{height:44px}
+}
+@media (min-width:431px) and (max-width:900px){:root{--gutter:300px}}
+</style>
+</head>
+<body>
+<header class="top" id="top">
+  <div class="brandrow">
+    <div class="wordmark">FleetBoard<span>Space</span></div>
+    <div class="picker" role="tablist" aria-label="Space" id="picker"></div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="hostnote" id="hostnote" hidden></div>
+  <div class="axis" id="axis"></div>
+</header>
+<main class="board" id="board" aria-live="polite"></main>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle"></aside>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const SPACE = 
+{
+  "schema": "fleet-space/1",
+  "builtAt": "2026-09-03T09:10:00-07:00",
+  "self": "mactop",
+  "hosts": {
+    "mactop":  { "liveness": "fresh", "publishAgeSec": 6 },
+    "mini":    { "liveness": "fresh", "publishAgeSec": 9 },
+    "macbook": { "liveness": "stale", "publishAgeSec": 5400, "note": "laptop asleep — last publish 1h 30m ago" }
+  },
+  "spaces": [
+    {
+      "id": "sp-ws", "key": "W.s", "name": "Winn.solutions",
+      "folders": [
+        {
+          "id": "fo-fleetboard", "name": "fleetboard",
+          "lists": [
+            {
+              "id": "li-fleetboard", "name": "fleetboard",
+              "tasks": [
+                { "id": "86eyq1a2b3", "name": "Space view: design shotgun (12 breadth + depth iterations)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1a2b3" },
+                { "id": "86eyq1c4d5", "name": "Launch rail: spawn a session on a chosen host (mactop default)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1c4d5" },
+                { "id": "86eyq1e6f7", "name": "Collector: publish clickupTasks + tmux fields on session rows", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-06", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1e6f7" },
+                { "id": "86eyq1g8h9", "name": "Spawn-host tag at the top of the session bar", "status": "to do", "agent_state": "ready-for-agent", "due": null, "doneWhen": false, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1g8h9" },
+                { "id": "86eyq1j0k1", "name": "Hibernation lane: waiting / ready / past-due cards + one-tap resume", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-12", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq1j0k1" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-ops-tracker", "name": "ops-tracker",
+          "lists": [
+            {
+              "id": "li-ops-tracker", "name": "ops-tracker",
+              "tasks": [
+                { "id": "86eyq2a2b3", "name": "dispatch.mjs: pick up ready-for-agent items via the launch rail", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-08", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2a2b3" },
+                { "id": "86eyq2c4d5", "name": "Stagger the four pollers so they stop 429-ing each other", "status": "proposed-done", "agent_state": "in-progress", "due": "2026-09-03", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2c4d5" },
+                { "id": "86eyq2e6f7", "name": "Retire the mini-only biz-agent-dispatch (archive + unload)", "status": "to do", "agent_state": "needs-info", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2e6f7", "question": "The mini copy has 3 edits not in the repo (rate-limit backoff, Slack reply, DISPATCH_MAX). Archive as-is, or port the backoff into dispatch.mjs first?" },
+                { "id": "86eyq2g8h9", "name": "followup-dispatch: crashes on missing openclaw binary (launchd PATH)", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-08", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq2g8h9" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-internal", "name": "Internal",
+          "lists": [
+            {
+              "id": "li-action-items", "name": "Team Action Items",
+              "tasks": [
+                { "id": "86eyq3a2b3", "name": "Rotate the proxy OAuth token before it expires on the 9th", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-09", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3a2b3" },
+                { "id": "86eyq3c4d5", "name": "Verify the Browser Live panel renders crisp at 2x", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-01", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq3c4d5" },
+                { "id": "86eyq3e6f7", "name": "Quarterly backup restore drill on the mini", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-10", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3e6f7" }
+              ]
+            },
+            {
+              "id": "li-recruiting", "name": "Recruiting",
+              "tasks": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-gm", "key": "GM", "name": "Growing Mindfully",
+      "folders": [
+        {
+          "id": "fo-gm-ops", "name": "Operations",
+          "lists": [
+            {
+              "id": "li-gm-sage", "name": "gm-sage",
+              "tasks": [
+                { "id": "86eyq4a2b3", "name": "Triage the inbound admin@ mailbox backlog (classify + file)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4a2b3" },
+                { "id": "86eyq4c4d5", "name": "Reconcile the September roster export against the portal", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-07", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4c4d5" }
+              ]
+            },
+            {
+              "id": "li-gm-insurance", "name": "insurance",
+              "tasks": [
+                { "id": "86eyq4e6f7", "name": "Confirm the new carrier's first invoice has arrived before cancelling the incumbent", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq4e6f7" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-gm-web", "name": "Website",
+          "lists": [
+            {
+              "id": "li-gm-website", "name": "growingmindfully.org",
+              "tasks": [
+                { "id": "86eyq5a2b3", "name": "Waitlist widget: fix the Safari date picker", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-11", "doneWhen": true, "priority": 3, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq5a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-personal", "key": "Personal", "name": "Personal",
+      "folders": [
+        {
+          "id": "fo-house", "name": "House Ops",
+          "lists": [
+            {
+              "id": "li-house", "name": "House Ops",
+              "tasks": [
+                { "id": "86eyq6a2b3", "name": "Pool heater: schedule the warranty visit", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-15", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq6a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "5c1e0f2a-1b3d-4e5f-8a6b-7c8d9e0f1a2b", "name": "fb-3fa9c1e2b7d4", "project": "fleetboard", "branch": "space-view-shotgun", "host": "mactop", "model": "fable", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq1a2b3"],
+      "summary": { "now": "Rendering concept 07 (cockpit) at 390px and fixing a header overflow", "next": "QA all 12 at both widths, build index.html, publish scrubbed copy", "goal": "12 phone-reviewable Space-view mockups on the unlisted mirror" },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 12m", "idle": "0m", "msgs": 63, "cost": 9.8, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 1
+    },
+    {
+      "session_id": "9d2f1a3b-2c4e-4f60-9b7c-8d9e0f1a2b3c", "name": "fb-8b1d44e0a2c9", "project": "fleetboard", "branch": "launch-rail-host-picker", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq1c4d5"],
+      "summary": { "now": "Waiting: should the default host tag read 'mactop' or the hostname 'MacTop-Pro'?", "next": "Wire the picker to the spawn call once the label is settled", "goal": "Spawn a session on a chosen host with the host shown as a tag on the session bar" },
+      "contextPct": 58, "tokens": 2100000, "elapsedActive": "2h 05m", "idle": "14m", "msgs": 88, "cost": 16.2, "resumeTier": "attach", "lastActivity": "14m ago", "summaryAgeMin": 14
+    },
+    {
+      "session_id": "a1b2c3d4-3d5f-4a71-8c8d-9e0f1a2b3c4d", "name": "fb-0c7e91b3d5f2", "project": "ops-tracker", "branch": "cu-86eyq2c4d5-poller-stagger", "host": "mini", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq2c4d5"],
+      "summary": { "now": "Ended: proposed done — five plists staggered, 429 count 41 → 2 over 30 min", "next": "Jarred confirms; nothing else pending", "goal": "Pollers stop rate-limiting each other" },
+      "contextPct": 22, "tokens": 640000, "elapsedActive": "38m", "idle": "3h 10m", "msgs": 29, "cost": 4.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 190
+    },
+    {
+      "session_id": "b2c3d4e5-4e60-4b82-9d9e-0f1a2b3c4d5e", "name": "fb-6e2a80c4f1b7", "project": "ops-tracker", "branch": "cu-86eyq2e6f7-retire-biz-dispatch", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq2e6f7"],
+      "summary": { "now": "Parked with a question: archive the mini copy as-is, or port its backoff first?", "next": "Resume on Jarred's answer", "goal": "biz-agent-dispatch archived into the repo and unloaded on the mini" },
+      "contextPct": 33, "tokens": 900000, "elapsedActive": "52m", "idle": "47m", "msgs": 40, "cost": 6.9, "resumeTier": "attach", "lastActivity": "47m ago", "summaryAgeMin": 47
+    },
+    {
+      "session_id": "c3d4e5f6-5f71-4c93-8eaf-1a2b3c4d5e6f", "name": "fb-b93f2d1e7a08", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill", "host": "mini", "model": "sonnet", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Restoring the 2026-08-30 snapshot into a scratch volume and checksumming", "next": "Compare 200 sampled files, write the drill record", "goal": "Restore drill passes with a written record" },
+      "contextPct": 27, "tokens": 780000, "elapsedActive": "24m", "idle": "0m", "msgs": 18, "cost": 3.2, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 2
+    },
+    {
+      "session_id": "d4e5f6a7-6082-4da4-9fb0-2b3c4d5e6f70", "name": "fb-2d8c5e0a9b41", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill-r1", "host": "mactop", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Ended: context maxed while indexing the snapshot listing", "next": "Revive into a fresh session (done — see the mini session)", "goal": "Restore drill passes with a written record" },
+      "contextPct": 97, "tokens": 4800000, "elapsedActive": "1h 50m", "idle": "26m", "msgs": 120, "cost": 31.0, "resumeTier": "revive", "lastActivity": "26m ago", "summaryAgeMin": 26
+    },
+    {
+      "session_id": "e5f6a7b8-7193-4eb5-80c1-3c4d5e6f7081", "name": "fb-f41a7c3e2d96", "project": "gm-sage", "branch": "cu-86eyq4a2b3-mailbox-triage", "host": "mini", "model": "fable", "status": "waiting", "source": "rail",
+      "clickupTasks": ["86eyq4a2b3"],
+      "summary": { "now": "Idle after filing 212 messages; 14 routed for review", "next": "Second pass on the 14 once the routing rules are confirmed", "goal": "Mailbox backlog classified and filed, review items surfaced" },
+      "contextPct": 49, "tokens": 1600000, "elapsedActive": "1h 30m", "idle": "22m", "msgs": 71, "cost": 12.4, "resumeTier": "attach", "lastActivity": "22m ago", "summaryAgeMin": 22
+    },
+    {
+      "session_id": "f6a7b8c9-82a4-4fc6-91d2-4d5e6f708192", "name": "omnara:collector-brand/velvet-anchor", "project": "collector-brand", "branch": "velvet-anchor", "host": "mactop", "model": "fable", "status": "working", "source": "omnara",
+      "clickupTasks": [],
+      "summary": { "now": "Refactoring the brand token export into a single script", "next": "Run the export against the three sample decks", "goal": "One-command brand token export" },
+      "contextPct": 36, "tokens": 1100000, "elapsedActive": "48m", "idle": "0m", "msgs": 35, "cost": 7.7, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 3
+    },
+    {
+      "session_id": "07b8c9d0-93b5-4ad7-a2e3-5e6f70819203", "name": "fb-c6d13a8e4f57", "project": "miscellaneous", "branch": "scratch-notes", "host": "macbook", "model": "sonnet", "status": "stale", "source": "rail",
+      "clickupTasks": [],
+      "summary": { "now": "Stale: last activity 3h ago (laptop asleep)", "next": "—", "goal": "Scratch exploration; no task linked" },
+      "contextPct": 12, "tokens": 210000, "elapsedActive": "15m", "idle": "3h 04m", "msgs": 9, "cost": 1.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 184
+    }
+  ]
+}
+;
+</script>
+<script>
+(function(){
+  'use strict';
+  /* ── time anchor: "now" = builtAt, formatted in its own UTC offset so the axis is stable anywhere ── */
+  const ISO = SPACE.builtAt;
+  const OFF = (function(){ const m = ISO.match(/([+-])(\d\d):(\d\d)$/); return m ? (m[1]==='-'?-1:1)*(+m[2]*60 + +m[3])*60000 : 0; })();
+  const NOW = Date.parse(ISO);
+  const WIN = 6*60*60000, START = NOW - WIN;
+  const pct = ms => Math.max(0, Math.min(100, (ms - START) / WIN * 100));
+  const clock = ms => { const d = new Date(ms + OFF); return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0'); };
+  const mins = s => { let m = 0; const h = /(\d+)h/.exec(s||''), mm = /(\d+)m/.exec(s||''); if (h) m += +h[1]*60; if (mm) m += +mm[1]; return m; };
+  const TODAY = ISO.slice(0,10);
+  const HOST = { mactop:'var(--h-mactop)', mini:'var(--h-mini)', macbook:'var(--h-macbook)' };
+  const LIVE = ['working','needs_input','waiting'];
+  const SLABEL = { needs_input:'needs input', working:'working', waiting:'waiting', stale:'stale', ended:'ended' };
+  const TIER = {
+    attach:'Attaches to the live tmux process — full working state, nothing lost.',
+    resume:'Runs claude --resume from the saved transcript. The conversation comes back; running processes, shell state and unsaved buffers do not.',
+    revive:'Starts a fresh session seeded from a handoff brief. Partial context only — the original window maxed out and cannot be restored.'
+  };
+  const STATE = { space:'sp-ws', dispatching:new Set(), linked:{}, answered:new Set(), answering:null, hostNote:null, pick:null };
+  const $ = id => document.getElementById(id);
+  const h = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDue = d => { if (!d) return null; const [y,m,dd] = d.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + ' ' + (+dd); };
+  const fmtTok = n => n >= 1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M' : Math.round(n/1e3) + 'k';
+
+  /* ── derived data ── */
+  const space = () => SPACE.spaces.find(s => s.id === STATE.space);
+  const allTasks = sp => sp.folders.flatMap(f => f.lists.flatMap(l => l.tasks));
+  const taskById = id => { for (const sp of SPACE.spaces) for (const f of sp.folders) for (const l of f.lists) for (const t of l.tasks) if (t.id === id) return t; return null; };
+  function eff(s){ /* session with mock state applied */
+    const o = Object.assign({}, s, { summary: Object.assign({}, s.summary) });
+    if (STATE.linked[s.session_id]) o.clickupTasks = [STATE.linked[s.session_id]];
+    if (o.status === 'needs_input' && o.clickupTasks.some(id => STATE.answered.has(id))) {
+      o.status = 'working'; o.idle = '0m'; o.lastActivity = 'just now'; o.summaryAgeMin = 0;
+      o.summary.now = 'Resuming with your answer'; 
+    }
+    return o;
+  }
+  const sessions = () => SPACE.sessions.map(eff);
+  const sessionsFor = tid => sessions().filter(s => s.clickupTasks.includes(tid));
+  const unlinked = () => sessions().filter(s => s.clickupTasks.length === 0);
+  const needsYou = (t, ss) => t.agent_state === 'needs-info' && !STATE.answered.has(t.id) || ss.some(s => s.status === 'needs_input');
+  function rank(t, ss){
+    if (needsYou(t, ss)) return 0;
+    if (t.status === 'in progress' || t.agent_state === 'in-progress' || ss.some(s => LIVE.includes(s.status)) || STATE.dispatching.has(t.id)) return 1;
+    return 2;
+  }
+  const canDispatch = t => t.doneWhen && ['ready-for-agent','needs-triage','ready-for-human'].includes(t.agent_state);
+
+  /* ── render: picker ── */
+  function renderPicker(){
+    $('picker').innerHTML = SPACE.spaces.map(sp =>
+      `<button role="tab" aria-selected="${sp.id===STATE.space}" data-space="${sp.id}">${h(sp.key)}<small>${h(sp.name)}</small></button>`).join('');
+  }
+
+  /* ── render: header strip ── */
+  function renderStats(){
+    const sp = space(), tasks = allTasks(sp), ss = sessions();
+    const inSpace = new Set(tasks.map(t => t.id));
+    const shown = ss.filter(s => s.clickupTasks.length === 0 || s.clickupTasks.some(id => inSpace.has(id)));
+    const live = shown.filter(s => LIVE.includes(s.status)).length;
+    const parked = tasks.filter(t => t.agent_state === 'needs-info' && !STATE.answered.has(t.id)).length;
+    const needs = tasks.filter(t => needsYou(t, sessionsFor(t.id))).length;
+    const prop = tasks.filter(t => t.status === 'proposed-done').length;
+    const unl = shown.filter(s => s.clickupTasks.length === 0).length;
+    const stat = (n, label, cls) => `<span class="stat ${cls||''} ${n===0?'zero':''}"><b>${n}</b>${label}</span>`;
+    const hosts = Object.entries(SPACE.hosts).map(([k,v]) => {
+      const age = v.publishAgeSec < 60 ? v.publishAgeSec + 's' : v.publishAgeSec < 3600 ? Math.round(v.publishAgeSec/60) + 'm' : Math.floor(v.publishAgeSec/3600) + 'h ' + Math.round(v.publishAgeSec%3600/60) + 'm';
+      const tip = v.liveness === 'fresh' ? `${k} is publishing normally — last row ${age} ago` : `${k} is ${v.liveness}: ${v.note || 'no recent publish'}. Its sessions may be older than shown.`;
+      return `<button class="host ${v.liveness}" style="--hc:${HOST[k]}" data-host="${k}" title="${h(tip)}" aria-expanded="${STATE.hostNote===k}"><i></i>${k}<em>${v.liveness==='fresh' ? age : 'stale · ' + age}</em></button>`;
+    }).join('');
+    $('stats').innerHTML =
+      stat(tasks.length, 'open') + stat(needs, 'need you', 'hot') + stat(live, 'live') + stat(parked, 'parked') + stat(prop, 'proposed-done') + (unl ? stat(unl, 'unlinked') : '') +
+      `<span class="hosts" role="group" aria-label="Host liveness (color = bar color)">${hosts}</span>`;
+    const hn = $('hostnote');
+    if (STATE.hostNote) {
+      const v = SPACE.hosts[STATE.hostNote];
+      hn.hidden = false;
+      hn.innerHTML = `<b>${h(STATE.hostNote)}</b> — ${v.liveness === 'fresh' ? `publishing normally; last row ${v.publishAgeSec}s ago. Bars in this color are current.` : h(v.note || 'no recent publish') + '. Bars in this color are as of its last publish — not live.'}`;
+    } else hn.hidden = true;
+  }
+
+  /* ── render: axis ── */
+  function ticks(withLabels){
+    let out = '';
+    const first = Math.ceil(START / 3600000) * 3600000;
+    for (let t = first; t <= NOW; t += 3600000) {
+      const p = pct(t), hour = new Date(t + OFF).getUTCHours();
+      if (withLabels) out += `<span class="tick ${hour%2?'odd':''} ${p>90?'hide':''}" style="left:${p.toFixed(3)}%"><b>${clock(t)}</b></span>`;
+      else out += `<span class="hl" style="left:${p.toFixed(3)}%"></span>`;
+    }
+    if (withLabels) {
+      const q = Math.ceil(START / 900000) * 900000;
+      for (let t = q; t <= NOW; t += 900000) if (t % 3600000 !== 0) out += `<span class="tick minor" style="left:${pct(t).toFixed(3)}%"></span>`;
+    }
+    return out;
+  }
+  function renderAxis(){
+    $('axis').innerHTML = `<div class="gcell">Folder › List › task</div><div class="track"><div class="ruler">${ticks(true)}<span class="nowlbl">now ${clock(NOW)}</span><span class="playhead" aria-hidden="true"></span></div></div>`;
+  }
+
+  /* ── render: board ── */
+  function chips(t){
+    const stCls = t.status === 'in progress' ? 'prog' : t.status === 'proposed-done' ? 'prop' : '';
+    let due = '';
+    if (t.due) {
+      const over = t.due < TODAY, today = t.due === TODAY;
+      due = `<span class="due ${over?'over':today?'today':''}">${over ? 'overdue · ' : today ? 'due today' : 'due '}${today ? '' : fmtDue(t.due)}</span>`;
+    } else due = `<span class="due">no due date</span>`;
+    return `<span class="chip st ${stCls}">${h(t.status)}</span>` +
+      `<span class="chip as-${h(t.agent_state)}">${h(t.agent_state)}</span>` + due +
+      (t.doneWhen ? `<span class="dw ok" title="DONE-WHEN contract present">✓ done-when</span>` : `<span class="dw warn" title="No DONE-WHEN contract — cannot be dispatched">⚠ no done-when</span>`) +
+      `<span class="who">${h(t.assignee)}</span>`;
+  }
+  function askBlock(t){
+    if (t.agent_state !== 'needs-info') return '';
+    if (STATE.answered.has(t.id)) return `<div class="ask sent"><div class="q">${h(t.question)}</div><div class="done">Answer sent — the session is resuming with it.</div></div>`;
+    const body = STATE.answering === t.id
+      ? `<textarea id="ans-${t.id}" placeholder="Your answer goes straight to the parked session" aria-label="Answer"></textarea><div class="acts"><button class="btn primary" data-send="${t.id}">Send answer</button><button class="btn" data-cancel="${t.id}">Cancel</button></div>`
+      : `<div class="acts"><button class="btn danger" data-answer="${t.id}">Answer</button></div>`;
+    return `<div class="ask"><div class="q">${h(t.question)}</div>${body}</div>`;
+  }
+  function taskCell(t, ss){
+    const pri = { 1:'P1 · drop everything', 2:'P2 · normal', 3:'P3 · whenever' }[t.priority];
+    return `<div class="tname"><span class="pri p${t.priority}" title="${pri}"></span><a href="${h(t.url)}" target="_blank" rel="noopener noreferrer" title="Open ${h(t.id)} in ClickUp">${h(t.name)}<span class="ext" aria-hidden="true">↗</span><span class="sr"> (opens ClickUp)</span></a></div>
+      <div class="tmeta">${chips(t)}</div>${askBlock(t)}`;
+  }
+  function barModel(s){
+    const a = mins(s.elapsedActive), i = mins(s.idle);
+    const start = NOW - (a + i) * 60000, aEnd = NOW - i * 60000;
+    const live = LIVE.includes(s.status);
+    const end = live ? NOW : aEnd;
+    const L = pct(start), E = pct(end), A = pct(aEnd), W = Math.max(E - L, 0.4);
+    const solid = W > 0 ? Math.max(0, Math.min(100, (A - L) / W * 100)) : 100;
+    return { L, E, A, W, solid, live, hasTail: live && i > 0 };
+  }
+  function metaStyle(L, E){
+    return L > 50 ? `right:${(100-E).toFixed(2)}%;max-width:${E.toFixed(2)}%;text-align:right` : `left:${L.toFixed(2)}%;max-width:${(100-L).toFixed(2)}%`;
+  }
+  function sessionLane(s){
+    const m = barModel(s);
+    const label = `${s.name} — ${SLABEL[s.status]} on ${s.host}, ${s.model}, ${s.elapsedActive} active` + (s.idle !== '0m' ? `, idle ${s.idle}` : '') + '. Open session details.';
+    let bar = `<button class="bar st-${s.status}${m.live?' live':''}" style="left:${m.L.toFixed(2)}%;width:${m.W.toFixed(2)}%;--host:${HOST[s.host]}" data-sid="${h(s.session_id)}" aria-label="${h(label)}">
+        <span class="fill solid${m.hasTail?' hastail':''}" style="width:${m.hasTail ? m.solid.toFixed(2) : 100}%"></span>` +
+      (m.hasTail ? `<span class="fill tail" style="left:${m.solid.toFixed(2)}%"></span><span class="mark ${s.status}" style="left:${m.solid.toFixed(2)}%" title="${s.status==='needs_input' ? 'Waiting on you since ' + s.idle + ' ago' : 'Idle for ' + s.idle}"></span>` : '') +
+      (m.live ? `<span class="head" aria-hidden="true"></span>` : '') +
+      (s.status === 'stale' ? `<span class="stalebadge">stale · ${h(s.idle)}</span>` : '') +
+      `</button>`;
+    if (s.status === 'ended') {
+      const pos = (100 - m.E) < 18 ? `right:${(100-m.E).toFixed(2)}%` : `left:${(m.E + 0.6).toFixed(2)}%`;
+      bar += `<button class="hbtn resume" style="${pos}" data-resume="${h(s.session_id)}" title="${h(TIER[s.resumeTier])}"><span class="pill">↻ Resume <em>${h(s.resumeTier)}</em></span></button>`;
+    }
+    const meta = `<span class="mono">${h(s.name)}</span> <span class="sst ${s.status}">${SLABEL[s.status]}</span> · ${h(s.model)} · ${h(s.elapsedActive)} active` + (s.idle !== '0m' ? ` · idle ${h(s.idle)}` : '') + (s.status === 'ended' ? ` · ended ${h(s.lastActivity)}` : '');
+    return `<div class="lane">${bar}<div class="smeta" style="${metaStyle(m.L, m.E)}">${meta}</div></div>`;
+  }
+  function dispatchLane(t){
+    if (STATE.dispatching.has(t.id)) {
+      return `<div class="lane"><button class="bar live dispatching" style="left:96.5%;width:3.5%;--host:var(--brand)" data-dispatching="${t.id}" aria-label="Dispatching a session for this task on mactop"><span class="fill solid" style="width:100%"></span><span class="head" aria-hidden="true"></span></button><div class="smeta" style="right:0;max-width:100%;text-align:right"><span class="mono">fb-…</span> <span class="sst working">dispatching…</span> · mactop · spawning from the launch rail</div></div>`;
+    }
+    const ok = canDispatch(t);
+    const hint = ok ? 'no session yet · dispatches to mactop' : !t.doneWhen ? 'needs DONE-WHEN' : `${t.agent_state} is not dispatchable`;
+    return `<div class="lane"><div class="dash" aria-hidden="true"></div>
+      <button class="hbtn dispatch" style="right:0" data-dispatch="${t.id}" ${ok?'':'disabled'} title="${ok ? 'Spawn a session for this task' : h(hint)}"><span class="pill">▶ Dispatch${ok ? '' : ' <em>needs DONE-WHEN</em>'}</span></button>
+      <div class="smeta" style="left:0;max-width:60%">${h(hint)}</div></div>`;
+  }
+  function taskRow(t){
+    const ss = sessionsFor(t.id);
+    const lanes = ss.length ? ss.map(sessionLane).join('') : dispatchLane(t);
+    return `<div class="row${needsYou(t, ss) ? ' needs' : ''}" data-task="${t.id}"><div class="tcell">${taskCell(t, ss)}</div><div class="track"><div class="lanes">${ticks(false)}${lanes}</div></div></div>`;
+  }
+  function unlinkedRow(s){
+    return `<div class="row unl" data-sid="${h(s.session_id)}"><div class="tcell">
+        <span class="src ${h(s.source)}">${h(s.source)}</span><span class="htag" style="--hc:${HOST[s.host]}">${h(s.host)}</span><span class="sid mono">${h(s.name)}</span>
+        <span class="sub">${h(s.project)} · <span class="mono">${h(s.branch)}</span> · ${h(s.model)}</span>
+        <button class="btn" data-link="${h(s.session_id)}">Link task</button>
+      </div><div class="track"><div class="lanes">${ticks(false)}${sessionLane(s)}</div></div></div>`;
+  }
+  function renderBoard(){
+    const sp = space();
+    let out = '<div class="playline" aria-hidden="true"></div>';
+    for (const f of sp.folders) for (const l of f.lists) {
+      const tasks = l.tasks.slice().sort((a,b) => rank(a, sessionsFor(a.id)) - rank(b, sessionsFor(b.id)) || a.priority - b.priority || (a.due||'9999').localeCompare(b.due||'9999'));
+      out += `<div class="group"><div class="gcell"><span class="folder">${h(f.name)}</span><span class="sep">›</span><span class="list">${h(l.name)}</span><span class="count">${tasks.length} open</span></div><div class="track"></div></div>`;
+      out += tasks.length ? tasks.map(taskRow).join('')
+        : `<div class="row emptyrow"><div class="tcell">No open tasks in this list.</div><div class="track"><div class="lanes">${ticks(false)}<div class="lane" style="height:20px"></div></div></div></div>`;
+    }
+    const unl = unlinked();
+    out += `<div class="group unl"><div class="gcell"><span class="folder">Unlinked sessions</span><span class="count">${unl.length}</span><span class="gnote">Running with no task on their row. Not attributed to any Space — link each to a task or it stays here.</span></div><div class="track"></div></div>`;
+    out += unl.length ? unl.map(unlinkedRow).join('') : `<div class="row emptyrow"><div class="tcell">Every session is linked to a task.</div><div class="track"></div></div>`;
+    $('board').innerHTML = out;
+  }
+  function render(){ renderPicker(); renderStats(); renderBoard(); }
+
+  /* ── drawer ── */
+  function open(html){ $('drawer').innerHTML = html; $('drawer').classList.add('on'); $('scrim').classList.add('on'); const x = $('drawer').querySelector('.xbtn'); if (x) x.focus(); }
+  function close(){ $('drawer').classList.remove('on'); $('scrim').classList.remove('on'); STATE.pick = null; }
+  function sessionDrawer(sid){
+    const s = sessions().find(x => x.session_id === sid); if (!s) return;
+    const t = s.clickupTasks.map(taskById).filter(Boolean)[0];
+    const age = s.summaryAgeMin;
+    const ageTxt = age < 1 ? 'summary just refreshed' : age < 60 ? `summary ${age}m old` : `summary ${Math.floor(age/60)}h ${age%60}m old`;
+    const live = LIVE.includes(s.status);
+    const hostV = SPACE.hosts[s.host];
+    const acts = live
+      ? `<button class="btn primary" data-open="${h(sid)}">Open session</button>`
+      : `<button class="btn primary" data-resume="${h(sid)}">↻ Resume · ${h(s.resumeTier)}</button>`;
+    open(`<div class="dhead"><div class="ttl"><div class="mono" id="dtitle">${h(s.name)}</div>
+        <div class="sub"><span class="htag" style="--hc:${HOST[s.host]}">${h(s.host)}</span><span class="sst ${s.status}">${SLABEL[s.status]}</span><span class="src ${h(s.source)}">${h(s.source)}</span><span>${h(s.project)} · <span class="mono">${h(s.branch)}</span></span></div></div>
+        <button class="xbtn" data-close aria-label="Close">×</button></div>
+      <div class="dbody">
+        ${t ? `<div><div class="eyebrow">Task</div><div class="dtask" style="margin-top:6px"><a href="${h(t.url)}" target="_blank" rel="noopener noreferrer">${h(t.name)} ↗</a><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${chips(t)}</div></div></div>`
+            : `<div><div class="eyebrow">Task</div><div class="dtask" style="margin-top:6px">Not linked to a task. <button class="btn" style="margin-left:6px;height:30px" data-link="${h(sid)}">Link task</button></div></div>`}
+        ${hostV.liveness !== 'fresh' ? `<div class="tiernote"><b>${h(s.host)} is ${h(hostV.liveness)}</b> — ${h(hostV.note||'')}. Everything below is as of its last publish.</div>` : ''}
+        <div><div class="eyebrow">Summary</div><div class="summ" style="margin-top:6px"><div class="age ${age>=30?'old':''}"><span>${ageTxt}</span><span>last activity ${h(s.lastActivity)}</span></div>
+          <dl><dt>Now</dt><dd class="now">${h(s.summary.now)}</dd><dt>Next</dt><dd>${h(s.summary.next)}</dd><dt>Goal</dt><dd>${h(s.summary.goal)}</dd></dl></div></div>
+        <div class="facts">
+          <div class="fact"><small>Model</small><b>${h(s.model)}</b></div>
+          <div class="fact"><small>Context</small><b>${s.contextPct}%</b></div>
+          <div class="fact"><small>Tokens</small><b>${fmtTok(s.tokens)}</b></div>
+          <div class="fact"><small>Active</small><b>${h(s.elapsedActive)}</b></div>
+          <div class="fact"><small>Idle</small><b>${h(s.idle)}</b></div>
+          <div class="fact"><small>Msgs · cost</small><b>${s.msgs} · $${s.cost.toFixed(2)}</b></div>
+        </div>
+        ${!live ? `<div class="tiernote"><b>Resume tier · ${h(s.resumeTier)}</b><br>${h(TIER[s.resumeTier])}</div>` : ''}
+        <div class="dacts">${acts}<button class="btn" data-close>Close</button></div>
+      </div>`);
+  }
+  function linkDrawer(sid){
+    const s = sessions().find(x => x.session_id === sid); if (!s) return;
+    STATE.pick = null;
+    const sp = space();
+    let list = '';
+    for (const f of sp.folders) for (const l of f.lists) {
+      if (!l.tasks.length) continue;
+      list += `<div class="pl">${h(f.name)} › ${h(l.name)}</div>` + l.tasks.map(t => `<label><input type="radio" name="pick" value="${t.id}"><span>${h(t.name)}<br><span style="font-size:11px;color:var(--ink-faint)">${h(t.agent_state)} · ${h(t.id)}</span></span></label>`).join('');
+    }
+    open(`<div class="dhead"><div class="ttl"><div class="mono" id="dtitle">Link ${h(s.name)}</div><div class="sub">Pick the ${h(sp.name)} task this session is working. It moves onto that task's row.</div></div><button class="xbtn" data-close aria-label="Close">×</button></div>
+      <div class="dbody"><div class="plist" id="plist">${list}</div>
+      <div class="dacts"><button class="btn primary" id="linkgo" data-linkgo="${h(sid)}" disabled>Link session</button><button class="btn" data-close>Cancel</button></div></div>`);
+  }
+
+  /* ── toast ── */
+  let tt;
+  function toast(msg){ const el = $('toast'); el.textContent = msg; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 3200); }
+
+  /* ── events ── */
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-space],[data-host],[data-sid].bar,[data-resume],[data-dispatch],[data-answer],[data-send],[data-cancel],[data-link],[data-linkgo],[data-open],[data-close],[data-dispatching]');
+    if (!el) return;
+    const d = el.dataset;
+    if (d.space) { STATE.space = d.space; STATE.answering = null; STATE.hostNote = null; render(); window.scrollTo({ top: 0 }); return; }
+    if (d.host) { STATE.hostNote = STATE.hostNote === d.host ? null : d.host; renderStats(); return; }
+    if (el.classList.contains('bar') && d.sid) { sessionDrawer(d.sid); return; }
+    if (d.dispatching) { toast('Session is still spawning — the bar will get a tmux name once the rail reports it.'); return; }
+    if (d.resume) {
+      const s = sessions().find(x => x.session_id === d.resume);
+      close(); toast(`Resuming ${s.name} on ${s.host} · tier ${s.resumeTier} — ${s.resumeTier === 'attach' ? 'full state' : s.resumeTier === 'resume' ? 'transcript only, not the process' : 'fresh session from the handoff brief'}`);
+      return;
+    }
+    if (d.dispatch) { if (el.disabled) return; STATE.dispatching.add(d.dispatch); renderStats(); renderBoard(); toast('Dispatching… a session is spawning on mactop for this task.'); return; }
+    if (d.answer) { STATE.answering = d.answer; renderBoard(); const ta = $('ans-' + d.answer); if (ta) ta.focus(); return; }
+    if (d.cancel) { STATE.answering = null; renderBoard(); return; }
+    if (d.send) {
+      const ta = $('ans-' + d.send); if (ta && !ta.value.trim()) { ta.focus(); toast('Type an answer first.'); return; }
+      STATE.answered.add(d.send); STATE.answering = null; renderStats(); renderBoard(); toast('Answer sent — the parked session is resuming.'); return;
+    }
+    if (d.link) { linkDrawer(d.link); return; }
+    if (d.linkgo) { if (!STATE.pick) return; STATE.linked[d.linkgo] = STATE.pick; const t = taskById(STATE.pick); close(); render(); toast(`Linked to “${t.name.slice(0,48)}${t.name.length>48?'…':''}”`); return; }
+    if (d.open) { const s = sessions().find(x => x.session_id === d.open); close(); toast(`Opening ${s.name} on ${s.host} (${s.source === 'rail' ? 'tmux attach' : 'Omnara'})`); return; }
+    if ('close' in d) { close(); return; }
+  });
+  document.addEventListener('change', e => {
+    if (e.target.name === 'pick') { STATE.pick = e.target.value; document.querySelectorAll('#plist label').forEach(l => l.classList.toggle('on', l.querySelector('input').checked)); const b = $('linkgo'); if (b) b.disabled = false; }
+  });
+  $('scrim').addEventListener('click', close);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('drawer').classList.contains('on')) close(); });
+
+  renderAxis();
+  render();
+})();
+</script>
+</body>
+</html>

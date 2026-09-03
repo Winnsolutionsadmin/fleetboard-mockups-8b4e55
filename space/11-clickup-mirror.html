@@ -1,0 +1,814 @@
+<!-- fleetboard space view · concept 11 clickup-mirror · Mirrors ClickUp's List view (Space header, Folder/List group headers, familiar columns) with two new columns — Sessions and Action — plus an Unlinked-sessions list at the bottom · phone-first, light theme, self-contained -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FleetBoard — Space · clickup-mirror</title>
+<style>
+:root{
+  --brand:#7b68ee; --brand-dark:#5f4dd0; --brand-soft:#efecfd;
+  --ink:#2a2e43; --ink-soft:#6b7186; --ink-faint:#9aa1b5;
+  --line:#e6e9f2; --ws:#fafbfc; --column:#f3f4f7; --card:#fff;
+  --c-needs:#f0555f; --c-needs-bg:#fdeef0;
+  --c-work:#4c9aff;  --c-work-bg:#eef5ff;
+  --c-wait:#f0a92e;  --c-wait-bg:#fdf6ea;
+  --c-stale:#98a1b3; --c-stale-bg:#f3f4f7;
+  --ok:#27ae60; --warn:#f0a92e; --bad:#e5484d;
+  --shadow:0 1px 3px rgba(42,46,67,.08), 0 1px 2px rgba(42,46,67,.05);
+  --h-mactop:#5f4dd0; --h-mini:#0e9994; --h-macbook:#0073ea;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --row-h:40px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font);color:var(--ink);background:var(--ws);font-size:13px;line-height:1.35;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+a{color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ───── top bar: ClickUp-style location strip + Space picker ───── */
+.topbar{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;background:#fff;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13px;letter-spacing:.01em;color:var(--ink)}
+.logo i{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));display:inline-block;position:relative}
+.logo i::after{content:"";position:absolute;inset:6px;border-radius:2px;background:#fff;opacity:.9}
+.crumb{color:var(--ink-faint);font-size:12px;display:none}
+.spaces{margin-left:auto;display:flex;gap:4px;background:var(--column);padding:3px;border-radius:9px}
+.space-tab{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:7px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+.space-tab .sq{width:16px;height:16px;border-radius:4px;color:#fff;font-size:9px;font-weight:800;display:grid;place-items:center;letter-spacing:.02em}
+.space-tab[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+
+/* ───── Space header (sticky) ───── */
+.space-head{position:sticky;top:0;z-index:20;background:rgba(250,251,252,.94);backdrop-filter:saturate(1.4) blur(8px);-webkit-backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line);padding:10px 14px 8px}
+.sh-title{display:flex;align-items:center;gap:10px;min-height:32px}
+.sh-title .sq{width:28px;height:28px;border-radius:7px;color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center}
+.sh-title h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em}
+.sh-title .view{margin-left:6px;display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-soft);padding:3px 8px;border-radius:6px;background:#fff;border:1px solid var(--line)}
+.sh-title .view b{color:var(--brand-dark)}
+.sh-title .built{margin-left:auto;font-size:11px;color:var(--ink-faint);white-space:nowrap}
+.stats{display:flex;gap:6px;margin-top:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:2px}
+.stats::-webkit-scrollbar{display:none}
+.stat{flex:0 0 auto;display:flex;align-items:baseline;gap:5px;height:30px;padding:0 10px;border-radius:7px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--ink-soft);white-space:nowrap;align-items:center}
+.stat b{font-size:14px;font-weight:700;color:var(--ink)}
+.stat.hot b{color:var(--c-needs)}
+.stat.hot{border-color:#f7c5ca;background:var(--c-needs-bg)}
+.stat.live b{color:var(--c-work)}
+.stat.parked b{color:var(--c-wait)}
+.stat.prop b{color:var(--brand-dark)}
+.hosts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;position:relative}
+.host{display:flex;align-items:center;gap:6px;height:26px;padding:0 9px 0 7px;border-radius:13px;border:1px solid var(--line);background:#fff;font-size:11.5px;color:var(--ink-soft);position:relative}
+.host .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px rgba(39,174,96,.18)}
+.host.stale .dot{background:var(--warn);box-shadow:0 0 0 2px rgba(240,169,46,.2)}
+.host.dead .dot{background:var(--bad)}
+.host .hn{font-weight:700;color:var(--ink)}
+.host.stale{border-style:dashed;border-color:#f2d59a;background:var(--c-wait-bg)}
+.host .age{color:var(--ink-faint)}
+.host .tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:30;background:var(--ink);color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;max-width:260px;line-height:1.4;box-shadow:0 6px 20px rgba(42,46,67,.25);white-space:normal}
+.host.open .tip,.host:hover .tip{display:block}
+@media (hover:none){.host:hover .tip{display:none}.host.open .tip{display:block}}
+
+/* ───── board ───── */
+.board{padding:10px 14px 120px;max-width:1400px}
+.group{margin-bottom:14px}
+.folder-h{display:flex;align-items:center;gap:8px;min-height:34px;padding:2px 4px;font-weight:700;font-size:13px;color:var(--ink)}
+.folder-h .chev,.list-h .chev{width:16px;height:16px;display:grid;place-items:center;color:var(--ink-faint);transition:transform .15s}
+.collapsed>.folder-h .chev,.list.collapsed>.list-h .chev{transform:rotate(-90deg)}
+.folder-h .ficon{width:16px;height:12px;border-radius:2px 2px 3px 3px;background:var(--ink-faint);position:relative;opacity:.85}
+.folder-h .ficon::before{content:"";position:absolute;left:0;top:-3px;width:7px;height:4px;border-radius:2px 2px 0 0;background:inherit}
+.cnt{font-weight:600;color:var(--ink-faint);font-size:11.5px;background:var(--column);padding:1px 7px;border-radius:9px}
+.folder-h .tog,.list-h .tog{display:flex;align-items:center;gap:8px;min-height:34px;padding:0 4px;border-radius:6px;flex:1;text-align:left}
+.folder-h .tog:hover,.list-h .tog:hover{background:var(--column)}
+.collapsed>.folder-body{display:none}
+.list{margin:2px 0 8px 0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.list-h{display:flex;align-items:center;gap:8px;min-height:38px;padding:0 8px;background:#fff;border-bottom:1px solid var(--line)}
+.list-h .bar{width:4px;height:18px;border-radius:2px;background:var(--brand)}
+.list-h .lname{font-weight:700;font-size:13px}
+.list-h .sub{color:var(--ink-faint);font-size:11.5px;margin-left:2px}
+.list.collapsed>.list-body{display:none}
+.list-h .hint{margin-left:auto;font-size:11px;color:var(--ink-faint);white-space:nowrap}
+
+/* table */
+.tbl{display:block}
+.colhead,.row{display:grid;grid-template-columns:minmax(300px,1fr) 122px 72px 84px 40px 134px minmax(230px,300px) 128px;align-items:center;column-gap:8px;padding:0 10px}
+.colhead{height:32px;font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);background:var(--ws)}
+.colhead .new{color:var(--brand-dark)}
+.colhead .new::after{content:"new";font-size:9px;font-weight:800;background:var(--brand-soft);color:var(--brand-dark);border-radius:4px;padding:1px 4px;margin-left:5px;letter-spacing:.06em;vertical-align:1px}
+.row{min-height:var(--row-h);border-bottom:1px solid var(--line);position:relative;padding-top:4px;padding-bottom:4px}
+.row:last-child{border-bottom:0}
+.row:hover{background:#fcfcfe}
+.row.needs-you{box-shadow:inset 3px 0 0 var(--c-needs)}
+.row.is-live{box-shadow:inset 3px 0 0 var(--c-work)}
+.row.dispatching{background:var(--brand-soft)}
+.row.dispatching .c-action .btn{background:var(--brand-soft);color:var(--brand-dark);border-color:transparent}
+
+.c-name{display:flex;align-items:center;gap:8px;min-width:0}
+.c-name .sdot{flex:0 0 10px;width:10px;height:10px;border-radius:50%;border:2px solid var(--ink-faint)}
+.c-name .sdot.todo{border-color:#b9c0d1}
+.c-name .sdot.prog{border-color:var(--c-work);background:var(--c-work)}
+.c-name .sdot.prop{border-color:var(--brand);background:var(--brand)}
+.c-name .tn{font-weight:500;font-size:13px;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+.c-name .dw{flex:0 0 auto;font-size:11px;font-weight:700;padding:1px 5px;border-radius:4px}
+.c-name .dw.ok{color:var(--ok);background:#eaf7ef}
+.c-name .dw.miss{color:#b7791f;background:var(--c-wait-bg)}
+.c-name .lnk{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:var(--ink-faint);text-decoration:none}
+.c-name .lnk:hover{background:var(--column);color:var(--brand-dark)}
+.c-name .tid{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);flex:0 0 auto}
+
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;color:#fff}
+.pill.todo{background:#87909e}
+.pill.prog{background:var(--c-work)}
+.pill.prop{background:var(--brand)}
+
+.av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+.av.kai{background:var(--brand-dark)}
+.av.jarred{background:#f0885a}
+.av.none{background:#fff;border:1px dashed var(--ink-faint);color:var(--ink-faint)}
+
+.due{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+.due.over{color:var(--bad);font-weight:700}
+.due.today{color:var(--warn);font-weight:700}
+.due.none{color:var(--ink-faint)}
+
+.flag{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px}
+.flag svg{width:14px;height:14px}
+.flag.p1{color:var(--bad)}
+.flag.p2{color:var(--c-work)}
+.flag.p3{color:var(--ink-faint)}
+
+.ag{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:11px;font-size:11px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.ag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.ag.needs-triage{color:#8a5a00;background:var(--c-wait-bg);border-color:#f2d59a}
+.ag.ready-for-human{color:#b3343b;background:var(--c-needs-bg);border-color:#f7c5ca}
+.ag.ready-for-agent{color:var(--brand-dark);background:var(--brand-soft);border-color:#d9d2fb}
+.ag.in-progress{color:#1c6fd6;background:var(--c-work-bg);border-color:#c5dcff}
+.ag.needs-info{color:#fff;background:var(--c-needs);border-color:var(--c-needs)}
+.ag.needs-info::before{background:#fff}
+.ag.out-of-scope{color:var(--ink-faint);background:var(--c-stale-bg);border-color:var(--line);text-decoration:line-through}
+
+/* sessions column */
+.c-sessions{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.chip{display:inline-flex;align-items:center;gap:0;height:28px;border-radius:7px;border:1px solid var(--line);background:#fff;overflow:hidden;max-width:100%;text-align:left}
+.chip .htag{align-self:stretch;display:flex;align-items:center;padding:0 7px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;font-family:var(--mono)}
+.chip.h-mactop .htag{background:var(--h-mactop)}
+.chip.h-mini .htag{background:var(--h-mini)}
+.chip.h-macbook .htag{background:var(--h-macbook)}
+.chip .body{display:flex;align-items:center;gap:6px;padding:0 9px 0 8px;min-width:0;font-size:11.5px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .sd{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.chip .st{font-weight:700;color:var(--ink)}
+.chip .model{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint)}
+.chip.s-needs_input{border-color:#f7b3b8;background:var(--c-needs-bg)}
+.chip.s-needs_input .sd{background:var(--c-needs);animation:pulse 1.2s ease-in-out infinite}
+.chip.s-needs_input .st{color:#c2303a}
+.chip.s-working{border-color:#c5dcff;background:var(--c-work-bg)}
+.chip.s-working .sd{background:var(--c-work);animation:pulse 2s ease-in-out infinite}
+.chip.s-waiting{border-color:#f2d59a;background:var(--c-wait-bg)}
+.chip.s-waiting .sd{background:var(--c-wait)}
+.chip.s-stale{border-color:var(--line);background:var(--c-stale-bg)}
+.chip.s-stale .sd{background:var(--c-stale)}
+.chip.s-ended{border-style:dashed;background:#fff;color:var(--ink-faint)}
+.chip.s-ended .htag{opacity:.55}
+.chip.s-ended .sd{background:transparent;border:1.5px solid var(--ink-faint)}
+.chip.s-ended .st{color:var(--ink-faint);font-weight:600}
+.chip:hover{filter:brightness(.985)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(240,85,95,.35)}50%{box-shadow:0 0 0 4px rgba(240,85,95,0)}}
+.chip.s-working .sd{animation-name:pulseb}
+@keyframes pulseb{0%,100%{box-shadow:0 0 0 0 rgba(76,154,255,.35)}50%{box-shadow:0 0 0 4px rgba(76,154,255,0)}}
+.resume{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 8px;border-radius:7px;border:1px solid var(--line);background:#fff;font-size:11.5px;font-weight:700;color:var(--ink);white-space:nowrap}
+.resume:hover{border-color:var(--brand);color:var(--brand-dark)}
+.tier{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em}
+.tier.attach{background:#eaf7ef;color:var(--ok)}
+.tier.resume{background:var(--c-work-bg);color:#1c6fd6}
+.tier.revive{background:var(--c-wait-bg);color:#8a5a00}
+.nosess{font-size:11.5px;color:var(--ink-faint);font-style:italic}
+
+/* action column */
+.c-action{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:700;white-space:nowrap;color:var(--ink)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
+.btn.ghost:hover{border-color:var(--brand);color:var(--brand-dark)}
+.btn:disabled{background:var(--column);border-color:var(--line);color:var(--ink-faint);cursor:not-allowed}
+.btn .spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(95,77,208,.25);border-top-color:var(--brand-dark);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hintt{font-size:10.5px;color:#b7791f;white-space:nowrap}
+
+/* parked question sub-row */
+.qrow{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;margin:4px 0 2px 18px;padding:9px 12px;border-radius:8px;background:var(--c-needs-bg);border:1px solid #f7c5ca}
+.qrow .qi{flex:0 0 auto;width:22px;height:22px;border-radius:6px;background:var(--c-needs);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
+.qrow .qt{flex:1;min-width:0}
+.qrow .ql{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#c2303a}
+.qrow .qq{font-size:12.5px;color:var(--ink);margin-top:2px;line-height:1.4}
+.qrow .qa{flex:0 0 auto}
+.qrow textarea{width:100%;margin-top:8px;min-height:64px;padding:8px 10px;border:1px solid #f7c5ca;border-radius:7px;font:inherit;font-size:13px;resize:vertical;background:#fff}
+.qrow .qbtns{display:flex;gap:6px;margin-top:6px}
+.qrow.sent{background:#eaf7ef;border-color:#bfe6cc}
+.qrow.sent .qi{background:var(--ok)}
+.qrow.sent .ql{color:#1f8a4c}
+
+.empty{padding:14px 12px 16px;color:var(--ink-faint);font-size:12.5px;display:flex;align-items:center;gap:8px}
+.empty::before{content:"";width:14px;height:14px;border-radius:4px;border:1.5px dashed var(--ink-faint)}
+
+/* unlinked list */
+.list.unlinked .list-h .bar{background:var(--c-stale)}
+.list.unlinked .colhead,.list.unlinked .row{grid-template-columns:minmax(220px,1fr) 96px 104px 92px minmax(240px,1.2fr) 210px}
+.list.unlinked .c-action{flex-direction:row;align-items:center;gap:6px}
+.sname{font-family:var(--mono);font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sname small{display:block;font-family:var(--font);font-weight:400;color:var(--ink-faint);font-size:11px}
+.now{font-size:12px;color:var(--ink-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
+.now .age{color:var(--ink-faint);font-size:11px}
+.htag2{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:5px;color:#fff;font-family:var(--mono);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.htag2.mactop{background:var(--h-mactop)}.htag2.mini{background:var(--h-mini)}.htag2.macbook{background:var(--h-macbook)}
+.sst{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
+.sst .sd{width:7px;height:7px;border-radius:50%}
+.sst.needs_input{color:#c2303a}.sst.needs_input .sd{background:var(--c-needs)}
+.sst.working{color:#1c6fd6}.sst.working .sd{background:var(--c-work)}
+.sst.waiting{color:#8a5a00}.sst.waiting .sd{background:var(--c-wait)}
+.sst.stale{color:var(--ink-faint)}.sst.stale .sd{background:var(--c-stale)}
+.sst.ended{color:var(--ink-faint)}.sst.ended .sd{border:1.5px solid var(--ink-faint)}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(42,46,67,.35);z-index:40;display:none}
+.scrim.show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:#fff;z-index:50;box-shadow:-8px 0 30px rgba(42,46,67,.18);transform:translateX(105%);transition:transform .22s ease;display:flex;flex-direction:column}
+.drawer.show{transform:none}
+.d-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.d-head .x{margin-left:auto;width:36px;height:36px;border-radius:8px;display:grid;place-items:center;color:var(--ink-soft)}
+.d-head .x:hover{background:var(--column)}
+.d-body{padding:14px 16px;overflow:auto;flex:1}
+.d-body h2{margin:0 0 2px;font-size:15px;font-family:var(--mono)}
+.d-body .meta{font-size:12px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:6px 12px;margin:6px 0 12px}
+.d-body .kv{display:grid;grid-template-columns:64px 1fr;gap:6px 10px;font-size:12.5px;margin:10px 0}
+.d-body .kv b{color:var(--ink-faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+.d-body .sage{font-size:11px;color:var(--ink-faint);margin-top:-4px}
+.term{background:#1e2130;color:#d5d9e6;font-family:var(--mono);font-size:11.5px;line-height:1.55;padding:12px 14px;border-radius:8px;margin-top:10px;white-space:pre-wrap;word-break:break-word}
+.term .p{color:#8f9bb3}.term .g{color:#5fd39b}.term .y{color:#f0c674}
+.d-foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px}
+.d-foot .btn{flex:1;height:40px}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.statgrid div{background:var(--column);border-radius:7px;padding:7px 8px;font-size:11px;color:var(--ink-faint)}
+.statgrid div b{display:block;font-size:13px;color:var(--ink);font-weight:700}
+
+/* picker dialog */
+dialog{border:0;border-radius:12px;padding:0;width:min(440px,calc(100% - 24px));box-shadow:0 20px 60px rgba(42,46,67,.3);color:var(--ink)}
+dialog::backdrop{background:rgba(42,46,67,.35)}
+.pk-h{padding:14px 16px 8px;border-bottom:1px solid var(--line)}
+.pk-h h3{margin:0;font-size:14px}
+.pk-h p{margin:4px 0 0;font-size:12px;color:var(--ink-soft)}
+.pk-list{max-height:min(52vh,420px);overflow:auto;padding:6px}
+.pk-item{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:6px 10px;border-radius:8px;text-align:left}
+.pk-item:hover{background:var(--column)}
+.pk-item[aria-checked="true"]{background:var(--brand-soft)}
+.pk-item .rb{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink-faint);flex:0 0 auto}
+.pk-item[aria-checked="true"] .rb{border-color:var(--brand);background:radial-gradient(circle,var(--brand) 45%,#fff 50%)}
+.pk-item .t{flex:1;min-width:0;font-size:13px}
+.pk-item .t small{display:block;color:var(--ink-faint);font-size:11px}
+.pk-f{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}
+.pk-f .btn{flex:1;height:40px}
+
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 14px;border-radius:9px;font-size:12.5px;box-shadow:0 8px 24px rgba(42,46,67,.3);opacity:0;transition:.2s;z-index:60;max-width:calc(100% - 24px);text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+/* ───── phone (≤760: card rows; ≤430: full phone rules) ───── */
+@media (max-width:760px){
+  .topbar{padding:0 10px;height:54px}
+  .logo span{display:none}
+  .spaces{margin-left:auto;padding:2px}
+  .space-tab{height:44px;padding:0 12px}
+  .sh-title .built{display:none}
+  .sh-title .view{display:none}
+  .board{padding:8px 10px 120px}
+  .colhead{display:none}
+  .list-h .hint{display:none}
+  .row,.list.unlinked .row{display:grid;grid-template-columns:auto auto auto 1fr auto;column-gap:8px;row-gap:8px;padding:10px 10px 10px 12px;align-items:center}
+  .c-name{grid-column:1/5;grid-row:1;align-items:flex-start}
+  .c-name .tn{white-space:normal;line-height:1.3;font-size:13.5px}
+  .c-name .tid{display:none}
+  .c-name .sdot{margin-top:4px}
+  .c-name .lnk{width:44px;height:44px;margin:-12px -10px -12px -4px}
+  .c-status{grid-column:5;grid-row:1;justify-self:end;align-self:start}
+  .c-prio{grid-column:1;grid-row:2}
+  .c-due{grid-column:2;grid-row:2}
+  .c-agent{grid-column:3;grid-row:2;min-width:0}
+  .c-assignee{grid-column:5;grid-row:2;justify-self:end}
+  .c-sessions{grid-column:1/6;grid-row:3;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -10px 0 -12px;padding:2px 10px 2px 12px;gap:8px}
+  .c-sessions::-webkit-scrollbar{display:none}
+  .c-sessions:empty{display:none}
+  .c-sessions .chip,.c-sessions .resume{flex:0 0 auto;height:44px;border-radius:10px}
+  .chip .htag{padding:0 9px}
+  .chip .body{padding:0 11px 0 9px;font-size:12.5px}
+  .c-action{grid-column:1/6;grid-row:4;flex-direction:row;align-items:center;gap:10px}
+  .c-action .btn{height:44px;padding:0 16px;min-width:140px;border-radius:10px;font-size:13px}
+  .hintt{white-space:normal}
+  .qrow{margin:0}
+  .qrow .qa .btn{height:44px}
+  .flag{width:32px;height:32px}
+  .av{width:28px;height:28px}
+  .ag{height:26px}
+  .pill{height:24px}
+  .folder-h .tog,.list-h .tog{min-height:44px}
+  .host{height:36px}
+  .host::after{content:"";position:absolute;left:0;right:0;top:-4px;bottom:-4px}
+  .stat{height:36px}
+  /* unlinked rows on phone */
+  .list.unlinked .c-sname{grid-column:1/5;grid-row:1}
+  .list.unlinked .c-host{grid-column:5;grid-row:1;justify-self:end}
+  .list.unlinked .c-sst{grid-column:1;grid-row:2}
+  .list.unlinked .c-ago{grid-column:2;grid-row:2}
+  .list.unlinked .c-now{grid-column:1/6;grid-row:3;white-space:normal}
+  .list.unlinked .c-action{grid-column:1/6;grid-row:4}
+  .sname{white-space:normal}
+  .drawer{top:auto;width:100%;max-height:88vh;border-radius:16px 16px 0 0;transform:translateY(105%);box-shadow:0 -8px 30px rgba(42,46,67,.2)}
+  .drawer.show{transform:none}
+  .drawer::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0}
+  .statgrid{grid-template-columns:repeat(2,1fr)}
+}
+@media (min-width:761px){
+  .crumb{display:inline}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo"><i></i><span>fleetboard</span></div>
+  <span class="crumb">Spaces ›</span>
+  <nav class="spaces" role="tablist" aria-label="Space picker" id="spacePicker"></nav>
+</header>
+
+<section class="space-head" id="spaceHead" aria-live="polite"></section>
+
+<main class="board" id="board"></main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" role="dialog" aria-label="Session"></aside>
+
+<dialog id="picker" aria-label="Link session to a task">
+  <div class="pk-h"><h3 id="pkTitle">Link to a task</h3><p id="pkSub"></p></div>
+  <div class="pk-list" id="pkList" role="radiogroup"></div>
+  <div class="pk-f"><button class="btn ghost" id="pkCancel" type="button">Cancel</button><button class="btn primary" id="pkLink" type="button" disabled>Link task</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const SPACE = {
+  "schema": "fleet-space/1",
+  "builtAt": "2026-09-03T09:10:00-07:00",
+  "self": "mactop",
+  "hosts": {
+    "mactop":  { "liveness": "fresh", "publishAgeSec": 6 },
+    "mini":    { "liveness": "fresh", "publishAgeSec": 9 },
+    "macbook": { "liveness": "stale", "publishAgeSec": 5400, "note": "laptop asleep — last publish 1h 30m ago" }
+  },
+  "spaces": [
+    {
+      "id": "sp-ws", "key": "W.s", "name": "Winn.solutions",
+      "folders": [
+        {
+          "id": "fo-fleetboard", "name": "fleetboard",
+          "lists": [
+            {
+              "id": "li-fleetboard", "name": "fleetboard",
+              "tasks": [
+                { "id": "86eyq1a2b3", "name": "Space view: design shotgun (12 breadth + depth iterations)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1a2b3" },
+                { "id": "86eyq1c4d5", "name": "Launch rail: spawn a session on a chosen host (mactop default)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1c4d5" },
+                { "id": "86eyq1e6f7", "name": "Collector: publish clickupTasks + tmux fields on session rows", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-06", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1e6f7" },
+                { "id": "86eyq1g8h9", "name": "Spawn-host tag at the top of the session bar", "status": "to do", "agent_state": "ready-for-agent", "due": null, "doneWhen": false, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq1g8h9" },
+                { "id": "86eyq1j0k1", "name": "Hibernation lane: waiting / ready / past-due cards + one-tap resume", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-12", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq1j0k1" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-ops-tracker", "name": "ops-tracker",
+          "lists": [
+            {
+              "id": "li-ops-tracker", "name": "ops-tracker",
+              "tasks": [
+                { "id": "86eyq2a2b3", "name": "dispatch.mjs: pick up ready-for-agent items via the launch rail", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-08", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2a2b3" },
+                { "id": "86eyq2c4d5", "name": "Stagger the four pollers so they stop 429-ing each other", "status": "proposed-done", "agent_state": "in-progress", "due": "2026-09-03", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2c4d5" },
+                { "id": "86eyq2e6f7", "name": "Retire the mini-only biz-agent-dispatch (archive + unload)", "status": "to do", "agent_state": "needs-info", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq2e6f7", "question": "The mini copy has 3 edits not in the repo (rate-limit backoff, Slack reply, DISPATCH_MAX). Archive as-is, or port the backoff into dispatch.mjs first?" },
+                { "id": "86eyq2g8h9", "name": "followup-dispatch: crashes on missing openclaw binary (launchd PATH)", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-08", "doneWhen": true, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq2g8h9" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-internal", "name": "Internal",
+          "lists": [
+            {
+              "id": "li-action-items", "name": "Team Action Items",
+              "tasks": [
+                { "id": "86eyq3a2b3", "name": "Rotate the proxy OAuth token before it expires on the 9th", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-09", "doneWhen": true, "priority": 1, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3a2b3" },
+                { "id": "86eyq3c4d5", "name": "Verify the Browser Live panel renders crisp at 2x", "status": "to do", "agent_state": "needs-triage", "due": "2026-09-01", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq3c4d5" },
+                { "id": "86eyq3e6f7", "name": "Quarterly backup restore drill on the mini", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-10", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq3e6f7" }
+              ]
+            },
+            {
+              "id": "li-recruiting", "name": "Recruiting",
+              "tasks": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-gm", "key": "GM", "name": "Growing Mindfully",
+      "folders": [
+        {
+          "id": "fo-gm-ops", "name": "Operations",
+          "lists": [
+            {
+              "id": "li-gm-sage", "name": "gm-sage",
+              "tasks": [
+                { "id": "86eyq4a2b3", "name": "Triage the inbound admin@ mailbox backlog (classify + file)", "status": "in progress", "agent_state": "in-progress", "due": "2026-09-04", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4a2b3" },
+                { "id": "86eyq4c4d5", "name": "Reconcile the September roster export against the portal", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-07", "doneWhen": true, "priority": 2, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq4c4d5" }
+              ]
+            },
+            {
+              "id": "li-gm-insurance", "name": "insurance",
+              "tasks": [
+                { "id": "86eyq4e6f7", "name": "Confirm the new carrier's first invoice has arrived before cancelling the incumbent", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-05", "doneWhen": true, "priority": 1, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq4e6f7" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fo-gm-web", "name": "Website",
+          "lists": [
+            {
+              "id": "li-gm-website", "name": "growingmindfully.org",
+              "tasks": [
+                { "id": "86eyq5a2b3", "name": "Waitlist widget: fix the Safari date picker", "status": "to do", "agent_state": "ready-for-agent", "due": "2026-09-11", "doneWhen": true, "priority": 3, "assignee": "Kai", "url": "https://app.clickup.com/t/86eyq5a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sp-personal", "key": "Personal", "name": "Personal",
+      "folders": [
+        {
+          "id": "fo-house", "name": "House Ops",
+          "lists": [
+            {
+              "id": "li-house", "name": "House Ops",
+              "tasks": [
+                { "id": "86eyq6a2b3", "name": "Pool heater: schedule the warranty visit", "status": "to do", "agent_state": "ready-for-human", "due": "2026-09-15", "doneWhen": false, "priority": 3, "assignee": "Jarred", "url": "https://app.clickup.com/t/86eyq6a2b3" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "5c1e0f2a-1b3d-4e5f-8a6b-7c8d9e0f1a2b", "name": "fb-3fa9c1e2b7d4", "project": "fleetboard", "branch": "space-view-shotgun", "host": "mactop", "model": "fable", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq1a2b3"],
+      "summary": { "now": "Rendering concept 07 (cockpit) at 390px and fixing a header overflow", "next": "QA all 12 at both widths, build index.html, publish scrubbed copy", "goal": "12 phone-reviewable Space-view mockups on the unlisted mirror" },
+      "contextPct": 41, "tokens": 1200000, "elapsedActive": "1h 12m", "idle": "0m", "msgs": 63, "cost": 9.8, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 1
+    },
+    {
+      "session_id": "9d2f1a3b-2c4e-4f60-9b7c-8d9e0f1a2b3c", "name": "fb-8b1d44e0a2c9", "project": "fleetboard", "branch": "launch-rail-host-picker", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq1c4d5"],
+      "summary": { "now": "Waiting: should the default host tag read 'mactop' or the hostname 'MacTop-Pro'?", "next": "Wire the picker to the spawn call once the label is settled", "goal": "Spawn a session on a chosen host with the host shown as a tag on the session bar" },
+      "contextPct": 58, "tokens": 2100000, "elapsedActive": "2h 05m", "idle": "14m", "msgs": 88, "cost": 16.2, "resumeTier": "attach", "lastActivity": "14m ago", "summaryAgeMin": 14
+    },
+    {
+      "session_id": "a1b2c3d4-3d5f-4a71-8c8d-9e0f1a2b3c4d", "name": "fb-0c7e91b3d5f2", "project": "ops-tracker", "branch": "cu-86eyq2c4d5-poller-stagger", "host": "mini", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq2c4d5"],
+      "summary": { "now": "Ended: proposed done — five plists staggered, 429 count 41 → 2 over 30 min", "next": "Jarred confirms; nothing else pending", "goal": "Pollers stop rate-limiting each other" },
+      "contextPct": 22, "tokens": 640000, "elapsedActive": "38m", "idle": "3h 10m", "msgs": 29, "cost": 4.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 190
+    },
+    {
+      "session_id": "b2c3d4e5-4e60-4b82-9d9e-0f1a2b3c4d5e", "name": "fb-6e2a80c4f1b7", "project": "ops-tracker", "branch": "cu-86eyq2e6f7-retire-biz-dispatch", "host": "mactop", "model": "fable", "status": "needs_input", "source": "rail",
+      "clickupTasks": ["86eyq2e6f7"],
+      "summary": { "now": "Parked with a question: archive the mini copy as-is, or port its backoff first?", "next": "Resume on Jarred's answer", "goal": "biz-agent-dispatch archived into the repo and unloaded on the mini" },
+      "contextPct": 33, "tokens": 900000, "elapsedActive": "52m", "idle": "47m", "msgs": 40, "cost": 6.9, "resumeTier": "attach", "lastActivity": "47m ago", "summaryAgeMin": 47
+    },
+    {
+      "session_id": "c3d4e5f6-5f71-4c93-8eaf-1a2b3c4d5e6f", "name": "fb-b93f2d1e7a08", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill", "host": "mini", "model": "sonnet", "status": "working", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Restoring the 2026-08-30 snapshot into a scratch volume and checksumming", "next": "Compare 200 sampled files, write the drill record", "goal": "Restore drill passes with a written record" },
+      "contextPct": 27, "tokens": 780000, "elapsedActive": "24m", "idle": "0m", "msgs": 18, "cost": 3.2, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 2
+    },
+    {
+      "session_id": "d4e5f6a7-6082-4da4-9fb0-2b3c4d5e6f70", "name": "fb-2d8c5e0a9b41", "project": "miscellaneous", "branch": "cu-86eyq3e6f7-restore-drill-r1", "host": "mactop", "model": "fable", "status": "ended", "source": "rail",
+      "clickupTasks": ["86eyq3e6f7"],
+      "summary": { "now": "Ended: context maxed while indexing the snapshot listing", "next": "Revive into a fresh session (done — see the mini session)", "goal": "Restore drill passes with a written record" },
+      "contextPct": 97, "tokens": 4800000, "elapsedActive": "1h 50m", "idle": "26m", "msgs": 120, "cost": 31.0, "resumeTier": "revive", "lastActivity": "26m ago", "summaryAgeMin": 26
+    },
+    {
+      "session_id": "e5f6a7b8-7193-4eb5-80c1-3c4d5e6f7081", "name": "fb-f41a7c3e2d96", "project": "gm-sage", "branch": "cu-86eyq4a2b3-mailbox-triage", "host": "mini", "model": "fable", "status": "waiting", "source": "rail",
+      "clickupTasks": ["86eyq4a2b3"],
+      "summary": { "now": "Idle after filing 212 messages; 14 routed for review", "next": "Second pass on the 14 once the routing rules are confirmed", "goal": "Mailbox backlog classified and filed, review items surfaced" },
+      "contextPct": 49, "tokens": 1600000, "elapsedActive": "1h 30m", "idle": "22m", "msgs": 71, "cost": 12.4, "resumeTier": "attach", "lastActivity": "22m ago", "summaryAgeMin": 22
+    },
+    {
+      "session_id": "f6a7b8c9-82a4-4fc6-91d2-4d5e6f708192", "name": "omnara:collector-brand/velvet-anchor", "project": "collector-brand", "branch": "velvet-anchor", "host": "mactop", "model": "fable", "status": "working", "source": "omnara",
+      "clickupTasks": [],
+      "summary": { "now": "Refactoring the brand token export into a single script", "next": "Run the export against the three sample decks", "goal": "One-command brand token export" },
+      "contextPct": 36, "tokens": 1100000, "elapsedActive": "48m", "idle": "0m", "msgs": 35, "cost": 7.7, "resumeTier": "attach", "lastActivity": "just now", "summaryAgeMin": 3
+    },
+    {
+      "session_id": "07b8c9d0-93b5-4ad7-a2e3-5e6f70819203", "name": "fb-c6d13a8e4f57", "project": "miscellaneous", "branch": "scratch-notes", "host": "macbook", "model": "sonnet", "status": "stale", "source": "rail",
+      "clickupTasks": [],
+      "summary": { "now": "Stale: last activity 3h ago (laptop asleep)", "next": "—", "goal": "Scratch exploration; no task linked" },
+      "contextPct": 12, "tokens": 210000, "elapsedActive": "15m", "idle": "3h 04m", "msgs": 9, "cost": 1.1, "resumeTier": "resume", "lastActivity": "3h ago", "summaryAgeMin": 184
+    }
+  ]
+};
+
+/* ───────── state ───────── */
+const TODAY = SPACE.builtAt.slice(0,10);
+const state = { space: "sp-ws", collapsed: new Set(), dispatching: new Set(), answered: new Set(), answering: null, pickerFor: null, pickerChoice: null };
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const SPACE_COLORS = { "sp-ws":"#5f4dd0", "sp-gm":"#0e9994", "sp-personal":"#f0885a" };
+const LIST_COLORS = ["#7b68ee","#4c9aff","#0e9994","#f0a92e","#f0885a","#e5484d"];
+const STATUS_LABEL = { "to do":"To do", "in progress":"In progress", "proposed-done":"Proposed done" };
+const STATUS_CLS = { "to do":"todo", "in progress":"prog", "proposed-done":"prop" };
+const AGENT_LABEL = { "needs-triage":"Needs triage", "ready-for-human":"Ready for human", "ready-for-agent":"Ready for agent", "in-progress":"In progress", "needs-info":"Parked · needs info", "out-of-scope":"Out of scope" };
+const SESS_LABEL = { needs_input:"needs input", working:"working", waiting:"waiting", stale:"stale", ended:"ended" };
+const SESS_RANK = { needs_input:0, working:1, waiting:2, stale:3, ended:4 };
+const PRIO = { 1:["Drop everything","p1"], 2:["Normal","p2"], 3:["Whenever","p3"] };
+const TIER_HINT = { attach:"attach: live tmux, full state", resume:"resume: transcript replay, tools re-init", revive:"revive: fresh session seeded from a distilled brief" };
+
+const sessionsFor = id => SPACE.sessions.filter(s => s.clickupTasks.includes(id));
+const isLive = s => s.status !== "ended";
+const taskNeedsYou = t => t.agent_state === "needs-info" || sessionsFor(t.id).some(s => s.status === "needs_input");
+const taskTier = t => taskNeedsYou(t) ? 0 : (t.status === "in progress" || sessionsFor(t.id).some(s => isLive(s) && s.status !== "stale")) ? 1 : 2;
+const canDispatch = t => t.doneWhen && ["ready-for-agent","needs-triage","ready-for-human"].includes(t.agent_state);
+const allTasks = sp => sp.folders.flatMap(f => f.lists.flatMap(l => l.tasks));
+const spaceById = id => SPACE.spaces.find(s => s.id === id);
+
+function ageText(min){ if(min < 60) return min + "m"; const h = Math.floor(min/60), m = min % 60; return h + "h" + (m ? " " + m + "m" : ""); }
+function secText(s){ if(s < 60) return s + "s"; const m = Math.round(s/60); if(m < 60) return m + "m"; const h = Math.floor(m/60); return h + "h " + (m%60) + "m"; }
+function dueText(d){
+  if(!d) return ["—","none","No due date"];
+  const [y,m,dd] = d.split("-").map(Number);
+  const label = new Date(y, m-1, dd).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  if(d < TODAY) return [label,"over","Overdue — was due " + label];
+  if(d === TODAY) return ["Today","today","Due today"];
+  return [label,"","Due " + label];
+}
+function sortTasks(ts){
+  return ts.slice().sort((a,b) => taskTier(a)-taskTier(b) || a.priority-b.priority || ((a.due||"9")>(b.due||"9")?1:(a.due||"9")<(b.due||"9")?-1:0));
+}
+function sortSessions(ss){ return ss.slice().sort((a,b) => SESS_RANK[a.status]-SESS_RANK[b.status]); }
+
+/* ───────── render: picker + header ───────── */
+function renderPicker(){
+  $("#spacePicker").innerHTML = SPACE.spaces.map(sp => `
+    <button class="space-tab" role="tab" aria-selected="${sp.id===state.space}" data-space="${sp.id}" title="${esc(sp.name)}">
+      <span class="sq" style="background:${SPACE_COLORS[sp.id]}">${esc(sp.key[0])}</span>${esc(sp.key)}
+    </button>`).join("");
+}
+function renderHead(){
+  const sp = spaceById(state.space);
+  const tasks = allTasks(sp);
+  const ids = new Set(tasks.map(t => t.id));
+  const liveInSpace = SPACE.sessions.filter(s => isLive(s) && s.status !== "stale" && s.clickupTasks.some(id => ids.has(id))).length;
+  const needsYou = tasks.filter(taskNeedsYou).length;
+  const parked = tasks.filter(t => t.agent_state === "needs-info").length;
+  const proposed = tasks.filter(t => t.status === "proposed-done").length;
+  const built = new Date(SPACE.builtAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  $("#spaceHead").innerHTML = `
+    <div class="sh-title">
+      <span class="sq" style="background:${SPACE_COLORS[sp.id]}">${esc(sp.key[0])}</span>
+      <h1>${esc(sp.name)}</h1>
+      <span class="view">☰ <b>List</b> · sessions joined</span>
+      <span class="built">snapshot ${built} · from ${esc(SPACE.self)}</span>
+    </div>
+    <div class="stats" aria-label="Space counts">
+      <span class="stat"><b>${tasks.length}</b> open tasks</span>
+      <span class="stat ${needsYou?'hot':''}"><b>${needsYou}</b> need${needsYou===1?'s':''} you</span>
+      <span class="stat live"><b>${liveInSpace}</b> live session${liveInSpace===1?'':'s'}</span>
+      <span class="stat parked"><b>${parked}</b> parked</span>
+      <span class="stat prop"><b>${proposed}</b> proposed-done to confirm</span>
+    </div>
+    <div class="hosts" aria-label="Host liveness">
+      ${Object.entries(SPACE.hosts).map(([h,v]) => `
+        <button class="host ${v.liveness}" data-host="${h}" type="button" aria-expanded="false" title="${esc(v.note || (h + ' · ' + v.liveness + ' · published ' + secText(v.publishAgeSec) + ' ago'))}">
+          <span class="dot"></span><span class="hn">${h}</span><span class="age">${v.liveness === 'fresh' ? secText(v.publishAgeSec) + ' ago' : v.liveness + ' · ' + secText(v.publishAgeSec)}</span>
+          <span class="tip">${esc(v.note ? v.note + ". Sessions on this host may have moved on; counts here are as of its last publish." : h + " is publishing normally — last row " + secText(v.publishAgeSec) + " ago.")}</span>
+        </button>`).join("")}
+    </div>`;
+}
+
+/* ───────── render: board ───────── */
+function flagSvg(){ return `<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3 1.5a.75.75 0 0 1 .75.75V3h8.5a.75.75 0 0 1 .6 1.2L10.7 7l2.15 2.8a.75.75 0 0 1-.6 1.2h-8.5v3.25a.75.75 0 0 1-1.5 0v-12A.75.75 0 0 1 3 1.5z"/></svg>`; }
+function linkSvg(){ return `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5H3.5v9h9V9.5"/><path d="M9 3h4v4"/><path d="M13 3 7.5 8.5"/></svg>`; }
+
+function sessionChip(s){
+  const live = s.status !== "ended";
+  const tail = s.status === "needs_input" ? `idle ${s.idle}` : s.status === "working" ? `${s.elapsedActive} active` : s.status === "waiting" ? `idle ${s.idle}` : s.status === "stale" ? `idle ${s.idle}` : `${s.lastActivity}`;
+  const chip = `<button class="chip h-${s.host} s-${s.status}" type="button" data-open="${s.session_id}" title="${esc(s.name)} · ${esc(s.summary.now)} (summary ${ageText(s.summaryAgeMin)} old)">
+      <span class="htag">${s.host}</span>
+      <span class="body"><span class="sd"></span><span class="st">${SESS_LABEL[s.status]}</span><span class="model">${esc(s.model)}</span><span>· ${tail}</span></span>
+    </button>`;
+  if(live) return chip;
+  return chip + `<button class="resume" type="button" data-resume="${s.session_id}" title="${esc(TIER_HINT[s.resumeTier])}">↻ Resume <span class="tier ${s.resumeTier}">${s.resumeTier}</span></button>`;
+}
+
+function actionCell(t, sess){
+  if(state.dispatching.has(t.id)) return `<button class="btn" type="button" disabled><span class="spin"></span>dispatching…</button>`;
+  const live = sess.find(s => isLive(s));
+  if(live) return `<button class="btn ghost" type="button" data-open="${live.session_id}">Open session</button>`;
+  const ended = sess.find(s => s.status === "ended");
+  if(ended) return `<button class="btn ghost" type="button" data-open="${ended.session_id}">Open session</button>`;
+  if(canDispatch(t)) return `<button class="btn primary" type="button" data-dispatch="${t.id}">▸ Dispatch</button>`;
+  if(!t.doneWhen) return `<button class="btn" type="button" disabled>▸ Dispatch</button><span class="hintt">needs DONE-WHEN</span>`;
+  return `<button class="btn" type="button" disabled>▸ Dispatch</button><span class="hintt">${t.agent_state === 'needs-info' ? 'answer the question first' : 'not dispatchable in this state'}</span>`;
+}
+
+function taskRow(t){
+  const sess = sortSessions(sessionsFor(t.id));
+  const [dLabel, dCls, dTitle] = dueText(t.due);
+  const [pName, pCls] = PRIO[t.priority];
+  const cls = ["row", taskNeedsYou(t) ? "needs-you" : sess.some(s => isLive(s) && s.status !== "stale") ? "is-live" : "", state.dispatching.has(t.id) ? "dispatching" : ""].join(" ");
+  const parked = t.agent_state === "needs-info";
+  const answered = state.answered.has(t.id);
+  const answering = state.answering === t.id;
+  return `<div class="${cls}" data-task="${t.id}">
+    <div class="c-name">
+      <span class="sdot ${STATUS_CLS[t.status]}" aria-hidden="true"></span>
+      <span class="tn" title="${esc(t.name)}">${esc(t.name)}</span>
+      <span class="dw ${t.doneWhen?'ok':'miss'}" title="${t.doneWhen?'Has a DONE-WHEN contract':'No DONE-WHEN contract — cannot dispatch'}">${t.doneWhen?'✓':'⚠'}</span>
+      <a class="lnk" href="${esc(t.url)}" target="_blank" rel="noopener" title="Open ${esc(t.id)} in ClickUp" aria-label="Open ${esc(t.name)} in ClickUp">${linkSvg()}</a>
+    </div>
+    <div class="c-status"><span class="pill ${STATUS_CLS[t.status]}">${STATUS_LABEL[t.status]}</span></div>
+    <div class="c-assignee"><span class="av ${t.assignee.toLowerCase()}" title="${esc(t.assignee)}">${esc(t.assignee[0])}</span></div>
+    <div class="c-due"><span class="due ${dCls}" title="${esc(dTitle)}">${dLabel}</span></div>
+    <div class="c-prio"><span class="flag ${pCls}" title="Priority ${t.priority} · ${pName}" aria-label="Priority ${t.priority} · ${pName}">${flagSvg()}</span></div>
+    <div class="c-agent"><span class="ag ${t.agent_state}">${AGENT_LABEL[t.agent_state]}</span></div>
+    <div class="c-sessions">${sess.length ? sess.map(sessionChip).join("") : `<span class="nosess">no session yet</span>`}</div>
+    <div class="c-action">${actionCell(t, sess)}</div>
+    ${parked ? `<div class="qrow ${answered?'sent':''}">
+        <span class="qi">${answered ? '✓' : '?'}</span>
+        <div class="qt">
+          <div class="ql">${answered ? 'Answer sent · session will pick it up' : 'Parked — waiting on you'}</div>
+          <div class="qq">${esc(t.question)}</div>
+          ${answering ? `<textarea id="ans-${t.id}" placeholder="Type the answer the session should act on…" aria-label="Answer"></textarea>
+            <div class="qbtns"><button class="btn primary" type="button" data-send="${t.id}">Send answer</button><button class="btn ghost" type="button" data-cancel-answer="${t.id}">Cancel</button></div>` : ""}
+        </div>
+        ${!answering && !answered ? `<div class="qa"><button class="btn primary" type="button" data-answer="${t.id}">Answer</button></div>` : ""}
+      </div>` : ""}
+  </div>`;
+}
+
+function colHead(){
+  return `<div class="colhead" aria-hidden="true"><span>Name</span><span>Status</span><span>Assignee</span><span>Due</span><span>Prio</span><span>Agent state</span><span class="new">Sessions</span><span class="new">Action</span></div>`;
+}
+
+function listBlock(l, i){
+  const open = !state.collapsed.has(l.id);
+  const tasks = sortTasks(l.tasks);
+  const live = l.tasks.reduce((n,t) => n + sessionsFor(t.id).filter(s => isLive(s) && s.status !== "stale").length, 0);
+  return `<section class="list ${open?'':'collapsed'}" data-list="${l.id}">
+    <div class="list-h">
+      <button class="tog" type="button" data-toggle="${l.id}" aria-expanded="${open}">
+        <span class="chev">▾</span><span class="bar" style="background:${LIST_COLORS[i % LIST_COLORS.length]}"></span>
+        <span class="lname">${esc(l.name)}</span><span class="cnt">${l.tasks.length}</span>
+        <span class="sub">${live ? live + ' live' : ''}</span>
+      </button>
+      <span class="hint">needs-you first · then in progress</span>
+    </div>
+    <div class="list-body">
+      ${tasks.length ? colHead() + `<div class="tbl">${tasks.map(taskRow).join("")}</div>` : `<div class="empty">No open tasks in this list.</div>`}
+    </div>
+  </section>`;
+}
+
+function folderBlock(f, i){
+  const open = !state.collapsed.has(f.id);
+  const n = f.lists.reduce((a,l) => a + l.tasks.length, 0);
+  return `<div class="group ${open?'':'collapsed'}" data-folder="${f.id}">
+    <div class="folder-h">
+      <button class="tog" type="button" data-toggle="${f.id}" aria-expanded="${open}">
+        <span class="chev">▾</span><span class="ficon"></span><span>${esc(f.name)}</span><span class="cnt">${n}</span>
+        <span class="sub" style="font-weight:400;color:var(--ink-faint)">${f.lists.length} list${f.lists.length===1?'':'s'}</span>
+      </button>
+    </div>
+    <div class="folder-body">${f.lists.map((l,j) => listBlock(l, i + j)).join("")}</div>
+  </div>`;
+}
+
+function unlinkedBlock(){
+  const ss = sortSessions(SPACE.sessions.filter(s => s.clickupTasks.length === 0));
+  const open = !state.collapsed.has("unlinked");
+  return `<div class="group ${open?'':'collapsed'}">
+    <div class="folder-h">
+      <button class="tog" type="button" data-toggle="unlinked" aria-expanded="${open}">
+        <span class="chev">▾</span><span class="ficon" style="background:var(--c-stale)"></span><span>Unlinked sessions</span><span class="cnt">${ss.length}</span>
+        <span class="sub" style="font-weight:400;color:var(--ink-faint)">every Space · not tied to a task</span>
+      </button>
+    </div>
+    <div class="folder-body">
+      <section class="list unlinked">
+        <div class="list-h"><span class="bar"></span><span class="lname">Sessions without a task</span><span class="cnt">${ss.length}</span><span class="hint">link one to make it show up above</span></div>
+        <div class="list-body">
+          ${ss.length ? `<div class="colhead" aria-hidden="true"><span>Session</span><span>Host</span><span>Status</span><span>Last activity</span><span>Now</span><span class="new">Action</span></div>
+          <div class="tbl">${ss.map(s => `
+            <div class="row" data-session="${s.session_id}">
+              <div class="c-sname"><span class="sname">${esc(s.name)}<small>${esc(s.project)} · ${esc(s.branch)} · ${esc(s.model)}</small></span></div>
+              <div class="c-host"><span class="htag2 ${s.host}">${s.host}</span></div>
+              <div class="c-sst"><span class="sst ${s.status}"><span class="sd"></span>${SESS_LABEL[s.status]}</span></div>
+              <div class="c-ago"><span class="due">${esc(s.lastActivity)}</span></div>
+              <div class="c-now"><span class="now" title="${esc(s.summary.now)}">${esc(s.summary.now)} <span class="age">· summary ${ageText(s.summaryAgeMin)} old</span></span></div>
+              <div class="c-action"><button class="btn primary" type="button" data-link="${s.session_id}">⛓ Link task</button><button class="btn ghost" type="button" data-open="${s.session_id}">Open</button></div>
+            </div>`).join("")}</div>` : `<div class="empty">Every session is linked to a task.</div>`}
+        </div>
+      </section>
+    </div>
+  </div>`;
+}
+
+function renderBoard(){
+  const sp = spaceById(state.space);
+  let li = 0;
+  $("#board").innerHTML = sp.folders.map(f => { const html = folderBlock(f, li); li += f.lists.length; return html; }).join("") + unlinkedBlock();
+}
+function render(){ renderPicker(); renderHead(); renderBoard(); }
+
+/* ───────── drawer ───────── */
+function openSession(id){
+  const s = SPACE.sessions.find(x => x.session_id === id); if(!s) return;
+  const tasks = s.clickupTasks.map(tid => { for(const sp of SPACE.spaces) for(const t of allTasks(sp)) if(t.id === tid) return t; return null; }).filter(Boolean);
+  const ctx = `${s.contextPct}%`;
+  $("#drawer").innerHTML = `
+    <div class="d-head"><span class="htag2 ${s.host}">${s.host}</span><span class="sst ${s.status}"><span class="sd"></span>${SESS_LABEL[s.status]}</span><span style="color:var(--ink-faint);font-size:12px">${esc(s.source)}</span><button class="x" type="button" data-close aria-label="Close">✕</button></div>
+    <div class="d-body">
+      <h2>${esc(s.name)}</h2>
+      <div class="meta"><span>${esc(s.project)}</span><span>⎇ ${esc(s.branch)}</span><span>${esc(s.model)}</span><span>${esc(s.lastActivity)}</span></div>
+      ${tasks.length ? `<div style="font-size:12px;color:var(--ink-soft)">Linked: ${tasks.map(t => `<a href="${esc(t.url)}" target="_blank" rel="noopener" style="color:var(--brand-dark);font-weight:600">${esc(t.name)} ↗</a>`).join(", ")}</div>` : `<div style="font-size:12px;color:var(--ink-soft)">Not linked to a task.</div>`}
+      <div class="kv"><b>Now</b><span>${esc(s.summary.now)}</span><b>Next</b><span>${esc(s.summary.next)}</span><b>Goal</b><span>${esc(s.summary.goal)}</span></div>
+      <div class="sage">summary ${ageText(s.summaryAgeMin)} old · from ${s.host}'s last publish</div>
+      <div class="statgrid"><div>Context<b>${ctx}</b></div><div>Active<b>${esc(s.elapsedActive)}</b></div><div>Messages<b>${s.msgs}</b></div><div>Cost<b>$${s.cost.toFixed(2)}</b></div></div>
+      <div class="term"><span class="p">tmux ▸ ${esc(s.name)} · ${s.host} · ${(s.tokens/1e6).toFixed(1)}M tokens</span>
+<span class="g">›</span> ${esc(s.summary.now)}
+<span class="y">…</span> transcript preview is a placeholder in this mockup</div>
+    </div>
+    <div class="d-foot">${s.status === "ended" ? `<button class="btn primary" type="button" data-resume="${s.session_id}">↻ Resume <span class="tier ${s.resumeTier}" style="background:rgba(255,255,255,.2);color:#fff">${s.resumeTier}</span></button>` : `<button class="btn primary" type="button" data-attach="${s.session_id}">Attach (${s.resumeTier})</button>`}<button class="btn ghost" type="button" data-close>Close</button></div>`;
+  $("#drawer").classList.add("show"); $("#drawer").setAttribute("aria-hidden","false"); $("#scrim").classList.add("show");
+}
+function closeDrawer(){ $("#drawer").classList.remove("show"); $("#drawer").setAttribute("aria-hidden","true"); $("#scrim").classList.remove("show"); }
+
+/* ───────── picker ───────── */
+function openPicker(sid){
+  const s = SPACE.sessions.find(x => x.session_id === sid); if(!s) return;
+  state.pickerFor = sid; state.pickerChoice = null;
+  const sp = spaceById(state.space);
+  $("#pkSub").textContent = `${s.name} · ${s.project}/${s.branch} → a task in ${sp.name}`;
+  $("#pkList").innerHTML = sp.folders.flatMap(f => f.lists.flatMap(l => l.tasks.map(t => `
+    <button class="pk-item" type="button" role="radio" aria-checked="false" data-pick="${t.id}"><span class="rb"></span><span class="t">${esc(t.name)}<small>${esc(f.name)} › ${esc(l.name)} · ${esc(t.id)}</small></span></button>`))).join("") || `<div class="empty">No open tasks in this Space.</div>`;
+  $("#pkLink").disabled = true;
+  $("#picker").showModal();
+}
+
+/* ───────── toast ───────── */
+let toastT;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
+
+/* ───────── events ───────── */
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-space],[data-toggle],[data-open],[data-resume],[data-dispatch],[data-link],[data-answer],[data-send],[data-cancel-answer],[data-close],[data-attach],[data-pick],[data-host]");
+  if(!el){ return; }
+  if(el.dataset.space){ state.space = el.dataset.space; state.collapsed.clear(); render(); window.scrollTo({top:0}); return; }
+  if(el.dataset.toggle){ const k = el.dataset.toggle; state.collapsed.has(k) ? state.collapsed.delete(k) : state.collapsed.add(k); renderBoard(); return; }
+  if(el.dataset.host){ const b = el; const was = b.classList.contains("open"); document.querySelectorAll(".host.open").forEach(h => { h.classList.remove("open"); h.setAttribute("aria-expanded","false"); }); if(!was){ b.classList.add("open"); b.setAttribute("aria-expanded","true"); } return; }
+  if(el.dataset.open){ openSession(el.dataset.open); return; }
+  if(el.dataset.close !== undefined){ closeDrawer(); return; }
+  if(el.dataset.attach){ const s = SPACE.sessions.find(x => x.session_id === el.dataset.attach); toast(`Attaching to ${s.name} on ${s.host} (mock)`); return; }
+  if(el.dataset.resume){
+    const s = SPACE.sessions.find(x => x.session_id === el.dataset.resume);
+    const t = s.resumeTier;
+    toast(t === "attach" ? `Attaching to ${s.name} on ${s.host} — live state (mock)` : t === "resume" ? `Resuming ${s.name} on ${s.host} — transcript replay, not a full restore (mock)` : `Reviving ${s.name} — fresh session seeded from its brief; prior context is NOT restored (mock)`);
+    closeDrawer(); return;
+  }
+  if(el.dataset.dispatch){ const id = el.dataset.dispatch; state.dispatching.add(id); renderBoard(); toast(`Dispatching ${id} to ${SPACE.self} via the launch rail (mock)`); return; }
+  if(el.dataset.link){ openPicker(el.dataset.link); return; }
+  if(el.dataset.pick){ state.pickerChoice = el.dataset.pick; document.querySelectorAll(".pk-item").forEach(i => i.setAttribute("aria-checked", i.dataset.pick === state.pickerChoice)); $("#pkLink").disabled = false; return; }
+  if(el.dataset.answer){ state.answering = el.dataset.answer; renderBoard(); const ta = $(`#ans-${el.dataset.answer}`); if(ta) ta.focus(); return; }
+  if(el.dataset.cancelAnswer !== undefined){ state.answering = null; renderBoard(); return; }
+  if(el.dataset.send){ const id = el.dataset.send; const ta = $(`#ans-${id}`); if(ta && !ta.value.trim()){ ta.focus(); toast("Type an answer first"); return; } state.answering = null; state.answered.add(id); renderBoard(); toast("Answer sent to the parked session (mock) — it resumes on its next turn"); return; }
+});
+$("#scrim").addEventListener("click", closeDrawer);
+$("#pkCancel").addEventListener("click", () => $("#picker").close());
+$("#pkLink").addEventListener("click", () => {
+  const s = SPACE.sessions.find(x => x.session_id === state.pickerFor);
+  if(s && state.pickerChoice){ s.clickupTasks = [state.pickerChoice]; $("#picker").close(); render(); toast(`${s.name} linked to ${state.pickerChoice} (mock)`); }
+});
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ closeDrawer(); document.querySelectorAll(".host.open").forEach(h => h.classList.remove("open")); } });
+
+render();
+</script>
+</body>
+</html>
