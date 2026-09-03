@@ -287,88 +287,13 @@ a{color:inherit}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* phone sheet (folders nav) */
-.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;z-index:50;transform:translateY(105%);transition:transform .2s cubic-bezier(.2,.8,.2,1);max-height:78vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
-.sheet.on{transform:none}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;z-index:50;transform:translateY(105%);visibility:hidden;transition:transform .2s cubic-bezier(.2,.8,.2,1),visibility 0s .2s;max-height:78vh;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
+.sheet.on{transform:none;visibility:visible;transition-delay:0s}
 .sheet-h{padding:10px 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
 .sheet-h::before{content:"";position:absolute;left:50%;top:6px;width:36px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}
 .sheet-h h2{margin:6px 0 0;font-size:15px;flex:1}
 .sheet-b{overflow:auto;padding:6px 8px 12px}
 .sheet-b .tree-list{min-height:44px}
-
-/* ── phone ─────────────────────────────────────────── */
-@media (max-width:720px){
-  :root{--tap:44px}
-  .app{grid-template-columns:1fr;height:auto;min-height:100vh}
-  .rail{display:none}
-  .main{overflow:visible}
-  .hdr{top:0}
-  .hdr-top{padding:12px 14px 0;flex-wrap:wrap;gap:8px}
-  .hdr-title h1{font-size:18px}
-  .hdr-title .built{display:none}
-  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px;background:var(--column);border-radius:10px;width:100%;order:3}
-  .seg button{min-height:44px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-soft)}
-  .seg button[aria-current="true"]{background:var(--card);color:var(--brand-dark);box-shadow:var(--shadow)}
-  .seg button b{color:var(--c-needs)}
-  .hdr-top .folders-btn{margin-left:auto;order:2}
-  .hdr-counts{padding:10px 14px 0}
-  .count{min-width:84px;padding:6px 10px}
-  .count b{font-size:18px}
-  .hdr-hosts{padding:8px 14px 10px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
-  .hdr-hosts::-webkit-scrollbar{display:none}
-  .host-chip{min-height:34px;flex:none}
-  .host-chip::after{content:"";position:absolute;inset:-5px 0}
-  .btn.sm{min-height:44px}
-  .ext{padding:15px 6px;margin:-15px -6px}
-  .task-name a{display:inline-block;padding:14px 0;margin:-14px 0}
-  .host-chip .why{position:fixed;left:14px;right:14px;top:auto;bottom:auto;max-width:none;width:auto;margin-top:6px}
-  .content{padding:12px 12px 140px}
-  .list{scroll-margin-top:230px}
-  .list-h{padding:10px 12px}
-  .task-row{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px 12px 10px}
-  .task-act{grid-column:2;justify-content:flex-start;padding-top:8px;width:100%}
-  .task-act .btn{flex:1}
-  .dispatch-wrap{align-items:stretch;width:100%}
-  .dispatch-wrap .btn{width:100%}
-  .dispatch-wrap .hint{text-align:center;white-space:normal}
-  .dispatching{justify-content:center;width:100%}
-  .parked{margin:2px 12px 12px 12px}
-  .sessions{margin:0 12px 12px 12px;padding-left:18px}
-  .sessions::before{left:5px}
-  .sess{grid-template-columns:1fr;padding:10px 12px}
-  .sess::before{left:-13px;width:11px;top:22px}
-  .sess::after{left:-4px;top:18px}
-  .sess-act{flex-direction:row;align-items:center;justify-content:space-between;margin-top:6px;width:100%}
-  .sess-act .btn{flex:1}
-  .sess-act .ctx{order:-1;flex:none}
-  .sess-act .ctx{display:none}
-  .hdr-scen{padding:8px 14px 0;overflow-x:auto;scrollbar-width:none;gap:8px}
-  .hdr-scen::-webkit-scrollbar{display:none}
-  .hdr-scen .lbl{display:none}
-  .scen-btn{min-height:38px}
-  .scen-blurb{display:none}
-  .tt-box{position:fixed;left:14px;right:14px;top:auto;bottom:auto;max-width:none;width:auto;margin-top:6px}
-  .tt-i::after{content:"";position:absolute;inset:-11px}
-  .tt-t{padding:12px 0;margin:-12px 0}
-  .hero{padding:16px 14px 14px}
-  .hero h2{font-size:17px}
-  .hero-next{grid-template-columns:1fr;gap:8px}
-  .hero-next .btn{width:100%}
-  .banner .b-act .btn{flex:1}
-  .list.sticky-h .list-h{top:var(--hdr-h,0px)}
-  .list.dense .task-row{padding:9px 12px 7px}
-  .more .btn{flex:1;min-width:0}
-  .drawer{top:auto;left:0;right:0;width:auto;max-height:88vh;border-radius:16px 16px 0 0;transform:translateY(105%);box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
-  .drawer.on{transform:none}
-  .picker{top:auto;bottom:0;left:0;transform:none;width:100%;max-height:82vh;border-radius:16px 16px 0 0}
-  .tree-list{min-height:44px}
-}
-@media (min-width:721px){
-  .folders-btn{display:none}
-  .sheet{display:none}
-}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation:none!important;transition:none!important}
-}
 
 /* ── 2d: scenario switcher ─────────────────────────── */
 .hdr-scen{display:flex;align-items:center;gap:10px;padding:10px 24px 0;min-width:0}
@@ -479,6 +404,84 @@ a{color:inherit}
 .more .btn{min-width:160px}
 .more .hint{white-space:normal}
 .dens-note{padding:6px 16px 8px;font-size:11.5px;color:var(--ink-faint);border-top:1px dashed var(--line);background:var(--ws)}
+
+/* ── phone ─────────────────────────────────────────── */
+@media (max-width:720px){
+  :root{--tap:44px}
+  .app{grid-template-columns:1fr;height:auto;min-height:100vh}
+  .rail{display:none}
+  .main{overflow:visible}
+  .hdr{top:0}
+  .hdr-top{padding:12px 14px 0;flex-wrap:wrap;gap:8px}
+  .hdr-title h1{font-size:18px}
+  .hdr-title .built{display:none}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px;background:var(--column);border-radius:10px;width:100%;order:3}
+  .seg button{min-height:44px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-soft)}
+  .seg button[aria-current="true"]{background:var(--card);color:var(--brand-dark);box-shadow:var(--shadow)}
+  .seg button b{color:var(--c-needs)}
+  .hdr-top .folders-btn{margin-left:auto;order:2}
+  .hdr-counts{padding:10px 14px 0}
+  .count{min-width:84px;padding:6px 10px}
+  .count b{font-size:18px}
+  .hdr-hosts{padding:8px 14px 10px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .hdr-hosts::-webkit-scrollbar{display:none}
+  .host-chip{min-height:34px;flex:none}
+  .host-chip::after{content:"";position:absolute;inset:-5px 0}
+  .btn.sm{min-height:44px}
+  .ext{padding:15px 6px;margin:-15px -6px}
+  .task-name a{display:inline-block;padding:14px 0;margin:-14px 0}
+  .host-chip .why{position:fixed;left:14px;right:14px;top:auto;bottom:auto;max-width:none;width:auto;margin-top:6px}
+  .content{padding:12px 12px 140px}
+  .list{scroll-margin-top:230px}
+  .list-h{padding:10px 12px}
+  .task-row{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px 12px 10px}
+  .task-act{grid-column:2;justify-content:flex-start;padding-top:8px;width:100%}
+  .task-act .btn{flex:1}
+  .dispatch-wrap{align-items:stretch;width:100%}
+  .dispatch-wrap .btn{width:100%}
+  .dispatch-wrap .hint{text-align:center;white-space:normal}
+  .dispatching{justify-content:center;width:100%}
+  .parked{margin:2px 12px 12px 12px}
+  .sessions{margin:0 12px 12px 12px;padding-left:18px}
+  .sessions::before{left:5px}
+  .sess{grid-template-columns:1fr;padding:10px 12px}
+  .sess::before{left:-13px;width:11px;top:22px}
+  .sess::after{left:-4px;top:18px}
+  .sess-act{flex-direction:row;align-items:center;justify-content:space-between;margin-top:6px;width:100%}
+  .sess-act .btn{flex:1}
+  .sess-act .ctx{order:-1;flex:none}
+  .sess-act .ctx{display:none}
+  .hdr-scen{padding:8px 14px 0;overflow-x:auto;scrollbar-width:none;gap:8px}
+  .hdr-scen::-webkit-scrollbar{display:none}
+  .hdr-scen .lbl{display:none}
+  .scen-btn{min-height:38px}
+  .scen-blurb{display:none}
+  .tt-box{position:fixed;left:14px;right:14px;top:auto;bottom:auto;max-width:none;width:auto;margin-top:6px}
+  .tt-i::after{content:"";position:absolute;inset:-11px}
+  .tt-t{padding:12px 0;margin:-12px 0}
+  .hero{padding:16px 14px 14px}
+  .hero h2{font-size:17px}
+  .hero-next{grid-template-columns:1fr;gap:8px}
+  .hero-next .btn{width:100%}
+  .banner .b-act .btn{flex:1}
+  .list.sticky-h .list-h{top:var(--hdr-h,0px)}
+  .list.dense .task-row{padding:9px 12px 7px}
+  .more{flex-direction:column;gap:6px;padding:10px 12px}
+  .more .btn{width:100%;min-width:0}
+  .more .hint{text-align:center}
+  .drawer{top:auto;left:0;right:0;width:auto;max-height:88vh;border-radius:16px 16px 0 0;transform:translateY(105%);box-shadow:0 -10px 40px rgba(42,46,67,.2);padding-bottom:env(safe-area-inset-bottom)}
+  .drawer.on{transform:none}
+  .picker{top:auto;bottom:0;left:0;transform:none;width:100%;max-height:82vh;border-radius:16px 16px 0 0}
+  .tree-list{min-height:44px}
+}
+@media (min-width:721px){
+  .folders-btn{display:none}
+  .sheet{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -1036,7 +1039,7 @@ function heroHTML(sp, st){
   const fresh = Math.max(...Object.values(DATA.hosts).map(h=>h.publishAgeSec));
   return `<section class="hero" aria-label="Nothing needs you">
     <div class="hero-top"><span class="hero-ic" aria-hidden="true">${ICON.check}</span><div><h2>Nothing needs you in ${esc(sp.name)}</h2><p class="sub">0 sessions waiting on input · 0 parked questions · 0 proposed-done to confirm. ${working?`${working} session${working>1?'s are':' is'} working on ${working>1?'their':'its'} own.`:'No session is running here.'}</p></div></div>
-    ${nx ? `<div class="hero-next"><span class="k">Next due<b>${nxDue.text}</b></span><span class="nm">${esc(taskLabel(nx))}<div class="task-meta"><span class="chip as-${nx.agent_state}">${AS_LABEL[nx.agent_state]}</span><span class="dw ${nx.doneWhen?'ok':'missing'}">${nx.doneWhen?ICON.check+'DONE-WHEN':ICON.warn+'no DONE-WHEN'}</span><span class="assg"><span class="av ${nx.assignee==='Jarred'?'j':''}">${initials(nx.assignee)}</span>${esc(nx.assignee)}</span></div></span><a class="btn" href="${esc(nx.url)}" target="_blank" rel="noopener">Open in ClickUp ${ICON.ext}</a></div>` : `<div class="hero-next"><span class="k">Next due<b>—</b></span><span class="nm" style="font-weight:500;color:var(--ink-soft)">No due dates set in this Space.</span></div>`}
+    ${nx ? `<div class="hero-next"><span class="k">${nxDue.cls==='over'?'Overdue':'Next due'}<b>${nxDue.text}</b></span><span class="nm">${esc(taskLabel(nx))}<div class="task-meta"><span class="chip as-${nx.agent_state}">${AS_LABEL[nx.agent_state]}</span><span class="dw ${nx.doneWhen?'ok':'missing'}">${nx.doneWhen?ICON.check+'DONE-WHEN':ICON.warn+'no DONE-WHEN'}</span><span class="assg"><span class="av ${nx.assignee==='Jarred'?'j':''}">${initials(nx.assignee)}</span>${esc(nx.assignee)}</span></div></span><a class="btn" href="${esc(nx.url)}" target="_blank" rel="noopener">Open in ClickUp ${ICON.ext}</a></div>` : `<div class="hero-next"><span class="k">Next due<b>—</b></span><span class="nm" style="font-weight:500;color:var(--ink-soft)">No due dates set in this Space.</span></div>`}
     <p class="hero-fine">Checked against every host’s snapshot (oldest ${fmtAge(fresh)} ago). This card leaves the moment anything needs an answer.</p>
   </section>`;
 }

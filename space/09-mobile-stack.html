@@ -40,17 +40,16 @@ svg{display:block}
 /* ---------- sticky Space header ---------- */
 .hdr{position:sticky;top:0;z-index:20;background:rgba(250,251,252,.92);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) 16px 10px}
 .hdr-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;min-height:18px}
-.eyebrow{font:600 13px/1.3 var(--font);color:var(--ink);letter-spacing:-.005em}
+.eyebrow{font:600 13px/1.3 var(--font);color:var(--ink);letter-spacing:-.005em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eyebrow b{color:var(--brand-dark);font-weight:800;letter-spacing:.01em}
 .built{font:11px/1.3 var(--font);color:var(--ink-faint);white-space:nowrap;font-variant-numeric:tabular-nums}
 .hdr h1{margin:4px 0 2px;font:700 22px/1.2 var(--font);letter-spacing:-.015em}
 .hdr .sub{font:13px/1.45 var(--font);color:var(--ink-soft);margin:0}
 
-.seg{display:flex;position:relative;background:var(--column);border-radius:12px;padding:3px;margin-top:8px;isolation:isolate}
-.seg button{flex:1;min-height:40px;border:0;background:transparent;font:600 14px var(--font);color:var(--ink-soft);border-radius:9px;position:relative;z-index:1;transition:color .2s}
-.seg button::after{content:"";position:absolute;inset:-3px}
+.seg{display:flex;position:relative;background:var(--column);border-radius:12px;padding:2px;margin-top:8px;isolation:isolate}
+.seg button{flex:1;min-height:44px;border:0;background:transparent;font:600 14px var(--font);color:var(--ink-soft);border-radius:9px;position:relative;z-index:1;transition:color .2s}
 .seg button[aria-selected="true"]{color:var(--ink)}
-.seg .ind{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);background:#fff;border-radius:9px;box-shadow:var(--shadow);transition:transform .28s var(--ease);z-index:0}
+.seg .ind{position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px)/3);background:#fff;border-radius:9px;box-shadow:var(--shadow);transition:transform .28s var(--ease);z-index:0}
 
 .counts{display:flex;gap:6px;overflow-x:auto;margin:8px -16px 0;padding:0 16px;scrollbar-width:none}
 .counts::-webkit-scrollbar{display:none}
@@ -64,9 +63,10 @@ svg{display:block}
 .ct.prop b{color:#1d7d44}
 .ct.zero b{color:var(--ink-faint)}
 
-.hosts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.host{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 10px 0 8px;border-radius:999px;background:#fff;border:1px solid var(--line);font:600 12px var(--font);color:var(--ink-soft);position:relative}
-.host::after{content:"";position:absolute;inset:-8px 0}
+.hosts{display:flex;gap:5px;margin-top:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.hosts::-webkit-scrollbar{display:none}
+.host{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 9px 0 8px;border-radius:999px;background:#fff;border:1px solid var(--line);font:600 11.5px var(--font);color:var(--ink-soft);position:relative;white-space:nowrap}
+.host::after{content:"";position:absolute;inset:-6px 0}
 .host i{width:8px;height:8px;border-radius:50%;background:var(--hc);box-shadow:0 0 0 2px color-mix(in srgb,var(--hc) 18%,transparent)}
 .host em{font-style:normal;color:var(--ink-faint);font-weight:500;font-variant-numeric:tabular-nums}
 .host.stale{border-style:dashed;color:var(--ink-faint);background:var(--c-stale-bg)}
@@ -76,6 +76,7 @@ svg{display:block}
 
 /* ---------- stack ---------- */
 .stack{padding:0 0 calc(var(--tab-h) + 28px + env(safe-area-inset-bottom))}
+.stack *{scroll-margin-top:calc(var(--hdr-h) + 60px);scroll-margin-bottom:calc(var(--tab-h) + 20px)}
 .fsec{position:relative}
 .folder{position:sticky;top:var(--hdr-h);z-index:10;background:var(--ws);padding:16px 16px 6px;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line)}
 .folder h2{margin:0;font:700 12px/1.2 var(--font);letter-spacing:.11em;text-transform:uppercase;color:var(--ink-soft)}
@@ -162,7 +163,7 @@ svg{display:block}
 .sess{flex:0 0 auto;width:216px;scroll-snap-align:start;border:1px solid var(--line);border-radius:12px;background:#fff;display:flex;overflow:hidden;position:relative}
 .sess::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--hc)}
 .sess.needs_input{border-color:#f5b5b8;background:var(--c-needs-bg)}
-.sess.ended{background:var(--column);border-style:dashed}
+.sess.ended{background:var(--column);border-style:dashed;width:256px}
 .sess.stale{background:var(--c-stale-bg)}
 .sess-main{flex:1;min-width:0;min-height:56px;padding:8px 8px 8px 14px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;display:flex;align-items:center;gap:6px}
 .sess-main:hover{background:rgba(42,46,67,.03)}
@@ -508,7 +509,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 function allTasks(space){ const out=[]; space.folders.forEach(f=>f.lists.forEach(l=>l.tasks.forEach(t=>out.push({task:t,folder:f,list:l,space})))); return out; }
 function sessionsFor(id){ return SPACE.sessions.filter(s=>s.clickupTasks.includes(id)).sort((a,b)=>STATUS_RANK[a.status]-STATUS_RANK[b.status]); }
 function unlinked(){ return SPACE.sessions.filter(s=>!s.clickupTasks.length); }
-function needsYou(t){ return t.agent_state==='needs-info' || sessionsFor(t.id).some(s=>s.status==='needs_input'); }
+function needsYou(t){ if(state.answered.has(t.id)) return false; return t.agent_state==='needs-info' || sessionsFor(t.id).some(s=>s.status==='needs_input'); }
 function isActive(t){ return t.agent_state==='in-progress' || t.status==='in progress' || sessionsFor(t.id).some(s=>s.status==='working'||s.status==='waiting'); }
 function group(t){ return needsYou(t) ? 0 : isActive(t) ? 1 : 2; }
 function sortTasks(ts){ return ts.slice().sort((a,b)=> group(a)-group(b) || a.priority-b.priority || (a.due||'9999').localeCompare(b.due||'9999')); }
@@ -552,7 +553,7 @@ function renderHeader(){
   if(state.tab==='spaces'){
     const sp = spaceOf(state.spaceId), c = counts(sp), idx = SPACE.spaces.findIndex(s=>s.id===sp.id);
     h.innerHTML = `
-      <div class="hdr-top"><span class="eyebrow"><b>FleetBoard</b> · ${esc(sp.name)}</span><span class="built">snapshot ${SPACE.builtAt.slice(11,16)} · from ${esc(SPACE.self)}</span></div>
+      <div class="hdr-top"><span class="eyebrow"><b>FleetBoard</b> · ${esc(sp.name)}</span><span class="built" title="snapshot built ${esc(SPACE.builtAt)}">${SPACE.builtAt.slice(11,16)} · from ${esc(SPACE.self)}</span></div>
       <div class="seg" role="tablist" aria-label="Space">
         ${SPACE.spaces.map(s=>`<button role="tab" aria-selected="${s.id===sp.id}" data-space="${s.id}" title="${esc(s.name)}">${esc(s.key)}</button>`).join('')}
         <span class="ind" style="transform:translateX(${idx*100}%)"></span>
@@ -565,7 +566,7 @@ function renderHeader(){
         <div class="ct ${c.proposed?'prop':'zero'}" title="proposed-done, awaiting your confirm"><b>${c.proposed}</b><span>to confirm</span></div>
       </div>
       <div class="hosts" aria-label="Hosts">
-        ${Object.entries(SPACE.hosts).map(([n,hh])=>`<button class="host ${hh.liveness}" style="--hc:${HOST_COLOR[n]}" data-host="${n}" title="${esc(hostCopy(n))}"><i></i>${n}<em>${hh.liveness==='fresh' ? fmtAge(hh.publishAgeSec) : hh.liveness+' · '+fmtAge(hh.publishAgeSec)}</em></button>`).join('')}
+        ${Object.entries(SPACE.hosts).map(([n,hh])=>`<button class="host ${hh.liveness}" style="--hc:${HOST_COLOR[n]}" data-host="${n}" title="${esc(hostCopy(n))}"><i></i>${n}<em>${hh.liveness==='fresh' ? fmtAge(hh.publishAgeSec) : hh.liveness+' '+fmtAge(hh.publishAgeSec).replace(' ','')}</em></button>`).join('')}
       </div>`;
   } else if(state.tab==='needs'){
     const n = SPACE.spaces.reduce((a,sp)=>a+allTasks(sp).filter(x=>needsYou(x.task)).length, 0);
@@ -733,7 +734,7 @@ function sessionSheet(s){
     <pre class="term" aria-label="Transcript preview"><span class="p">$</span> tmux attach -t ${esc(s.name)}
 <span class="dim"># transcript preview renders here — placeholder in this mockup</span></pre>
     <div class="sh-actions">
-      ${ended ? `<button class="btn primary" data-resume="${s.session_id}">${I.play}Resume <span class="tier inv">${s.resumeTier}</span></button>` : `<button class="btn primary" data-attach="${s.session_id}">${I.term}Attach on ${esc(s.host)} <span class="tier inv">${s.resumeTier}</span></button>`}
+      ${ended ? `<button class="btn primary" data-resume="${s.session_id}">${I.play}Resume <span class="tier inv">${s.resumeTier}</span></button>` : `<button class="btn primary" data-attach="${s.session_id}">${I.term}Attach on ${esc(s.host)}</button>`}
       ${tasks.length ? '' : `<button class="btn" data-link="${s.session_id}">${I.link}Link task</button>`}
       <button class="btn" data-copy="${esc(s.name)}">${I.copy}Copy name</button>
     </div>
